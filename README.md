@@ -1,22 +1,21 @@
 # isc-dpl
-Data processing library for ISC stereo cameras.
+Data processing library project for ISC stereo cameras.
 
 ****
 ## Outline 
 ****
-isc-dplは、ISCシリーズのステレオカメラに対応したデータ処理ライブラリと、その使用方法を提示するサンプルプロジェクトにより構成されています。  
+isc-dplは、ISCシリーズのステレオカメラに対応したデータ処理ライブラリと、ライブラリを使用したサンプルプログラムを提供するプロジェクトです。  
+データ処理ライブラリには、現在は２つのライブラリが含まれています。  
 
-プロジェクトには、２つのデータ処理ライブラリが含まれています。  
-
- - Soft Matching  
-　ステレオマッチングを行います。  
+ - Soft Stereo Matching  
+　ステレオマッチングを行います  
 
  - Frame Decoder  
-　視差の平均化、補間処理を行います。  
+　カメラ本体又はSoft Stereo Matching出力の視差に対して平均化、補間処理を行います  
 
-これらのライブラリのソースコードを提供すると共に、実際のステレオカメラと接続して使用する方法を提示します。  
+本サンプルプログラムを実際のステレオカメラと接続して使用することで、動作の検証が可能となります。  
 
-なお、本プロジェクトにおいては、それぞれ以下のモジュール名で提供されています。
+なお、本プロジェクトにおいてデータ処理ライブラリは、それぞれ以下の名称で提供されています。
 
 | Library              | module(class)    | DLL                  |  
 | :------------------- | :--------------- | :------------------- |  
@@ -24,7 +23,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 | Frame Decoder	       | IscFrameDecoder  | IscFrameDecoder.dll  |  
     
 注意  
-*Soft Matchingのアルゴリズムは、ISCシリーズのステレオカメラ実装と同一のものではありません*  
+*Soft Stereo Matchingのアルゴリズムは、ISCシリーズのステレオカメラ本体実装と同一のものではありません*  
 
 ****
 ## Requirements for Windows  
@@ -35,9 +34,12 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x73~)  
     - ISC100XC: FPGA(0x22~)  
+- ISC Stereo Camera SDK
+    - ISC100VM: 2.3.2~
+    - ISC100XC: 2.2.2~
 
 ****
-# How to build  
+# How to build and Run  
 ****
 - OpenCV  
     - [OpenCV official site](https://opencv.org/releases/)よりダウンロードしてください  
@@ -49,10 +51,16 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
       ソリューションファイルは、build\windows\isc_dpl_all.sln　です。  
 
 - run  
-    - 実行フォルダにISCステレオカメラ用のDLLをコピーします  
-      それぞれ以下に含まれます  
-        - ISC100VM: 3rdparty\ITDLab\vm\2.4.0.0\bin  
-        - ISC100XC: 3rdparty\ITDLab\xc\2.2.4.0\bin
+    - ISCステレオカメラ用のDLLを実行フォルダへコピーします  
+      DLLは、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
+      それぞれ必要なDLLの名称は以下です
+        - ISC100VM: ISCLibvm.dll, ISCSDKLibvm200.dll  
+        - ISC100XC: ISCLibxc.dll, ISCSDKLibxc.dll
+    - ISC100XC用のFT601(FTDI)のApplication Library(DLL)を実行フォルダへコピーします  
+      DLL(FTD3XX.dll)　は、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
+      または、[FTDI official site](https://ftdichip.com/drivers/d3xx-drivers/)より入手可能です  
+    - 実行に必要なパラメータファイルを実行フォルダへコピーします  
+      source\apps\ParameterFiles　に含まれています
 
 ****
 ## Project structure
@@ -71,6 +79,11 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
         + IscFrameDecoder 視差の平均化、補間処理を行います  
     
 - ISC SDK(VM/XC) それぞれのカメラに対応したSDKです  
+
+****
+## Manuals
+****
+[API Manual](doc/api-doc/index.html)  
 
 ****
 ## License  

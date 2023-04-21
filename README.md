@@ -56,8 +56,8 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
       それぞれ必要なDLLの名称は以下です
         - ISC100VM: ISCLibvm.dll, ISCSDKLibvm200.dll  
         - ISC100XC: ISCLibxc.dll, ISCSDKLibxc.dll
-    - ISC100XC用のFT601(FTDI)のApplication Library(DLL)を実行フォルダへコピーします  
-      DLL(FTD3XX.dll)　は、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
+    - ISC100XCを使用する場合は、FT601(FTDI)のApplication Library(FTD3XX.dll)を実行フォルダへコピーします  
+      FTD3XX.dll　は、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
       または、[FTDI official site](https://ftdichip.com/drivers/d3xx-drivers/)より入手可能です  
     - 実行に必要なパラメータファイルを実行フォルダへコピーします  
       source\apps\ParameterFiles　に含まれています

@@ -83,7 +83,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 ## Manuals
 ****
-[API Manual](doc/api-doc/index.html)  
+[API Manual](https://itdlab.github.io/)  
 
 ****
 ## License  

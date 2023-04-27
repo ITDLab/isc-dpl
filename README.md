@@ -30,7 +30,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 - Windows 10(x64)/11  
 - Visual Studio 2022 (require MFC)  
-- OpenCV 4.7.0 ()  
+- OpenCV 4.7.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの注意を確認してください)  
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x75)  
     - ISC100XC: FPGA(0x22)  
@@ -89,6 +89,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 ## Project structure
 ****
+プロジェクトの全体構成を下図に示します  
 ![Diagram](./res/data_processing_lib-Overall-Structure.drawio.png)
 - DPC_gui 表示及び各種の制御を行うGUIです  
     
@@ -96,8 +97,8 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
     + IscDpl インターフェース用DLLです  
     + IscDplMainControl 全体の制御、データの受け渡しを行います  
     + IScCameraControl 実カメラの制御及びカメラデータのファイル読み書きを行います  
-        + VmSdkWrapper  
-        + XcSdkWrapper  
+        + VmSdkWrapper SDKとのインターフェースです  
+        + XcSdkWrapper SDKとのインターフェースです  
     + IscDataProcessingControl  データ処理ライブラリの呼び出しを行います
         + IscBlockMatching ステレオマッチングを行います  
         + IscFrameDecoder 視差の平均化、補間処理を行います  
@@ -107,7 +108,10 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 ## Manuals
 ****
-[API Manual](https://itdlab.github.io/)  
+[DPC_gui操作説明書](./docs/DPC_gui操作説明書.pdf)  
+[ISC_DPLモジュール説明書](./docs/ISC_DPLモジュール説明書.pdf)  
+[データ処理ライブラリ説明書](./docs/データ処理ライブラリ説明書.pdf)  
+[IscDpl API Manual](https://itdlab.github.io/isc-dpl-docs/index.html)  
 
 ****
 ## License  

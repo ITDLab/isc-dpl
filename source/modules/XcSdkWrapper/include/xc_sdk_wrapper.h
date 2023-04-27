@@ -330,6 +330,9 @@ public:
 		const int width, const int height, IscImageInfo* isc_image_info);
 
 private:
+	char module_path_[_MAX_PATH];		/**< This is the path of dll module */
+	char file_name_of_dll_[_MAX_PATH];	/**< This is the DLL file name */
+	HMODULE dll_handle_;				/**< DLL handle */
 
 	/** struct  VM_CameraParamInfo
 	*  This is the structure for camera parameter. do not use nDistanceHistValue and nParallaxThreshold 
@@ -409,6 +412,16 @@ private:
 		@return 0, if successful.
 	*/
 	int GetStereoMatchingsOcclusionRemoval(unsigned int* value);
+
+	/** @brief Get fuction address.
+	@return 0, if successful.
+	*/
+	int LoadDLLFunction(char* module_path);
+
+	/** @brief free fuction address.
+		@return 0, if successful.
+	*/
+	int UnLoadDLLFunction();
 
 };// class XCSDKWRAPPER_API XcSdkWrapper
 

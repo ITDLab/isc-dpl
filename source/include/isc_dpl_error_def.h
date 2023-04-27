@@ -64,6 +64,7 @@
 #define CAMCONTROL_E_GET_FULL_FRAME_FAILED      ((DPL_RESULT) 0xC200000F)  /**< Failed. */
 #define CAMCONTROL_E_SET_FETURE_FAILED          ((DPL_RESULT) 0xC2000010)  /**< Failed. */
 #define CAMCONTROL_E_GET_FETURE_FAILED          ((DPL_RESULT) 0xC2000011)  /**< Failed. */
+#define CAMCONTROL_E_LOAD_DLL_FAILED            ((DPL_RESULT) 0xC2000012)  /**< Load DLL function failed. */
 #define CAMCONTROL_E_SART_SAVE_FAILED           ((DPL_RESULT) 0xC2000020)  /**< Unable to start. */
 #define CAMCONTROL_E_INVALID_SAVE_FOLDER        ((DPL_RESULT) 0xC2000021)  /**< The specified save folder is invalid. */
 #define CAMCONTROL_E_CREATE_SAVE_FILE           ((DPL_RESULT) 0xC2000022)  /**< Failed to create write file. */

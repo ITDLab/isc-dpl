@@ -28,6 +28,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <cassert>
+#include <shlwapi.h>
 
 #include "isc_dpl_error_def.h"
 #include "isc_camera_def.h"
@@ -35,9 +36,9 @@
 #include "vm_sdk_wrapper.h"
 
 #include "opencv2\opencv.hpp"
-#include "ISCSDKLib.h"
+#include "ISCSDKLib_define.h"
 
-#pragma comment (lib, "ISCSDKLibvm200")
+#pragma comment (lib, "shlwapi")
 
 #ifdef _DEBUG
 #pragma comment (lib,"opencv_world470d")
@@ -45,15 +46,160 @@
 #pragma comment (lib,"opencv_world470")
 #endif
 
+#define SDK_VERSION 2320
+
 namespace ns_vmsdk_wrapper
 {
+constexpr char kISC_VM_DRV_FILE_NAME[] = "ISCSDKLibvm200.dll";
+
+// Function typedef
+
+// int OpenISC();
+typedef int (WINAPI* TOpenISC)();
+TOpenISC openISC = NULL;
+
+//int CloseISC();
+typedef int (WINAPI* TCloseISC)();
+TCloseISC closeISC = NULL;
+
+//int SetISCRunMode(int nMode);
+typedef int (WINAPI* TSetISCRunMode)(int);
+TSetISCRunMode setISCRunMode = NULL;
+
+//int GetISCRunMode(int* pMode);
+typedef int (WINAPI* TGetISCRunMode)(int*);
+TGetISCRunMode getISCRunMode = NULL;
+
+//int StartGrab(int nMode);
+typedef int (WINAPI* TStartGrab)(int);
+TStartGrab startGrab = NULL;
+
+//int StopGrab();
+typedef int (WINAPI* TStopGrab)();
+TStopGrab stopGrab = NULL;
+
+//int GetImage(unsigned char* pBuffer1, unsigned char* pBuffer2, int nSkip);
+typedef int (WINAPI* TGetImage)(unsigned char*, unsigned char*, int);
+TGetImage getImage = NULL;
+
+//int GetImageEx(unsigned char* pBuffer1, unsigned char* pBuffer2, int nSkip, int nWaitTime = 100);
+typedef int (WINAPI* TGetImageEx)(unsigned char*, unsigned char*, int, int);
+TGetImageEx getImageEx = NULL;
+
+//int GetDepthInfo(float* pBuffer);
+typedef int (WINAPI* TGetDepthInfo)(float*);
+TGetDepthInfo getDepthInfo = NULL;
+
+//int GetCameraParamInfo(CameraParamInfo* pParam);
+typedef int (WINAPI* TGetCameraParamInfo)(CameraParamInfo*);
+TGetCameraParamInfo getCameraParamInfo = NULL;
+
+//int GetImageSize(unsigned int* pnWidth, unsigned int* pnHeight);
+typedef int (WINAPI* TGetImageSize)(int*, int*);
+TGetImageSize getImageSize = NULL;
+
+//int SetAutoCalibration(int nMode);
+typedef int (WINAPI* TSetAutoCalibration)(int);
+TSetAutoCalibration setAutoCalibration = NULL;
+
+//int GetAutoCalibration(int* nMode);
+typedef int (WINAPI* TGetAutoCalibration)(int*);
+TGetAutoCalibration getAutoCalibration = NULL;
+
+//int SetShutterControlMode(int nMode);
+typedef int (WINAPI* TSetShutterControlMode)(int);
+TSetShutterControlMode setShutterControlMode = NULL;
+
+//int GetShutterControlMode(int* nMode);
+typedef int (WINAPI* TGetShutterControlMode)(int*);
+TGetShutterControlMode getShutterControlMode = NULL;
+
+//int GetExposureValue(unsigned int* pnValue);
+typedef int (WINAPI* TGetExposureValue)(unsigned int*);
+TGetExposureValue getExposureValue = NULL;
+
+//int SetExposureValue(unsigned int nValue);
+typedef int (WINAPI* TSetExposureValue)(unsigned int);
+TSetExposureValue setExposureValue = NULL;
+
+//int SetFineExposureValue(unsigned int nValue);
+typedef int (WINAPI* TSetFineExposureValue)(unsigned int);
+TSetFineExposureValue setFineExposureValue = NULL;
+
+//int GetFineExposureValue(unsigned int* pnValue);
+typedef int (WINAPI* TGetFineExposureValue)(unsigned int*);
+TGetFineExposureValue getFineExposureValue = NULL;
+
+//int GetGainValue(unsigned int* pnValue);
+typedef int (WINAPI* TGetGainValue)(unsigned int*);
+TGetGainValue getGainValue = NULL;
+
+//int SetGainValue(unsigned int nValue);
+typedef int (WINAPI* TSetGainValue)(unsigned int);
+TSetGainValue setGainValue = NULL;
+
+//int SetHDRMode(int nValue);
+typedef int (WINAPI* TSetHDRMode)(int);
+TSetHDRMode setHDRMode = NULL;
+
+//int GetHDRMode(int* pnMode);
+typedef int (WINAPI* TGetHDRMode)(int*);
+TGetHDRMode getHDRMode = NULL;
+
+//int SetHiResolutionMode(int nValue);
+typedef int (WINAPI* TSetHiResolutionMode)(int);
+TSetHiResolutionMode setHiResolutionMode = NULL;
+
+//int GetHiResolutionMode(int* pnMode);
+typedef int (WINAPI* TGetHiResolutionMode)(int*);
+TGetHiResolutionMode getHiResolutionMode = NULL;
+
+//int SetNoiseFilter(unsigned int nDCDX);
+typedef int (WINAPI* TSetNoiseFilter)(int);
+TSetNoiseFilter setNoiseFilter = NULL;
+
+//int GetNoiseFilter(unsigned int* nDCDX);
+typedef int (WINAPI* TGetNoiseFilter)(int*);
+TGetNoiseFilter getNoiseFilter = NULL;
+
+//int SetMeasArea(int mode, int nTop, int nLeft, int nRight, int nBottom, int nTop_Left, int nTop_Right, int nBottom_Left, int nBottom_Right);
+typedef int (WINAPI* TSetMeasArea)(int,int,int,int,int,int,int,int,int);
+TSetMeasArea setMeasArea = NULL;
+
+//int GetMeasArea(int* mode, int* nTop, int* nLeft, int* nRight, int* nBottom, int* nTop_Left, int* nTop_Right, int* nBottom_Left, int* nBottom_Right);
+typedef int (WINAPI* TGetMeasArea)(int*,int*,int*,int*,int*,int*,int*,int*,int*);
+TGetMeasArea getMeasArea = NULL;
+
+//int SetCameraFPSMode(int nMode);
+typedef int (WINAPI* TSetCameraFPSMode)(int);
+TSetCameraFPSMode setCameraFPSMode = NULL;
+
+//int GetCameraFPSMode(int* pnMode, int* pnNominalFPS);
+typedef int (WINAPI* TGetCameraFPSMode)(int*, int*);
+TGetCameraFPSMode getCameraFPSMode = NULL;
+
+//int GetFullFrameInfo(unsigned char* pBuffer);
+typedef int (WINAPI* TGetFullFrameInfo)(unsigned char*);
+TGetFullFrameInfo getFullFrameInfo = NULL;
+
+//int GetFullFrameInfo2(unsigned char* pBuffer);
+typedef int (WINAPI* TGetFullFrameInfo2)(unsigned char*);
+TGetFullFrameInfo2 getFullFrameInfo2 = NULL;
+
+//int SetCameraRegData(unsigned char* pwBuf, unsigned int wSize);
+typedef int (WINAPI* TSetCameraRegData)(unsigned char*, unsigned int);
+TSetCameraRegData setCameraRegData = NULL;
+
+//int GetCameraRegData(unsigned char* pwBuf, unsigned char* prBuf, unsigned int wSize, unsigned int rSize);
+typedef int (WINAPI* TGetCameraRegData)(unsigned char*,  unsigned char*, unsigned int, unsigned int);
+TGetCameraRegData getCameraRegData = NULL;
 
 /**
  * constructor
  *
  */
 VmSdkWrapper::VmSdkWrapper()
-	:vm_camera_param_info_(), isc_grab_start_mode_(), isc_shutter_mode_(IscShutterMode::kManualShutter), isc_image_info_(), decode_buffer_()
+	:module_path_(), file_name_of_dll_(), dll_handle_(NULL), vm_camera_param_info_(), isc_grab_start_mode_(), isc_shutter_mode_(IscShutterMode::kManualShutter), isc_image_info_(), decode_buffer_()
 {
 	isc_grab_start_mode_.isc_grab_mode = IscGrabMode::kParallax;
 	isc_grab_start_mode_.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
@@ -75,6 +221,12 @@ VmSdkWrapper::~VmSdkWrapper()
  */
 int VmSdkWrapper::Initialize()
 {
+	// get module path
+	char module_path_name[MAX_PATH + 1] = {};
+	GetModuleFileNameA(NULL, module_path_name, MAX_PATH);
+	sprintf_s(module_path_, "%s", module_path_name);
+	PathRemoveFileSpecA(module_path_);
+
 	// value in specification
 	constexpr int camera_width = 752;
 	constexpr int camea_height = 480;
@@ -130,13 +282,18 @@ int VmSdkWrapper::Terminate()
 int VmSdkWrapper::DeviceOpen()
 {
 
-	int ret = OpenISC();
+	int ret = LoadDLLFunction(module_path_);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	ret = openISC();
 
 	if (ret == ISC_OK) {
 		memset(&vm_camera_param_info_, 0, sizeof(vm_camera_param_info_));
 
 		CameraParamInfo paramInfo = {};
-		ret = GetCameraParamInfo(&paramInfo);
+		ret = getCameraParamInfo(&paramInfo);
 
 		if (ret == ISC_OK) {
 			vm_camera_param_info_.d_inf					= paramInfo.fD_INF;
@@ -185,7 +342,7 @@ int VmSdkWrapper::DeviceClose()
 
 	ReleaeIscIamgeinfo(&isc_image_info_);
 
-	int ret = CloseISC();
+	int ret = closeISC();
 
 	int ret_value = DPC_E_OK;
 	if (ret == ISC_OK) {
@@ -193,6 +350,8 @@ int VmSdkWrapper::DeviceClose()
 	else {
 		ret_value = CAMCONTROL_E_CLOSE_DEVICE_FAILED;
 	}
+
+	UnLoadDLLFunction();
 
 	return ret;
 }
@@ -755,7 +914,11 @@ bool VmSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
+		ret_value = true;
+#else
 		ret_value = false;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -811,7 +974,11 @@ bool VmSdkWrapper::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		ret_value = true;
+#else
+		ret_value = false;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -858,7 +1025,11 @@ bool VmSdkWrapper::DeviceOptionIsWritable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		ret_value = true;
+#else
+		ret_value = false;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -907,8 +1078,13 @@ int VmSdkWrapper::DeviceGetOptionMin(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		*value = 0;
 		ret_value = DPC_E_OK;
+#else
+		*value = 0;
+		ret_value = CAMCONTROL_E_INVALID_REQUEST;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -947,8 +1123,13 @@ int VmSdkWrapper::DeviceGetOptionMax(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		*value = 828;
 		ret_value = DPC_E_OK;
+#else
+		*value = 0;
+		ret_value = CAMCONTROL_E_INVALID_REQUEST;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -984,8 +1165,13 @@ int VmSdkWrapper::DeviceGetOptionInc(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		*value = 1;
 		ret_value = DPC_E_OK;
+#else
+		*value = 0;
+		ret_value = CAMCONTROL_E_INVALID_REQUEST;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
@@ -1021,7 +1207,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 		break;
 
 	case IscCameraParameter::kExposure:
-		ret_value = GetExposureValue(&get_value);
+		ret_value = getExposureValue(&get_value);
 		if (ret_value == ISC_OK) {
 			*value = static_cast<int>(get_value);
 			ret_value = DPC_E_OK;
@@ -1032,6 +1218,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		ret_value = GetFineExposureValue(&get_value);
 		if (ret_value == ISC_OK) {
 			*value = static_cast<int>(get_value);
@@ -1040,10 +1227,14 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 		else {
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
+#else
+		ret_value = CAMCONTROL_E_INVALID_REQUEST;
+#endif
+
 		break;
 
 	case IscCameraParameter::kGain:
-		ret_value = GetGainValue(&get_value);
+		ret_value = getGainValue(&get_value);
 		if (ret_value == ISC_OK) {
 			*value = static_cast<int>(get_value);
 			ret_value = DPC_E_OK;
@@ -1086,7 +1277,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 		break;
 
 	case IscCameraParameter::kExposure:
-		ret_value = SetExposureValue(set_value);
+		ret_value = setExposureValue(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1096,6 +1287,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 		break;
 
 	case IscCameraParameter::kFineExposure:
+#if SDK_VERSION == 2400
 		ret_value = SetFineExposureValue(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
@@ -1103,10 +1295,13 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 		else {
 			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
 		}
+#else
+		ret_value = CAMCONTROL_E_INVALID_REQUEST;
+#endif
 		break;
 
 	case IscCameraParameter::kGain:
-		ret_value = SetGainValue(set_value);
+		ret_value = setGainValue(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1197,7 +1392,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 
 	switch (option_name) {
 	case IscCameraParameter::kHrMode:
-		ret_value = GetHiResolutionMode(&get_value);
+		ret_value = getHiResolutionMode(&get_value);
 		if (ret_value == ISC_OK) {
 			if (get_value == 0) {
 				*value = false;
@@ -1213,7 +1408,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 		break;
 
 	case IscCameraParameter::kHdrMode:
-		ret_value = GetHDRMode(&get_value);
+		ret_value = getHDRMode(&get_value);
 		if (ret_value == ISC_OK) {
 			if (get_value == 0) {
 				*value = false;
@@ -1229,7 +1424,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 		break;
 
 	case IscCameraParameter::kAdjustAuto:
-		ret_value = GetAutoCalibration(&get_value);
+		ret_value = getAutoCalibration(&get_value);
 		if (ret_value == ISC_OK) {
 			if ((get_value & AUTOCALIBRATION_STATUS_BIT_AUTO_ON) != 0) {
 				*value = true;
@@ -1245,7 +1440,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 		break;
 
 	case IscCameraParameter::kAdjustForce:
-		ret_value = GetAutoCalibration(&get_value);
+		ret_value = getAutoCalibration(&get_value);
 		if (ret_value == ISC_OK) {
 			if ((get_value & AUTOCALIBRATION_STATUS_BIT_MANUAL_RUNNING) != 0) {
 				*value = true;
@@ -1301,7 +1496,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		else {
 			set_value = 0;
 		}
-		ret_value = SetHiResolutionMode(set_value);
+		ret_value = setHiResolutionMode(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1317,7 +1512,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		else {
 			set_value = 0;
 		}
-		ret_value = SetHDRMode(set_value);
+		ret_value = setHDRMode(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1333,7 +1528,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		else {
 			set_value = AUTOCALIBRATION_COMMAND_STOP;
 		}
-		ret_value = SetAutoCalibration(set_value);
+		ret_value = setAutoCalibration(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1346,7 +1541,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		if (value) {
 			set_value = AUTOCALIBRATION_COMMAND_MANUAL_START;
 
-			ret_value = SetAutoCalibration(set_value);
+			ret_value = setAutoCalibration(set_value);
 			if (ret_value == ISC_OK) {
 				ret_value = DPC_E_OK;
 			}
@@ -1492,7 +1687,7 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, IscShutt
 
 	switch (option_name) {
 	case IscCameraParameter::kShutterMode:
-		ret_value = GetShutterControlMode(&get_value);
+		ret_value = getShutterControlMode(&get_value);
 		if (ret_value == ISC_OK) {
 			switch (get_value) {
 			case 0:
@@ -1552,7 +1747,7 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const Is
 			break;
 		}
 
-		ret_value = SetShutterControlMode(set_value);
+		ret_value = setShutterControlMode(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1621,7 +1816,7 @@ int VmSdkWrapper::Start(const IscGrabStartMode* isc_grab_start_mode)
 		break;
 	}
 
-	int camera_ret_value = StartGrab(start_mode);
+	int camera_ret_value = startGrab(start_mode);
 
 	if (camera_ret_value == ISC_OK) {
 		isc_grab_start_mode_.isc_grab_mode = isc_grab_start_mode->isc_grab_mode;
@@ -1652,7 +1847,7 @@ int VmSdkWrapper::Stop()
 {
 	int ret_value = DPC_E_OK;
 
-	int camera_ret_value = StopGrab();
+	int camera_ret_value = stopGrab();
 	if (camera_ret_value == ISC_OK) {
 	}
 	else {
@@ -1878,7 +2073,7 @@ int VmSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 	isc_image_info->raw.height = 0;
 	isc_image_info->raw.channel_count = 0;
 
-	int ret = GetImageEx(isc_image_info_.p2.image, isc_image_info_.p1.image, 1, isc_get_mode->wait_time);
+	int ret = getImageEx(isc_image_info_.p2.image, isc_image_info_.p1.image, 1, isc_get_mode->wait_time);
 	isc_image_info->camera_status.error_code = ret;
 
 	if (ret != ISC_OK) {
@@ -1906,7 +2101,7 @@ int VmSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 	// RAW data
 	if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
-		ret = GetFullFrameInfo(isc_image_info->raw.image);
+		ret = getFullFrameInfo(isc_image_info->raw.image);
 		if (ret != 0) {
 			return CAMCONTROL_E_GET_FULL_FRAME_FAILED;
 		}
@@ -1932,7 +2127,7 @@ int VmSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 		cv::flip(mat_src_image_p1, mat_dst_image_p1, 1);
 
 		if (isc_grab_start_mode_.isc_grab_mode == IscGrabMode::kParallax) {
-			ret = GetDepthInfo(isc_image_info_.depth.image);
+			ret = getDepthInfo(isc_image_info_.depth.image);
 			if (ret != ISC_OK) {
 				return CAMCONTROL_E_GET_DEPTH_FAILED;
 			}
@@ -1966,7 +2161,7 @@ int VmSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 		memcpy(isc_image_info->p1.image, isc_image_info_.p1.image, cp_size);
 
 		if (isc_grab_start_mode_.isc_grab_mode == IscGrabMode::kParallax) {
-			ret = GetDepthInfo(isc_image_info_.depth.image);
+			ret = getDepthInfo(isc_image_info_.depth.image);
 			if (ret != ISC_OK) {
 				return CAMCONTROL_E_GET_DEPTH_FAILED;
 			}
@@ -2297,7 +2492,7 @@ int VmSdkWrapper::SetStereoMatchingsPeculiarRemoval(const int value)
 	}
 
 	// コマンドを送ります
-	int ret = SetCameraRegData(wbuf, USB_WRITE_CMD_SIZE);
+	int ret = setCameraRegData(wbuf, USB_WRITE_CMD_SIZE);
 
 	return ret;
 }
@@ -2321,7 +2516,7 @@ int VmSdkWrapper::GetStereoMatchingsPeculiarRemoval(int* value)
 	wbuf[3] = 0x00;
 	wbuf[4] = 0x00;
 
-	int ret = GetCameraRegData(wbuf, rbuf, usb_write_cmd_size, usb_read_data_size);
+	int ret = getCameraRegData(wbuf, rbuf, usb_write_cmd_size, usb_read_data_size);
 
 	*value = (int)rbuf[7];
 
@@ -2354,7 +2549,7 @@ int VmSdkWrapper::SetStereoMatchingsOcclusionRemoval(const unsigned int value)
 	}
 
 	// コマンドを送ります
-	int ret = SetCameraRegData(wbuf, USB_WRITE_CMD_SIZE);
+	int ret = setCameraRegData(wbuf, USB_WRITE_CMD_SIZE);
 
 	return ret;
 }
@@ -2379,12 +2574,372 @@ int VmSdkWrapper::GetStereoMatchingsOcclusionRemoval(unsigned int* value)
 	wbuf[3] = 0x00;
 	wbuf[4] = 0x00;
 
-	int ret = GetCameraRegData(wbuf, rbuf, usb_write_cmd_size, usb_read_data_size);
+	int ret = getCameraRegData(wbuf, rbuf, usb_write_cmd_size, usb_read_data_size);
 
 	*value = rbuf[7];
 
 	return ret;
 }
+
+/**
+ * load function address from DLL.
+ *
+ * @return 0 if successful.
+ */
+int VmSdkWrapper::LoadDLLFunction(char* module_path)
+{
+	sprintf_s(file_name_of_dll_, "%s\\%s", module_path, kISC_VM_DRV_FILE_NAME);
+
+	// Load DLL
+	dll_handle_ = LoadLibraryA(file_name_of_dll_);
+
+	if (dll_handle_ == NULL) {
+		MessageBoxA(NULL, "Failed to load DLL", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+
+	// Load Function
+	
+	// int OpenISC();
+	FARPROC proc = GetProcAddress(dll_handle_, "OpenISC");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	openISC = reinterpret_cast<TOpenISC>(proc);
+
+	//int CloseISC();
+	proc = GetProcAddress(dll_handle_, "CloseISC");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	closeISC = reinterpret_cast<TCloseISC>(proc);
+
+	//int SetISCRunMode(int nMode);
+	proc = GetProcAddress(dll_handle_, "SetISCRunMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setISCRunMode = reinterpret_cast<TSetISCRunMode>(proc);
+
+	//int GetISCRunMode(int* pMode);
+	proc = GetProcAddress(dll_handle_, "GetISCRunMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getISCRunMode = reinterpret_cast<TGetISCRunMode>(proc);
+
+	//int StartGrab(int nMode);
+	proc = GetProcAddress(dll_handle_, "StartGrab");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	startGrab = reinterpret_cast<TStartGrab>(proc);
+
+	//int StopGrab();
+	proc = GetProcAddress(dll_handle_, "StopGrab");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	stopGrab = reinterpret_cast<TStopGrab>(proc);
+
+	//int GetImage(unsigned char* pBuffer1, unsigned char* pBuffer2, int nSkip);
+	proc = GetProcAddress(dll_handle_, "GetImage");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getImage = reinterpret_cast<TGetImage>(proc);
+
+	//int GetImageEx(unsigned char* pBuffer1, unsigned char* pBuffer2, int nSkip, int nWaitTime = 100);
+	proc = GetProcAddress(dll_handle_, "GetImageEx");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getImageEx = reinterpret_cast<TGetImageEx>(proc);
+
+	//int GetDepthInfo(float* pBuffer);
+	proc = GetProcAddress(dll_handle_, "GetDepthInfo");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getDepthInfo = reinterpret_cast<TGetDepthInfo>(proc);
+
+	//int GetCameraParamInfo(CameraParamInfo* pParam);
+	proc = GetProcAddress(dll_handle_, "GetCameraParamInfo");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getCameraParamInfo = reinterpret_cast<TGetCameraParamInfo>(proc);
+
+	//int GetImageSize(unsigned int* pnWidth, unsigned int* pnHeight);
+	proc = GetProcAddress(dll_handle_, "GetImageSize");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getImageSize = reinterpret_cast<TGetImageSize>(proc);
+
+	//int SetAutoCalibration(int nMode);
+	proc = GetProcAddress(dll_handle_, "SetAutoCalibration");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setAutoCalibration = reinterpret_cast<TSetAutoCalibration>(proc);
+
+	//int GetAutoCalibration(int* nMode);
+	proc = GetProcAddress(dll_handle_, "GetAutoCalibration");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getAutoCalibration = reinterpret_cast<TGetAutoCalibration>(proc);
+
+	//int SetShutterControlMode(bool nMode);
+	proc = GetProcAddress(dll_handle_, "SetShutterControlMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setShutterControlMode = reinterpret_cast<TSetShutterControlMode>(proc);
+
+	//int GetShutterControlMode(bool* nMode);
+	proc = GetProcAddress(dll_handle_, "GetShutterControlMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getShutterControlMode = reinterpret_cast<TGetShutterControlMode>(proc);
+
+	//int GetExposureValue(unsigned int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetExposureValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getExposureValue = reinterpret_cast<TGetExposureValue>(proc);
+
+	//int SetExposureValue(unsigned int nValue);
+	proc = GetProcAddress(dll_handle_, "SetExposureValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setExposureValue = reinterpret_cast<TSetExposureValue>(proc);
+
+	//int GetGainValue(unsigned int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetGainValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getGainValue = reinterpret_cast<TGetGainValue>(proc);
+
+	//int SetGainValue(unsigned int nValue);
+	proc = GetProcAddress(dll_handle_, "SetGainValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setGainValue = reinterpret_cast<TSetGainValue>(proc);
+
+	//int SetHDRMode(int nValue);
+	proc = GetProcAddress(dll_handle_, "SetHDRMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setHDRMode = reinterpret_cast<TSetHDRMode>(proc);
+
+	//int GetHDRMode(int* pnMode);
+	proc = GetProcAddress(dll_handle_, "GetHDRMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getHDRMode = reinterpret_cast<TGetHDRMode>(proc);
+
+	//int SetHiResolutionMode(int nValue);
+	proc = GetProcAddress(dll_handle_, "SetHiResolutionMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setHiResolutionMode = reinterpret_cast<TSetHiResolutionMode>(proc);
+
+	//int GetHiResolutionMode(int* pnMode);
+	proc = GetProcAddress(dll_handle_, "GetHiResolutionMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getHiResolutionMode = reinterpret_cast<TGetHiResolutionMode>(proc);
+
+	//int SetNoiseFilter(unsigned int nDCDX);
+	proc = GetProcAddress(dll_handle_, "SetNoiseFilter");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setNoiseFilter = reinterpret_cast<TSetNoiseFilter>(proc);
+
+	//int GetNoiseFilter(unsigned int* nDCDX);
+	proc = GetProcAddress(dll_handle_, "GetNoiseFilter");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getNoiseFilter = reinterpret_cast<TGetNoiseFilter>(proc);
+
+	//int SetMeasArea(int mode, int nTop, int nLeft, int nRight, int nBottom, int nTop_Left, int nTop_Right, int nBottom_Left, int nBottom_Right);
+	proc = GetProcAddress(dll_handle_, "SetMeasArea");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setMeasArea = reinterpret_cast<TSetMeasArea>(proc);
+
+	//int GetMeasArea(int* mode, int* nTop, int* nLeft, int* nRight, int* nBottom, int* nTop_Left, int* nTop_Right, int* nBottom_Left, int* nBottom_Right);
+	proc = GetProcAddress(dll_handle_, "GetMeasArea");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getMeasArea = reinterpret_cast<TGetMeasArea>(proc);
+
+	//int SetCameraFPSMode(int nMode);
+	proc = GetProcAddress(dll_handle_, "SetCameraFPSMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setCameraFPSMode = reinterpret_cast<TSetCameraFPSMode>(proc);
+
+	//int GetCameraFPSMode(int* pnMode, int* pnNominalFPS);
+	proc = GetProcAddress(dll_handle_, "GetCameraFPSMode");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getCameraFPSMode = reinterpret_cast<TGetCameraFPSMode>(proc);
+
+	//int GetFullFrameInfo(unsigned char* pBuffer);
+	proc = GetProcAddress(dll_handle_, "GetFullFrameInfo");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getFullFrameInfo = reinterpret_cast<TGetFullFrameInfo>(proc);
+
+	//int GetFullFrameInfo2(unsigned char* pBuffer);
+	proc = GetProcAddress(dll_handle_, "GetFullFrameInfo2");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getFullFrameInfo2 = reinterpret_cast<TGetFullFrameInfo2>(proc);
+
+	//int SetCameraRegData(unsigned char* pwBuf, unsigned int wSize);
+	proc = GetProcAddress(dll_handle_, "SetCameraRegData");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setCameraRegData = reinterpret_cast<TSetCameraRegData>(proc);
+
+	//int GetCameraRegData(unsigned char* pwBuf, unsigned char* prBuf, unsigned int wSize, unsigned int rSize);
+	proc = GetProcAddress(dll_handle_, "GetCameraRegData");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getCameraRegData = reinterpret_cast<TGetCameraRegData>(proc);
+
+
+
+#if SDK_VERSION == 2400
+	//int SetFineExposureValue(unsigned int nValue);
+	proc = GetProcAddress(dll_handle_, "SetFineExposureValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setFineExposureValue = reinterpret_cast<TSetFineExposureValue>(proc);
+
+	//int GetFineExposureValue(unsigned int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetFineExposureValue");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getFineExposureValue = reinterpret_cast<TGetFineExposureValue>(proc);
+
+#endif
+
+	return DPC_E_OK;
+}
+
+/**
+ * unload function address from DLL.
+ *
+ * @return 0 if successful.
+ */
+int VmSdkWrapper::UnLoadDLLFunction()
+{
+	// unload dll
+	if (dll_handle_ != NULL) {
+		FreeLibrary(dll_handle_);
+	}
+
+	openISC = NULL;
+	closeISC = NULL;
+	setISCRunMode = NULL;
+	getISCRunMode = NULL;
+	startGrab = NULL;
+	stopGrab = NULL;
+	getImage = NULL;
+	getImageEx = NULL;
+	getDepthInfo = NULL;
+	getCameraParamInfo = NULL;
+	getImageSize = NULL;
+	setAutoCalibration = NULL;
+	getAutoCalibration = NULL;
+	setShutterControlMode = NULL;
+	getShutterControlMode = NULL;
+	getExposureValue = NULL;
+	setExposureValue = NULL;
+	setFineExposureValue = NULL;
+	getFineExposureValue = NULL;
+	getGainValue = NULL;
+	setGainValue = NULL;
+	setHDRMode = NULL;
+	getHDRMode = NULL;
+	setHiResolutionMode = NULL;
+	getHiResolutionMode = NULL;
+	setNoiseFilter = NULL;
+	getNoiseFilter = NULL;
+	setMeasArea = NULL;
+	getMeasArea = NULL;
+	setCameraFPSMode = NULL;
+	getCameraFPSMode = NULL;
+	getFullFrameInfo = NULL;
+	getFullFrameInfo2 = NULL;
+	setCameraRegData = NULL;
+	getCameraRegData = NULL;
+
+	return DPC_E_OK;
+}
+
+
 
 
 } /* namespace ns_vmsdk_wrapper */

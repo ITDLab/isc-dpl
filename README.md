@@ -29,14 +29,14 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ## Requirements for Windows  
 ****
 - Windows 10(x64)/11  
-- Visual Studio 2022  
-- OpenCV 4.5.0 and higher versions  
+- Visual Studio 2022 (require MFC)  
+- OpenCV 4.7.0 ()  
 - ISC Stereo Camrea  
-    - ISC100VM: FPGA(0x73~)  
-    - ISC100XC: FPGA(0x22~)  
+    - ISC100VM: FPGA(0x75)  
+    - ISC100XC: FPGA(0x22)  
 - ISC Stereo Camera SDK
-    - ISC100VM: 2.3.2~
-    - ISC100XC: 2.2.2~
+    - ISC100VM: 2.3.2
+    - ISC100XC: 2.2.2
 
 ****
 # How to build and Run  
@@ -48,15 +48,39 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 
 - build  
     - Visual Studioを使用し、プロジェクトをbuildします  
-      ソリューションファイルは、build\windows\isc_dpl_all.sln　です。  
+      ソリューションファイルは、build\windows\isc_dpl_all.sln　です  
+      実行するプロジェクトは、DPC_guiです  
+    - OpenCVのバージョンが4.7.0以外の場合は、リンクしているバージョンを変更してください  
+      以下のようにLinkを定義していますので、全て変更してください  
+      ```
+            #ifdef _DEBUG  
+            #pragma comment (lib,"opencv_world470d")  
+            #else  
+            #pragma comment (lib,"opencv_world470")  
+            #endif  
+      ```  
+    
+      設定の必要なファイルは、以下です  
+      - source\apps\DPC_gui\DPC_guiDlg.cpp  
+      - source\modules\IscBlockMatching\src\isc_blockmatching_interface.cpp  
+      - source\modules\IscCameraControl\src\isc_camera_control.cpp  
+      - source\modules\IscDataProcessingControl\src\isc_data_processing_control.cpp  
+      - source\modules\IscDplMainControl\src\isc_main_control_impl.cpp  
+      - source\modules\IscFrameDecoder\src\isc_framedecoder_interface.cpp  
+      - source\modules\VmSdkWrapper\src\vm_sdk_wrapper.cpp  
+      - source\modules\XcSdkWrapper\src\xc_sdk_wrapper.cpp  
+
 
 - run  
+    - OpenCVのDLLを実行フォルダへコピーします（バージョンはBuildしたOpenCVによります）  
+        - Debug Build: opencv_world470d.dll  
+        - Release Build: opencv_world470.dll  
     - ISCステレオカメラ用のDLLを実行フォルダへコピーします  
       DLLは、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
       それぞれ必要なDLLの名称は以下です
         - ISC100VM: ISCLibvm.dll, ISCSDKLibvm200.dll  
         - ISC100XC: ISCLibxc.dll, ISCSDKLibxc.dll
-    - ISC100XCを使用する場合は、FT601(FTDI)のApplication Library(FTD3XX.dll)を実行フォルダへコピーします  
+    - ISC100XCを使用する場合は、USB 3.0 to FIFO Bridge Chip FT601(FTDI*)のApplication Library(FTD3XX.dll)を実行フォルダへコピーします  
       FTD3XX.dll　は、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
       または、[FTDI official site](https://ftdichip.com/drivers/d3xx-drivers/)より入手可能です  
     - 実行に必要なパラメータファイルを実行フォルダへコピーします  
@@ -105,4 +129,8 @@ This software is licensed under the Apache 2.0 LICENSE.
 > limitations under the License.  
     
 ****  
+
+*FTDI  
+[Future Technology Devices International Limited](https://ftdichip.com/)
+
 *end of document.*  

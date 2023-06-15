@@ -1,4 +1,4 @@
-// Copyright 2023 ITD Lab Corp.All Rights Reserved.
+ï»¿// Copyright 2023 ITD Lab Corp.All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,11 +101,11 @@ IscMainControlImpl::~IscMainControlImpl()
 }
 
 /**
- * ƒNƒ‰ƒX‚ğ‰Šú‰»‚µ‚Ü‚·.
+ * ã‚¯ãƒ©ã‚¹ã‚’åˆæœŸåŒ–ã—ã¾ã™.
  *
- * @param[in] ipc_dpl_configuratio ‰Šú‰»ƒpƒ‰ƒ[ƒ^\‘¢‘Ì
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] ipc_dpl_configuratio åˆæœŸåŒ–ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ§‹é€ ä½“
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configuratio)
 {
@@ -269,10 +269,10 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
 }
 
 /**
- * I—¹ˆ—‚ğ‚µ‚Ü‚·.
+ * çµ‚äº†å‡¦ç†ã‚’ã—ã¾ã™.
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::Terminate()
 {
@@ -343,11 +343,11 @@ int IscMainControlImpl::Terminate()
 }
 
 /**
- * ƒf[ƒ^óMThread.
+ * ãƒ‡ãƒ¼ã‚¿å—ä¿¡Thread.
  *
- * @param[in] context Thraed“ü—Íƒf[ƒ^
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] context Thraedå…¥åŠ›ãƒ‡ãƒ¼ã‚¿
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 unsigned __stdcall IscMainControlImpl::ControlThreadCamera(void* context)
 {
@@ -363,14 +363,14 @@ unsigned __stdcall IscMainControlImpl::ControlThreadCamera(void* context)
 }
 
 /**
- * ƒf[ƒ^óMThread@ˆ—–{‘Ì.
+ * ãƒ‡ãƒ¼ã‚¿å—ä¿¡Threadã€€å‡¦ç†æœ¬ä½“.
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  * @note
- *  - ˆÈ‰º‚Ìˆ—‚ğs‚¢‚Ü‚·  
- *    - ƒJƒƒ‰‚©‚ç‚Ìƒf[ƒ^óM  
- *    - ƒf[ƒ^ˆ—ŒÄ‚Ño‚µ
+ *  - ä»¥ä¸‹ã®å‡¦ç†ã‚’è¡Œã„ã¾ã™  
+ *    - ã‚«ãƒ¡ãƒ©ã‹ã‚‰ã®ãƒ‡ãƒ¼ã‚¿å—ä¿¡  
+ *    - ãƒ‡ãƒ¼ã‚¿å‡¦ç†å‘¼ã³å‡ºã—
       .
     .
  */
@@ -505,11 +505,11 @@ int IscMainControlImpl::RecieveDataProcCamera()
 // camera dependent paraneter
 
 /**
- * ‹@”\‚ªÀ‘•‚³‚ê‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraInfo)
+ * æ©Ÿèƒ½ãŒå®Ÿè£…ã•ã‚Œã¦ã„ã‚‹ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraInfo)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true À‘•‚³‚ê‚Ä‚¢‚Ü‚·
- * @retval false À‘•‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã™
+ * @retval false å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsImplemented(const IscCameraInfo option_name)
 {
@@ -523,11 +523,11 @@ bool IscMainControlImpl::DeviceOptionIsImplemented(const IscCameraInfo option_na
 }
 
 /**
- * ’l‚ğæ“¾‰Â”\‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraInfo)
+ * å€¤ã‚’å–å¾—å¯èƒ½ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraInfo)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true “Ç‚İ‚İ‰Â”\‚Å‚·
- * @retval false “Ç‚İ‚İ‚Í‚Å‚«‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true èª­ã¿è¾¼ã¿å¯èƒ½ã§ã™
+ * @retval false èª­ã¿è¾¼ã¿ã¯ã§ãã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsReadable(const IscCameraInfo option_name)
 {
@@ -541,11 +541,11 @@ bool IscMainControlImpl::DeviceOptionIsReadable(const IscCameraInfo option_name)
 }
 
 /**
- * ’l‚ğ‘‚«‚İ‰Â”\‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraInfo)
+ * å€¤ã‚’æ›¸ãè¾¼ã¿å¯èƒ½ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraInfo)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true ‘‚«‚İ‰Â”\‚Å‚·
- * @retval false ‘‚«‚İ‚Í‚Å‚«‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true æ›¸ãè¾¼ã¿å¯èƒ½ã§ã™
+ * @retval false æ›¸ãè¾¼ã¿ã¯ã§ãã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsWritable(const IscCameraInfo option_name)
 {
@@ -559,12 +559,12 @@ bool IscMainControlImpl::DeviceOptionIsWritable(const IscCameraInfo option_name)
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/int)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, int* value)
 {
@@ -581,12 +581,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, int*
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/int)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, int* value)
 {
@@ -603,12 +603,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, int*
 }
 
 /**
- * İ’è‰Â”\‚È‘Œ¸’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/int)
+ * è¨­å®šå¯èƒ½ãªå¢—æ¸›å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value ‘Œ¸’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å¢—æ¸›å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionInc(const IscCameraInfo option_name, int* value)
 {
@@ -625,12 +625,12 @@ int IscMainControlImpl::DeviceGetOptionInc(const IscCameraInfo option_name, int*
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/int)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, int* value)
 {
@@ -647,12 +647,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, int* va
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraInfo/int)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraInfo/int)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const int value)
 {
@@ -669,12 +669,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const i
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/float)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, float* value)
 {
@@ -691,12 +691,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, floa
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/float)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, float* value)
 {
@@ -713,12 +713,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, floa
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/float)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, float* value)
 {
@@ -735,12 +735,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, float* 
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraInfo/int)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraInfo/int)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const float value)
 {
@@ -757,12 +757,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const f
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/bool)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/bool)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, bool* value)
 {
@@ -779,12 +779,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, bool* v
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraInfo/bool)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraInfo/bool)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const bool value)
 {
@@ -801,13 +801,13 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const b
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/char)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/char)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @param[in] max_length valueƒoƒbƒtƒ@[‚ÌÅ‘å•¶š”
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @param[in] max_length valueãƒãƒƒãƒ•ã‚¡ãƒ¼ã®æœ€å¤§æ–‡å­—æ•°
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, char* value, const int max_length)
 {
@@ -824,12 +824,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, char* v
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraInfo/char)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraInfo/char)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const char* value)
 {
@@ -846,12 +846,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const c
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/uint64_t)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, uint64_t* value)
 {
@@ -868,12 +868,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraInfo option_name, uint
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/uint64_t)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, uint64_t* value)
 {
@@ -890,12 +890,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraInfo option_name, uint
 }
 
 /**
- * İ’è‰Â”\‚È‘Œ¸’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/uint64_t)
+ * è¨­å®šå¯èƒ½ãªå¢—æ¸›å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value ‘Œ¸’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å¢—æ¸›å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionInc(const IscCameraInfo option_name, uint64_t* value)
 {
@@ -912,12 +912,12 @@ int IscMainControlImpl::DeviceGetOptionInc(const IscCameraInfo option_name, uint
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraInfo/uint64_t)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraInfo/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, uint64_t* value)
 {
@@ -934,12 +934,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraInfo option_name, uint64_
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraInfo/uint64_t)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraInfo/uint64_t)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const uint64_t value)
 {
@@ -959,11 +959,11 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraInfo option_name, const u
 // camera control parameter
 
 /**
- * ‹@”\‚ªÀ‘•‚³‚ê‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraParameter)
+ * æ©Ÿèƒ½ãŒå®Ÿè£…ã•ã‚Œã¦ã„ã‚‹ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraParameter)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true À‘•‚³‚ê‚Ä‚¢‚Ü‚·
- * @retval false À‘•‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã™
+ * @retval false å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsImplemented(const IscCameraParameter option_name)
 {
@@ -977,11 +977,11 @@ bool IscMainControlImpl::DeviceOptionIsImplemented(const IscCameraParameter opti
 }
 
 /**
- * ’l‚ğæ“¾‰Â”\‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraParameter)
+ * å€¤ã‚’å–å¾—å¯èƒ½ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraParameter)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true “Ç‚İ‚İ‰Â”\‚Å‚·
- * @retval false “Ç‚İ‚İ‚Í‚Å‚«‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true èª­ã¿è¾¼ã¿å¯èƒ½ã§ã™
+ * @retval false èª­ã¿è¾¼ã¿ã¯ã§ãã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsReadable(const IscCameraParameter option_name)
 {
@@ -995,11 +995,11 @@ bool IscMainControlImpl::DeviceOptionIsReadable(const IscCameraParameter option_
 }
 
 /**
- * ’l‚ğ‘‚«‚İ‰Â”\‚©‚Ç‚¤‚©‚ğŠm”F‚µ‚Ü‚·(IscCameraParameter)
+ * å€¤ã‚’æ›¸ãè¾¼ã¿å¯èƒ½ã‹ã©ã†ã‹ã‚’ç¢ºèªã—ã¾ã™(IscCameraParameter)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @retval true ‘‚«‚İ‰Â”\‚Å‚·
- * @retval false ‘‚«‚İ‚Í‚Å‚«‚Ü‚¹‚ñ
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @retval true æ›¸ãè¾¼ã¿å¯èƒ½ã§ã™
+ * @retval false æ›¸ãè¾¼ã¿ã¯ã§ãã¾ã›ã‚“
  */
 bool IscMainControlImpl::DeviceOptionIsWritable(const IscCameraParameter option_name)
 {
@@ -1013,12 +1013,12 @@ bool IscMainControlImpl::DeviceOptionIsWritable(const IscCameraParameter option_
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/int)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name, int* value)
 {
@@ -1035,12 +1035,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name,
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/int)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name, int* value)
 {
@@ -1057,12 +1057,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name,
 }
 
 /**
- * İ’è‰Â”\‚È‘Œ¸’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/int)
+ * è¨­å®šå¯èƒ½ãªå¢—æ¸›å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value ‘Œ¸’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å¢—æ¸›å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionInc(const IscCameraParameter option_name, int* value)
 {
@@ -1079,12 +1079,12 @@ int IscMainControlImpl::DeviceGetOptionInc(const IscCameraParameter option_name,
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/int)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/int)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, int* value)
 {
@@ -1101,12 +1101,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, in
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/int)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/int)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const int value)
 {
@@ -1123,12 +1123,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/float)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name, float* value)
 {
@@ -1145,12 +1145,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name,
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/float)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name, float* value)
 {
@@ -1167,12 +1167,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name,
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/float)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/float)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, float* value)
 {
@@ -1189,12 +1189,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, fl
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/float)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/float)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const float value)
 {
@@ -1211,12 +1211,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/bool)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/bool)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, bool* value)
 {
@@ -1233,12 +1233,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, bo
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/bool)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/bool)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const bool value)
 {
@@ -1255,13 +1255,13 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/char)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/char)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @param[in] max_length valueƒoƒbƒtƒ@[‚ÌÅ‘å•¶š”
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @param[in] max_length valueãƒãƒƒãƒ•ã‚¡ãƒ¼ã®æœ€å¤§æ–‡å­—æ•°
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, char* value, const int max_length)
 {
@@ -1278,12 +1278,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, ch
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/char)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/char)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const char* value)
 {
@@ -1300,12 +1300,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ¬’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/uint64_t)
+ * è¨­å®šå¯èƒ½ãªæœ€å°å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å¬’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å°å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name, uint64_t* value)
 {
@@ -1322,12 +1322,12 @@ int IscMainControlImpl::DeviceGetOptionMin(const IscCameraParameter option_name,
 }
 
 /**
- * İ’è‰Â”\‚ÈÅ‘å’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/uint64_t)
+ * è¨­å®šå¯èƒ½ãªæœ€å¤§å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value Å‘å’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value æœ€å¤§å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name, uint64_t* value)
 {
@@ -1344,12 +1344,12 @@ int IscMainControlImpl::DeviceGetOptionMax(const IscCameraParameter option_name,
 }
 
 /**
- * İ’è‰Â”\‚È‘Œ¸’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/uint64_t)
+ * è¨­å®šå¯èƒ½ãªå¢—æ¸›å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value ‘Œ¸’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å¢—æ¸›å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOptionInc(const IscCameraParameter option_name, uint64_t* value)
 {
@@ -1366,12 +1366,12 @@ int IscMainControlImpl::DeviceGetOptionInc(const IscCameraParameter option_name,
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/uint64_t)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/uint64_t)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, uint64_t* value)
 {
@@ -1388,12 +1388,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, ui
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/uint64_t)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/uint64_t)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const uint64_t value)
 {
@@ -1410,12 +1410,12 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 }
 
 /**
- * ’l‚ğæ“¾‚µ‚Ü‚·(IscCameraParameter/IscShutterMode)
+ * å€¤ã‚’å–å¾—ã—ã¾ã™(IscCameraParameter/IscShutterMode)
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O
- * @param[out] value æ“¾’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰
+ * @param[out] value å–å¾—å€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, IscShutterMode* value)
 {
@@ -1432,12 +1432,12 @@ int IscMainControlImpl::DeviceGetOption(const IscCameraParameter option_name, Is
 }
 
 /**
- * ’l‚ğİ’è‚µ‚Ü‚·
+ * å€¤ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] option_name Šm”F‚·‚é‹@”\‚Ì–¼‘O(IscCameraParameter/IscShutterMode)
- * @param[out] value İ’è’l
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] option_name ç¢ºèªã™ã‚‹æ©Ÿèƒ½ã®åå‰(IscCameraParameter/IscShutterMode)
+ * @param[out] value è¨­å®šå€¤
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, const IscShutterMode value)
 {
@@ -1457,15 +1457,15 @@ int IscMainControlImpl::DeviceSetOption(const IscCameraParameter option_name, co
 // grab control
 
 /**
- * æ‚è‚İ‚ğŠJn‚µ‚Ü‚·
+ * å–ã‚Šè¾¼ã¿ã‚’é–‹å§‹ã—ã¾ã™
  *
- * @param[in] isc_start_mode ŠJn‚Ì‚½‚ß‚Ìƒpƒ‰ƒ[ƒ^
+ * @param[in] isc_start_mode é–‹å§‹ã®ãŸã‚ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  * @details
- *  - ƒJƒƒ‰–”‚Íƒtƒ@ƒCƒ‹‚©‚çæ“¾‰Â”\‚Å‚·
- *  - Ú×‚Í IscStartMode@‚ğQÆ‚µ‚Ü‚·
+ *  - ã‚«ãƒ¡ãƒ©åˆã¯ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰å–å¾—å¯èƒ½ã§ã™
+ *  - è©³ç´°ã¯ IscStartModeã€€ã‚’å‚ç…§ã—ã¾ã™
  */
 int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
 {
@@ -1544,10 +1544,10 @@ int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
 }
 
 /**
- * æ‚è‚İ‚ğ’â~‚µ‚Ü‚·
+ * å–ã‚Šè¾¼ã¿ã‚’åœæ­¢ã—ã¾ã™
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::Stop()
 {
@@ -1572,12 +1572,12 @@ int IscMainControlImpl::Stop()
 }
 
 /**
- * Œ»İ‚Ì“®ìƒ‚[ƒh‚ğæ“¾‚µ‚Ü‚·
+ * ç¾åœ¨ã®å‹•ä½œãƒ¢ãƒ¼ãƒ‰ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] isc_start_mode Œ»İ‚Ìƒpƒ‰ƒ[ƒ^
+ * @param[in] isc_start_mode ç¾åœ¨ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 {
@@ -1597,12 +1597,12 @@ int IscMainControlImpl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 // image & data get
 
 /**
- * ƒf[ƒ^æ“¾‚Ì‚½‚ß‚Ìƒoƒbƒtƒ@[‚ğ‰Šú‰»‚µ‚Ü‚·
+ * ãƒ‡ãƒ¼ã‚¿å–å¾—ã®ãŸã‚ã®ãƒãƒƒãƒ•ã‚¡ãƒ¼ã‚’åˆæœŸåŒ–ã—ã¾ã™
  *
- * @param[in] isc_image_Info ƒoƒbƒtƒ@[\‘¢‘Ì
+ * @param[in] isc_image_Info ãƒãƒƒãƒ•ã‚¡ãƒ¼æ§‹é€ ä½“
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::InitializeIscIamgeinfo(IscImageInfo* isc_image_Info)
 {
@@ -1619,12 +1619,12 @@ int IscMainControlImpl::InitializeIscIamgeinfo(IscImageInfo* isc_image_Info)
 }
 
 /**
- * ƒf[ƒ^æ“¾‚Ì‚½‚ß‚Ìƒoƒbƒtƒ@[‚ğ‰ğ•ú‚µ‚Ü‚·
+ * ãƒ‡ãƒ¼ã‚¿å–å¾—ã®ãŸã‚ã®ãƒãƒƒãƒ•ã‚¡ãƒ¼ã‚’è§£æ”¾ã—ã¾ã™
  *
- * @param[in] isc_image_Info ƒoƒbƒtƒ@[\‘¢‘Ì
+ * @param[in] isc_image_Info ãƒãƒƒãƒ•ã‚¡ãƒ¼æ§‹é€ ä½“
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::ReleaeIscIamgeinfo(IscImageInfo* isc_image_Info)
 {
@@ -1641,12 +1641,12 @@ int IscMainControlImpl::ReleaeIscIamgeinfo(IscImageInfo* isc_image_Info)
 }
 
 /**
- * ƒf[ƒ^‚ğæ“¾‚µ‚Ü‚·
+ * ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] isc_image_Info ƒoƒbƒtƒ@[\‘¢‘Ì
+ * @param[in] isc_image_Info ãƒãƒƒãƒ•ã‚¡ãƒ¼æ§‹é€ ä½“
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetCameraData(IscImageInfo* isc_image_Info)
 {
@@ -1672,13 +1672,13 @@ int IscMainControlImpl::GetCameraData(IscImageInfo* isc_image_Info)
 }
 
 /**
- * ƒtƒ@ƒCƒ‹‚æ‚èƒf[ƒ^‚ğæ“¾‚·‚éê‡‚ÉAƒwƒbƒ_[‚ğæ“¾‚µ‚Ü‚·
+ * ãƒ•ã‚¡ã‚¤ãƒ«ã‚ˆã‚Šãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ã™ã‚‹å ´åˆã«ã€ãƒ˜ãƒƒãƒ€ãƒ¼ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] play_file_name ƒtƒ@ƒCƒ‹–¼
- * @param[out] raw_file_header ƒwƒbƒ_[\‘¢‘Ì
+ * @param[in] play_file_name ãƒ•ã‚¡ã‚¤ãƒ«å
+ * @param[out] raw_file_header ãƒ˜ãƒƒãƒ€ãƒ¼æ§‹é€ ä½“
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header)
 {
@@ -1699,13 +1699,13 @@ int IscMainControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHe
 }
 
 /**
- * IscImageInfo‚Ì“à—e‚ğƒRƒs[‚µ‚Ü‚·
+ * IscImageInfoã®å†…å®¹ã‚’ã‚³ãƒ”ãƒ¼ã—ã¾ã™
  *
- * @param[out] dst_isc_image_Info ƒRƒs[æ
- * @param[in] src_isc_image_Info ƒRƒs[Œ³
+ * @param[out] dst_isc_image_Info ã‚³ãƒ”ãƒ¼å…ˆ
+ * @param[in] src_isc_image_Info ã‚³ãƒ”ãƒ¼å…ƒ
  *
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscImageInfo* src_isc_image_Info)
 {
@@ -1840,15 +1840,15 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
 // get information for depth, distance, ...
 
 /**
- * w’èˆÊ’u‚Ì‹·‚Æ‹——£‚ğæ“¾‚µ‚Ü‚·
+ * æŒ‡å®šä½ç½®ã®è¦–å·®ã¨è·é›¢ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] x ‰æ‘œ“àÀ•W(X)
- * @param[in] y ‰æ‘œ“àÀ•W(Y)
- * @param[in] isc_image_info ƒf[ƒ^\‘¢‘Ì
- * @param[out] disparity ‹·
- * @param[out] depth ‹——£(m)
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] x ç”»åƒå†…åº§æ¨™(X)
+ * @param[in] y ç”»åƒå†…åº§æ¨™(Y)
+ * @param[in] isc_image_info ãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
+ * @param[out] disparity è¦–å·®
+ * @param[out] depth è·é›¢(m)
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImageInfo* isc_image_info, float* disparity, float* depth)
 {
@@ -1891,16 +1891,16 @@ int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImag
 }
 
 /**
- * w’èˆÊ’u‚Ì3DˆÊ’u‚ğæ“¾‚µ‚Ü‚·
+ * æŒ‡å®šä½ç½®ã®3Dä½ç½®ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] x ‰æ‘œ“àÀ•W(X)
- * @param[in] y ‰æ‘œ“àÀ•W(Y)
- * @param[in] isc_image_info ƒf[ƒ^\‘¢‘Ì
- * @param[out] x_d ‰æ–Ê’†‰›‚©‚ç‚Ì‹——£(m)
- * @param[out] y_d ‰æ–Ê’†‰›‚©‚ç‚Ì‹——£(m)
- * @param[out] z_d ‹——£(m)
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] x ç”»åƒå†…åº§æ¨™(X)
+ * @param[in] y ç”»åƒå†…åº§æ¨™(Y)
+ * @param[in] isc_image_info ãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
+ * @param[out] x_d ç”»é¢ä¸­å¤®ã‹ã‚‰ã®è·é›¢(m)
+ * @param[out] y_d ç”»é¢ä¸­å¤®ã‹ã‚‰ã®è·é›¢(m)
+ * @param[out] z_d è·é›¢(m)
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetPosition3D(const int x, const int y, const IscImageInfo* isc_image_info, float* x_d, float* y_d, float* z_d)
 {
@@ -1951,11 +1951,11 @@ int IscMainControlImpl::GetPosition3D(const int x, const int y, const IscImageIn
 }
 
 /**
- * ’†‰›’l‚ğæ“¾‚µ‚Ü‚·
+ * ä¸­å¤®å€¤ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] input_org “ü—Í”z—ñ
- * @retval ’†‰›’l
- * @note ¸”s‚É‚ÍA0‚ğ–ß‚µ‚Ü‚·
+ * @param[in] input_org å…¥åŠ›é…åˆ—
+ * @retval ä¸­å¤®å€¤
+ * @note å¤±æ•—æ™‚ã«ã¯ã€0ã‚’æˆ»ã—ã¾ã™
  */
 float MedianMat(cv::Mat& input_org) {
 
@@ -1992,16 +1992,16 @@ float MedianMat(cv::Mat& input_org) {
 }
 
 /**
- * w’è—Ìˆæ‚Ìî•ñ‚ğæ“¾‚µ‚Ü‚·
+ * æŒ‡å®šé ˜åŸŸã®æƒ…å ±ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] x ‰æ‘œ“àÀ•W¶ã(X)
- * @param[in] y ‰æ‘œ“àÀ•W¶ã(Y)
- * @param[in] width •
- * @param[in] height ‚‚³
- * @param[in] isc_image_info ƒf[ƒ^\‘¢‘Ì
- * @param[out] isc_data_statistics —Ìˆæ‚Ìî•ñ
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] x ç”»åƒå†…åº§æ¨™å·¦ä¸Š(X)
+ * @param[in] y ç”»åƒå†…åº§æ¨™å·¦ä¸Š(Y)
+ * @param[in] width å¹…
+ * @param[in] height é«˜ã•
+ * @param[in] isc_image_info ãƒ‡ãƒ¼ã‚¿æ§‹é€ ä½“
+ * @param[out] isc_data_statistics é ˜åŸŸã®æƒ…å ±
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetAreaStatistics(const int x, const int y, const int width, const int height, const IscImageInfo* isc_image_info, IscAreaDataStatistics* isc_data_statistics)
 {
@@ -2044,7 +2044,7 @@ int IscMainControlImpl::GetAreaStatistics(const int x, const int y, const int wi
     cv::Mat src_disparity(image_height, image_width, CV_32F, isc_image_info->depth.image);
     cv::Mat roi_depth = src_disparity(roi);
 
-    // ‹·‚Ì•½‹Ï‚ğŒvZ
+    // è¦–å·®ã®å¹³å‡ã‚’è¨ˆç®—
 
     const float valid_minimum = isc_image_info->camera_specific_parameter.d_inf;
 
@@ -2076,13 +2076,13 @@ int IscMainControlImpl::GetAreaStatistics(const int x, const int y, const int wi
         average_of_depth = sum_of_depth / (float)sum_of_depth_count;
     }
 
-    // ’†‰›’l‚ğŒvZ
+    // ä¸­å¤®å€¤ã‚’è¨ˆç®—
     float median_of_depth = 0;
     if (sum_of_depth_count != 0) {
         median_of_depth = MedianMat(roi_depth);
     }
 
-    // ‹·‚Ì•W€•Î·‚ğŒvZ
+    // è¦–å·®ã®æ¨™æº–åå·®ã‚’è¨ˆç®—
     float std_dev_of_depth = 0;
     if (sum_of_depth_count != 0) {
 
@@ -2204,11 +2204,11 @@ int IscMainControlImpl::GetAreaStatistics(const int x, const int y, const int wi
 // data processing module settings
 
 /**
- * —˜—p‰Â”\‚Èƒf[ƒ^ˆ—ƒ‚ƒWƒ…[ƒ‹‚Ì”‚ğæ“¾‚µ‚Ü‚·
+ * åˆ©ç”¨å¯èƒ½ãªãƒ‡ãƒ¼ã‚¿å‡¦ç†ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®æ•°ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[out] total_count ƒ‚ƒWƒ…[ƒ‹”
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[out] total_count ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«æ•°
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetTotalModuleCount(int* total_count)
 {
@@ -2229,13 +2229,13 @@ int IscMainControlImpl::GetTotalModuleCount(int* total_count)
 }
 
 /**
- * —˜—p‰Â”\‚Èƒf[ƒ^ˆ—ƒ‚ƒWƒ…[ƒ‹‚Ì”‚ğæ“¾‚µ‚Ü‚·
+ * åˆ©ç”¨å¯èƒ½ãªãƒ‡ãƒ¼ã‚¿å‡¦ç†ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®æ•°ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] module_index æ“¾‚·‚éƒ‚ƒWƒ…[ƒ‹‚Ì”Ô†
- * @param[in] max_length ƒoƒbƒtƒ@[‚ÌÅ‘å•¶š”
- * @param[out] module_name ƒ‚ƒWƒ…[ƒ‹–¼
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] module_index å–å¾—ã™ã‚‹ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ç•ªå·
+ * @param[in] max_length ãƒãƒƒãƒ•ã‚¡ãƒ¼ã®æœ€å¤§æ–‡å­—æ•°
+ * @param[out] module_name ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«å
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetModuleNameByIndex(const int module_index, wchar_t* module_name, int max_length)
 {
@@ -2260,12 +2260,12 @@ int IscMainControlImpl::GetModuleNameByIndex(const int module_index, wchar_t* mo
 }
 
 /**
- * w’è‚µ‚½ƒ‚ƒWƒ…[ƒ‹‚Ìƒpƒ‰ƒ[ƒ^‚ğæ“¾‚µ‚Ü‚·
+ * æŒ‡å®šã—ãŸãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] module_index æ“¾‚·‚éƒ‚ƒWƒ…[ƒ‹‚Ì”Ô†
- * @param[out] isc_data_proc_module_parameter æ“¾‚µ‚½ƒpƒ‰ƒ[ƒ^
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] module_index å–å¾—ã™ã‚‹ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ç•ªå·
+ * @param[out] isc_data_proc_module_parameter å–å¾—ã—ãŸãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter)
 {
@@ -2286,12 +2286,12 @@ int IscMainControlImpl::GetDataProcModuleParameter(const int module_index, IscDa
 }
 
 /**
- * w’è‚µ‚½ƒ‚ƒWƒ…[ƒ‹‚Öƒpƒ‰ƒ[ƒ^‚ğİ’è‚µ‚Ü‚·
+ * æŒ‡å®šã—ãŸãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã¸ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’è¨­å®šã—ã¾ã™
  *
- * @param[in] module_index æ“¾‚·‚éƒ‚ƒWƒ…[ƒ‹‚Ì”Ô†
- * @param[out] isc_data_proc_module_parameter İ’è‚·‚éƒpƒ‰ƒ[ƒ^
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] module_index å–å¾—ã™ã‚‹ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ç•ªå·
+ * @param[out] isc_data_proc_module_parameter è¨­å®šã™ã‚‹ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::SetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter, const bool is_update_file)
 {
@@ -2312,13 +2312,13 @@ int IscMainControlImpl::SetDataProcModuleParameter(const int module_index, IscDa
 }
 
 /**
- * w’è‚µ‚½ƒ‚ƒWƒ…[ƒ‹‚Ìƒpƒ‰ƒ[ƒ^ƒtƒ@ƒCƒ‹‚Ìƒtƒ@ƒCƒ‹–¼‚ğæ“¾‚µ‚Ü‚·
+ * æŒ‡å®šã—ãŸãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ•ã‚¡ã‚¤ãƒ«åã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] module_index æ“¾‚·‚éƒ‚ƒWƒ…[ƒ‹‚Ì”Ô†
- * @param[in] max_length ƒoƒbƒtƒ@[‚ÌÅ‘å•¶š”
- * @param[out] file_name ƒpƒ‰ƒ[ƒ^ƒtƒ@ƒCƒ‹–¼
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] module_index å–å¾—ã™ã‚‹ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ç•ªå·
+ * @param[in] max_length ãƒãƒƒãƒ•ã‚¡ãƒ¼ã®æœ€å¤§æ–‡å­—æ•°
+ * @param[out] file_name ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãƒ•ã‚¡ã‚¤ãƒ«å
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetParameterFileName(const int module_index, wchar_t* file_name, const int max_length)
 {
@@ -2339,13 +2339,13 @@ int IscMainControlImpl::GetParameterFileName(const int module_index, wchar_t* fi
 }
 
 /**
- * w’è‚µ‚½ƒ‚ƒWƒ…[ƒ‹‚Öƒtƒ@ƒCƒ‹‚©‚çƒpƒ‰ƒ[ƒ^‚Ì“Ç‚İ‚İ‚ğw¦‚µ‚Ü‚·
+ * æŒ‡å®šã—ãŸãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã¸ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®èª­ã¿è¾¼ã¿ã‚’æŒ‡ç¤ºã—ã¾ã™
  *
- * @param[in] module_index æ“¾‚·‚éƒ‚ƒWƒ…[ƒ‹‚Ì”Ô†
- * @param[in] file_name ƒpƒ‰ƒ[ƒ^ƒtƒ@ƒCƒ‹–¼
- * @param[in] is_valid ƒpƒ‰ƒ[ƒ^‚ğ”½‰f‚³‚¹‚é‚©‚Ç‚¤‚©‚ğw’è‚µ‚Ü‚· true:‘¦”½‰f
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] module_index å–å¾—ã™ã‚‹ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ç•ªå·
+ * @param[in] file_name ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãƒ•ã‚¡ã‚¤ãƒ«å
+ * @param[in] is_valid ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’åæ˜ ã•ã›ã‚‹ã‹ã©ã†ã‹ã‚’æŒ‡å®šã—ã¾ã™ true:å³æ™‚åæ˜ 
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::ReloadParameterFromFile(const int module_index, const wchar_t* file_name, const bool is_valid)
 {
@@ -2368,11 +2368,11 @@ int IscMainControlImpl::ReloadParameterFromFile(const int module_index, const wc
 // data processing module result data
 
 /**
- * ƒ‚ƒWƒ…[ƒ‹‚Ìˆ—Œ‹‰Êƒoƒbƒtƒ@[‚ğ‰Šú‰»‚µ‚Ü‚·
+ * ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®å‡¦ç†çµæœãƒãƒƒãƒ•ã‚¡ãƒ¼ã‚’åˆæœŸåŒ–ã—ã¾ã™
  *
- * @param[in] isc_data_proc_result_data ˆ—Œ‹‰Êƒoƒbƒtƒ@[
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] isc_data_proc_result_data å‡¦ç†çµæœãƒãƒƒãƒ•ã‚¡ãƒ¼
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::InitializeIscDataProcResultData(IscDataProcResultData* isc_data_proc_result_data)
 {
@@ -2393,11 +2393,11 @@ int IscMainControlImpl::InitializeIscDataProcResultData(IscDataProcResultData* i
 }
 
 /**
- * ƒ‚ƒWƒ…[ƒ‹‚Ìˆ—Œ‹‰Êƒoƒbƒtƒ@[‚ğ‰ğ•ú‚µ‚Ü‚·
+ * ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®å‡¦ç†çµæœãƒãƒƒãƒ•ã‚¡ãƒ¼ã‚’è§£æ”¾ã—ã¾ã™
  *
- * @param[in] isc_data_proc_result_data ˆ—Œ‹‰Êƒoƒbƒtƒ@[
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] isc_data_proc_result_data å‡¦ç†çµæœãƒãƒƒãƒ•ã‚¡ãƒ¼
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::ReleaeIscDataProcResultData(IscDataProcResultData* isc_data_proc_result_data)
 {
@@ -2418,11 +2418,11 @@ int IscMainControlImpl::ReleaeIscDataProcResultData(IscDataProcResultData* isc_d
 }
 
 /**
- * ƒ‚ƒWƒ…[ƒ‹‚Ìˆ—Œ‹‰Ê‚ğæ“¾‚µ‚Ü‚·
+ * ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®å‡¦ç†çµæœã‚’å–å¾—ã—ã¾ã™
  *
- * @param[in] isc_data_proc_result_data ˆ—Œ‹‰Êƒoƒbƒtƒ@[
- * @retval 0 ¬Œ÷
- * @retval other ¸”s
+ * @param[in] isc_data_proc_result_data å‡¦ç†çµæœãƒãƒƒãƒ•ã‚¡ãƒ¼
+ * @retval 0 æˆåŠŸ
+ * @retval other å¤±æ•—
  */
 int IscMainControlImpl::GetDataProcModuleData(IscDataProcResultData* isc_data_proc_result_data)
 {

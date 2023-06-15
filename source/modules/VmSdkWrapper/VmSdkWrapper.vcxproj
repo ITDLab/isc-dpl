@@ -132,7 +132,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(OpenCV_DIR)\x64\vc16\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OpenCV_DIR)\x64\vc17\lib</AdditionalLibraryDirectories>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -154,7 +154,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(OpenCV_DIR)\x64\vc16\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OpenCV_DIR)\x64\vc17\lib</AdditionalLibraryDirectories>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>

@@ -287,7 +287,9 @@ int VmSdkWrapper::DeviceOpen()
 		return ret;
 	}
 
-	ret = openISC();
+	if (openISC != NULL) {
+		ret = openISC();
+	}
 
 	if (ret == ISC_OK) {
 		memset(&vm_camera_param_info_, 0, sizeof(vm_camera_param_info_));
@@ -342,7 +344,10 @@ int VmSdkWrapper::DeviceClose()
 
 	ReleaeIscIamgeinfo(&isc_image_info_);
 
-	int ret = closeISC();
+	int ret = ISC_OK;
+	if (closeISC != NULL) {
+		ret = closeISC();
+	}
 
 	int ret_value = DPC_E_OK;
 	if (ret == ISC_OK) {
@@ -2594,7 +2599,9 @@ int VmSdkWrapper::LoadDLLFunction(char* module_path)
 	dll_handle_ = LoadLibraryA(file_name_of_dll_);
 
 	if (dll_handle_ == NULL) {
-		MessageBoxA(NULL, "Failed to load DLL", "LoadDLLFunction", MB_OK);
+		char dbg_msg[512] = {};
+		sprintf_s(dbg_msg, "Failed to load DLL(%s)", file_name_of_dll_);
+		MessageBoxA(NULL, dbg_msg, "LoadDLLFunction", MB_OK);
 		return CAMCONTROL_E_LOAD_DLL_FAILED;
 	}
 
@@ -2898,6 +2905,7 @@ int VmSdkWrapper::UnLoadDLLFunction()
 	// unload dll
 	if (dll_handle_ != NULL) {
 		FreeLibrary(dll_handle_);
+		dll_handle_ = NULL;
 	}
 
 	openISC = NULL;

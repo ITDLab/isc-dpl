@@ -25,96 +25,346 @@
 #define ISCDPLC_EXPORTS_API __declspec(dllimport)
 #endif
 
-/**
-* @namespace ns_isc_dpl_c
-* @brief define ISC DPL API
-* @details APIs
-*/
-namespace ns_isc_dpl_c {
-
 extern "C" {
 	
-/** @brief Initializes the CaptureSession and prepares it to start streaming data. Must be called at least once before streaming is started.
-	@return 0, if successful.
-*/
-ISCDPLC_EXPORTS_API int Initialize(const IscDplConfiguration* ipc_dpl_configuratio, const IscCameraModel isc_camera_model);
+	/** @brief Initializes the CaptureSession and prepares it to start streaming data. Must be called at least once before streaming is started.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplInitialize(const IscDplConfiguration* ipc_dpl_configuratio);
 
-/** @brief ... Shut down the runtime system. Don't call any method after calling Terminate().
-	@return 0, if successful.
- */
-ISCDPLC_EXPORTS_API int Terminate();
+	/** @brief ... Shut down the runtime system. Don't call any method after calling Terminate().
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplTerminate();
 
-// camera dependent paraneter
-ISCDPLC_EXPORTS_API bool DeviceOptionIsImplemented(const IscCameraInfo option_name);
-ISCDPLC_EXPORTS_API bool DeviceOptionIsReadable(const IscCameraInfo option_name);
-ISCDPLC_EXPORTS_API bool DeviceOptionIsWritable(const IscCameraInfo option_name);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraInfo option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraInfo option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionInc(const IscCameraInfo option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraInfo option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraInfo option_name, const int value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraInfo option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraInfo option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraInfo option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraInfo option_name, const float value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraInfo option_name, bool* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraInfo option_name, const bool value);
-ISCDPLC_EXPORTS_API int DeviceGetStringOption(const IscCameraInfo option_name, char* value, const int max_length);
-ISCDPLC_EXPORTS_API int DeviceSetStringOption(const IscCameraInfo option_name, const char value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraInfo option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraInfo option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionInc(const IscCameraInfo option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraInfo option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraInfo option_name, const uint64_t value);
+	// camera dependent paraneter
 
-// camera control parameter
-ISCDPLC_EXPORTS_API bool DeviceOptionIsImplemented(const IscCameraParameter option_name);
-ISCDPLC_EXPORTS_API bool DeviceOptionIsReadable(const IscCameraParameter option_name);
-ISCDPLC_EXPORTS_API bool DeviceOptionIsWritable(const IscCameraParameter option_name);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraParameter option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraParameter option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionInc(const IscCameraParameter option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraParameter option_name, int* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraParameter option_name, const int value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraParameter option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraParameter option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraParameter option_name, float* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraParameter option_name, const float value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraParameter option_name, bool* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraParameter option_name, const bool value);
-ISCDPLC_EXPORTS_API int DeviceGetStringOption(const IscCameraParameter option_name, char* value);
-ISCDPLC_EXPORTS_API int DeviceSetStringOption(const IscCameraParameter option_name, const char value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMin(const IscCameraParameter option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionMax(const IscCameraParameter option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOptionInc(const IscCameraParameter option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraParameter option_name, uint64_t* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraParameter option_name, const uint64_t value);
-ISCDPLC_EXPORTS_API int DeviceGetOption(const IscCameraParameter option_name, IscShutterMode* value);
-ISCDPLC_EXPORTS_API int DeviceSetOption(const IscCameraParameter option_name, const IscShutterMode value);
+	/** @brief whether or not the parameter is implemented.
+		@return true, if implemented.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsImplementedInfo(const IscCameraInfo option_name);
 
-// grab control
-ISCDPLC_EXPORTS_API int Start(const IscGrabStartMode isc_grab_start_mode);
-ISCDPLC_EXPORTS_API int Stop();
-ISCDPLC_EXPORTS_API int GetGrabMode(IscGrabStartMode* isc_grab_start_mode);
+	/** @brief whether the parameter is readable.
+		@return true, if readable.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsReadableInfo(const IscCameraInfo option_name);
 
-// image & data get 
-ISCDPLC_EXPORTS_API int InitializeIscIamgeinfo(IscImageInfo* isc_image_Info);
-ISCDPLC_EXPORTS_API int ReleaeIscIamgeinfo(IscImageInfo* isc_image_Info);
+	/** @brief whether the parameter is writable.
+		@return true, if writable.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsWritableInfo(const IscCameraInfo option_name);
 
-ISCDPLC_EXPORTS_API int GetCameraData(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_Info);
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinInfoInt(const IscCameraInfo option_name, int* value);
 
-// get information for depth, distance, ...
-ISCDPLC_EXPORTS_API int GetDepth(const int x, const int y, float* depth);
-ISCDPLC_EXPORTS_API int GetPosition3D(const int x, const int y, float* x_d, float* y_d, float* z_d);
-ISCDPLC_EXPORTS_API int GetStatistics(const int x, const int y, const int width, const int height, IscDataStatistics* isc_data_statistics);
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxInfoInt(const IscCameraInfo option_name, int* value);
 
-// data processing module settings
-ISCDPLC_EXPORTS_API int GetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter);
-ISCDPLC_EXPORTS_API int SetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter);
+	/** @brief Gets the unit of increment or decrement for the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionIncInfoInt(const IscCameraInfo option_name, int* value);
 
-// data processing module result data
-ISCDPLC_EXPORTS_API int GetDataProcModuleData(const int module_index, IscDataProcResultData* isc_data_proc_result_data);
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionInfoInt(const IscCameraInfo option_name, int* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionInfoInt(const IscCameraInfo option_name, const int value);
+
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinInfoFloat(const IscCameraInfo option_name, float* value);
+
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxInfoFloat(const IscCameraInfo option_name, float* value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionInfoFloat(const IscCameraInfo option_name, float* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionInfoFloat(const IscCameraInfo option_name, const float value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionInfoBool(const IscCameraInfo option_name, bool* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionInfoBool(const IscCameraInfo option_name, const bool value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionInfoChar(const IscCameraInfo option_name, char* value, const int max_length);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionInfoChar(const IscCameraInfo option_name, const char* value);
+
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinInfoInt64(const IscCameraInfo option_name, uint64_t* value);
+
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxInfoInt64(const IscCameraInfo option_name, uint64_t* value);
+
+	/** @brief Gets the unit of increment or decrement for the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionIncInfoInt64(const IscCameraInfo option_name, uint64_t* value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionInfoInt64(const IscCameraInfo option_name, uint64_t* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionInfoInt64(const IscCameraInfo option_name, const uint64_t value);
+
+	// camera control parameter
+
+	/** @brief whether or not the parameter is implemented.
+		@return true, if implemented.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsImplementedPara(const IscCameraParameter option_name);
+
+	/** @brief whether the parameter is readable.
+		@return true, if readable.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsReadablePara(const IscCameraParameter option_name);
+
+	/** @brief whether the parameter is writable.
+		@return true, if writable.
+	*/
+	ISCDPLC_EXPORTS_API bool DplDeviceOptionIsWritablePara(const IscCameraParameter option_name);
+
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinParaInt(const IscCameraParameter option_name, int* value);
+
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxParaInt(const IscCameraParameter option_name, int* value);
+
+	/** @brief Gets the unit of increment or decrement for the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionIncParaInt(const IscCameraParameter option_name, int* value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaInt(const IscCameraParameter option_name, int* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaInt(const IscCameraParameter option_name, const int value);
+
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinParaFloat(const IscCameraParameter option_name, float* value);
+
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxParaFloat(const IscCameraParameter option_name, float* value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaFloat(const IscCameraParameter option_name, float* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaFloat(const IscCameraParameter option_name, const float value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaBool(const IscCameraParameter option_name, bool* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaBool(const IscCameraParameter option_name, const bool value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaChar(const IscCameraParameter option_name, char* value, const int max_length);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaChar(const IscCameraParameter option_name, const char* value);
+
+	/** @brief get the minimum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMinParaInt64(const IscCameraParameter option_name, uint64_t* value);
+
+	/** @brief get the maximum value of a parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionMaxParaInt64(const IscCameraParameter option_name, uint64_t* value);
+
+	/** @brief Gets the unit of increment or decrement for the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionIncParaInt64(const IscCameraParameter option_name, uint64_t* value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaInt64(const IscCameraParameter option_name, uint64_t* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaInt64(const IscCameraParameter option_name, const uint64_t value);
+
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceGetOptionParaShMode(const IscCameraParameter option_name, IscShutterMode* value);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplDeviceSetOptionParaShMode(const IscCameraParameter option_name, const IscShutterMode value);
+
+	// grab control
+
+	/** @brief start image acquisition.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplStart(const IscStartMode* isc_start_mode);
+
+	/** @brief stop image capture.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplStop();
+
+	/** @brief get the current capture mode.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetGrabMode(IscGrabStartMode* isc_grab_start_mode);
+
+	// image & data get 
+
+	/** @brief initialize IscImageInfo. Allocate the required space.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplInitializeIscIamgeinfo(IscImageInfo* isc_image_Info);
+
+	/** @brief release the allocated space.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplReleaeIscIamgeinfo(IscImageInfo* isc_image_Info);
+
+	/** @brief get captured data.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetCameraData(IscImageInfo* isc_image_Info);
+
+	/** @brief get the information of the file header.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
+
+	// get information for depth, distance, ...
+
+	/** @brief gets the distance of the given coordinates.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetPositionDepth(const int x, const int y, const IscImageInfo* isc_image_info, float* disparity, float* depth);
+
+	/** @brief gets the 3D position of the given coordinates.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetPosition3D(const int x, const int y, const IscImageInfo* isc_image_info, float* x_d, float* y_d, float* z_d);
+
+	/** @brief get information for the specified region.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetAreaStatistics(const int x, const int y, const int width, const int height, const IscImageInfo* isc_image_info, IscAreaDataStatistics* isc_data_statistics);
+
+	// data processing module settings
+
+	/** @brief get the number of installed modules.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetTotalModuleCount(int* total_count);
+
+	/** @brief get the name of the specified module.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetModuleNameByIndex(const int module_index, wchar_t* module_name, int max_length);
+
+	/** @brief get the parameters of the specified module.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter);
+
+	/** @brief sets a parameter to the specified module.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplSetDataProcModuleParameter(const int module_index, IscDataProcModuleParameter* isc_data_proc_module_parameter, const bool is_update_file);
+
+	/** @brief gets the name of the configuration file for the specified module.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetParameterFileName(const int module_index, wchar_t* file_name, const int max_length);
+
+	/** @brief requests the specified module to reload its parameters.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplReloadParameterFromFile(const int module_index, const wchar_t* file_name, const bool is_valid);
+
+	// data processing module result data
+
+	/** @brief initialize IscDataProcResultData. Allocate the required space.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplInitializeIscDataProcResultData(IscDataProcResultData* isc_data_proc_result_data);
+
+	/** @brief release the allocated space.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplReleaeIscDataProcResultData(IscDataProcResultData* isc_data_proc_result_data);
+
+	/** @brief get module processing result.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetDataProcModuleData(IscDataProcResultData* isc_data_proc_result_data);
 
 } /* extern "C" { */
 
-} /* ns_isc_dpl_c*/

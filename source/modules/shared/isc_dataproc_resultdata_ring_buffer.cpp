@@ -112,9 +112,9 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 		buffer_data_[i].isc_dataproc_resultdata.status.proc_tact_time = 0;
 
 		for (int j = 0; j < buffer_data_[i].isc_dataproc_resultdata.maximum_number_of_modules; j++) {
-			printf_s(	buffer_data_[i].isc_dataproc_resultdata.module_status[j].module_names, "\n");
-						buffer_data_[i].isc_dataproc_resultdata.module_status[j].error_code = 0;
-						buffer_data_[i].isc_dataproc_resultdata.module_status[j].processing_time = 0;
+			sprintf_s(	buffer_data_[i].isc_dataproc_resultdata.module_status[j].module_names, "\n");
+			buffer_data_[i].isc_dataproc_resultdata.module_status[j].error_code = 0;
+			buffer_data_[i].isc_dataproc_resultdata.module_status[j].processing_time = 0;
 		}
 
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frameNo = 0;

@@ -810,20 +810,6 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
    
-    dst_isc_image_info->frameNo = isc_image_Info->frameNo;
-    dst_isc_image_info->gain = isc_image_Info->gain;
-    dst_isc_image_info->exposure = isc_image_Info->exposure;
-
-    dst_isc_image_info->grab = isc_image_Info->grab;
-    dst_isc_image_info->color_grab_mode = isc_image_Info->color_grab_mode;
-    dst_isc_image_info->shutter_mode = isc_image_Info->shutter_mode;
-    dst_isc_image_info->camera_specific_parameter.d_inf = isc_image_Info->camera_specific_parameter.d_inf;
-    dst_isc_image_info->camera_specific_parameter.bf = isc_image_Info->camera_specific_parameter.bf;
-    dst_isc_image_info->camera_specific_parameter.base_length = isc_image_Info->camera_specific_parameter.base_length;
-    dst_isc_image_info->camera_specific_parameter.dz = isc_image_Info->camera_specific_parameter.dz;
-    dst_isc_image_info->camera_status.error_code = isc_image_Info->camera_status.error_code;
-    dst_isc_image_info->camera_status.data_receive_tact_time = isc_image_Info->camera_status.data_receive_tact_time;
-
     // (1)
     int width = isc_image_Info->raw.width / 2;
     int height = isc_image_Info->raw.height;
@@ -905,20 +891,6 @@ int IscFramedecoderInterface::GetDecodeAverageDisparityData(IscImageInfo* isc_im
     }
 
     IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
-
-    dst_isc_image_info->frameNo = isc_image_Info->frameNo;
-    dst_isc_image_info->gain = isc_image_Info->gain;
-    dst_isc_image_info->exposure = isc_image_Info->exposure;
-
-    dst_isc_image_info->grab = isc_image_Info->grab;
-    dst_isc_image_info->color_grab_mode = isc_image_Info->color_grab_mode;
-    dst_isc_image_info->shutter_mode = isc_image_Info->shutter_mode;
-    dst_isc_image_info->camera_specific_parameter.d_inf = isc_image_Info->camera_specific_parameter.d_inf;
-    dst_isc_image_info->camera_specific_parameter.bf = isc_image_Info->camera_specific_parameter.bf;
-    dst_isc_image_info->camera_specific_parameter.base_length = isc_image_Info->camera_specific_parameter.base_length;
-    dst_isc_image_info->camera_specific_parameter.dz = isc_image_Info->camera_specific_parameter.dz;
-    dst_isc_image_info->camera_status.error_code = isc_image_Info->camera_status.error_code;
-    dst_isc_image_info->camera_status.data_receive_tact_time = isc_image_Info->camera_status.data_receive_tact_time;
 
     int image_width = isc_block_disparity_data->image_width;
     int image_height = isc_block_disparity_data->image_height;

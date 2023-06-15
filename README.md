@@ -15,7 +15,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 
 本サンプルプログラムを実際のステレオカメラと接続して使用することで、動作の検証が可能となります。  
 
-なお、本プロジェクトにおいてデータ処理ライブラリは、それぞれ以下の名称で提供されています。
+なお、本プロジェクトにおいてデータ処理ライブラリは、それぞれ以下の名称です。
 
 | Library              | module(class)    | DLL                  |  
 | :------------------- | :--------------- | :------------------- |  
@@ -30,7 +30,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 - Windows 10(x64)/11  
 - Visual Studio 2022 (require MFC)  
-- OpenCV 4.7.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの注意を確認してください)  
+- OpenCV 4.7.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの設定を調整してください)  
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x75)  
     - ISC100XC: FPGA(0x22)  
@@ -89,21 +89,31 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 ## Project structure
 ****
+プロジェクト一覧
+
+|                       | Project                   | exe/dll                       | Content |  
+|:-------------------   | :---------------          | :-------------------          | :------------------- |  
+| Application           |                           |                               | |  
+|                       | DPC_gui                   | DPC_gui.exe                   | |  
+| Examples              |                           |                               | |  
+|                       | Sample_OpenCV1            | Sample_OpenCV1.exe            | OpenCVを使用するサンプル|  
+|                       | Sample_Yolo1              | Sample_Yolo1.exe              | Yoloを使用するサンプル|  
+| Library               | ISC DPL                   |                               | カメラの制御及びデータ処理を行うライブラリ群です|  
+|                       | IscDpl                    | IscDpl.dll                    | インターフェース用DLLです|  
+|                       | IscDplC                   | IscDplC.dll                   | インターフェース用DLLです(Extern C)|  
+|                       | IscDplMainControl         | IscDplMainControl.dll         | 全体の制御、データの受け渡しを行います|  
+|                       | IScCameraControl          | IscCameraControl.dll          | 実カメラの制御及びカメラデータのファイル読み書きを行います|  
+|                       | VmSdkWrapper              | VmSdkWrapper.dll              | SDKとのインターフェースです|  
+|                       | XcSdkWrapper              | XcSdkWrapper.dll              | SDKとのインターフェースです|  
+|                       | IscDataProcessingControl  | IscDataProcessingControl.dll  | データ処理ライブラリの呼び出しを行います|  
+|                       | IscBlockMatching          | IscBlockMatching.dll          | ステレオマッチングを行います|  
+|                       | IscFrameDecoder           | IscFrameDecoder.dll           | 視差の平均化、補間処理を行います|  
+| SDK                   |                           |                               | |  
+|                       |ISC SDK(VM/XC)             |                               | それぞれのカメラに対応したSDKです|  
+
+
 プロジェクトの全体構成を下図に示します  
 ![Diagram](./res/data_processing_lib-Overall-Structure.drawio.png)
-- DPC_gui 表示及び各種の制御を行うGUIです  
-    
-- ISC DPL カメラの制御及びデータ処理を行うライブラリ群です  
-    + IscDpl インターフェース用DLLです  
-    + IscDplMainControl 全体の制御、データの受け渡しを行います  
-    + IScCameraControl 実カメラの制御及びカメラデータのファイル読み書きを行います  
-        + VmSdkWrapper SDKとのインターフェースです  
-        + XcSdkWrapper SDKとのインターフェースです  
-    + IscDataProcessingControl  データ処理ライブラリの呼び出しを行います
-        + IscBlockMatching ステレオマッチングを行います  
-        + IscFrameDecoder 視差の平均化、補間処理を行います  
-    
-- ISC SDK(VM/XC) それぞれのカメラに対応したSDKです  
 
 ****
 ## Manuals

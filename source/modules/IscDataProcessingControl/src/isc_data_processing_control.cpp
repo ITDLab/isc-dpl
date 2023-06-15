@@ -432,7 +432,7 @@ int IscDataProcessingControl::InitializeIscDataProcResultData(IscDataProcResultD
     isc_data_proc_result_data->status.proc_tact_time = 0;
 
     for (int i = 0; i < isc_data_proc_result_data->maximum_number_of_modules; i++) {
-        printf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
+        sprintf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
         isc_data_proc_result_data->module_status[i].error_code = 0;
         isc_data_proc_result_data->module_status[i].processing_time = 0;
     }
@@ -469,7 +469,7 @@ int IscDataProcessingControl::InitializeIscDataProcResultData(IscDataProcResultD
     isc_image_info->color.width = 0;
     isc_image_info->color.height = 0;
     isc_image_info->color.channel_count = 0;
-    isc_image_info->color.image = nullptr;
+    isc_image_info->color.image = new unsigned char[width * height * 3];
 
     isc_image_info->depth.width = 0;
     isc_image_info->depth.height = 0;
@@ -521,7 +521,7 @@ int IscDataProcessingControl::ReleaeIscDataProcResultData(IscDataProcResultData*
     isc_data_proc_result_data->status.proc_tact_time = 0;
 
     for (int i = 0; i < isc_data_proc_result_data->maximum_number_of_modules; i++) {
-        printf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
+        sprintf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
         isc_data_proc_result_data->module_status[i].error_code = 0;
         isc_data_proc_result_data->module_status[i].processing_time = 0;
     }
@@ -558,6 +558,7 @@ int IscDataProcessingControl::ReleaeIscDataProcResultData(IscDataProcResultData*
     isc_image_info->color.width = 0;
     isc_image_info->color.height = 0;
     isc_image_info->color.channel_count = 0;
+    delete[] isc_image_info->color.image;
     isc_image_info->color.image = nullptr;
 
     isc_image_info->depth.width = 0;
@@ -600,7 +601,7 @@ int IscDataProcessingControl::ClearIscDataProcResultData(IscDataProcResultData* 
     isc_data_proc_result_data->status.proc_tact_time = 0;
 
     for (int i = 0; i < isc_data_proc_result_data->maximum_number_of_modules; i++) {
-        printf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
+        sprintf_s(isc_data_proc_result_data->module_status[i].module_names, "\n");
         isc_data_proc_result_data->module_status[i].error_code = 0;
         isc_data_proc_result_data->module_status[i].processing_time = 0;
     }
@@ -674,7 +675,7 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
         isc_data_proc_result_data->status.proc_tact_time = dataproc_result_buffer_data->isc_dataproc_resultdata.status.proc_tact_time;
 
         for (int i = 0; i < isc_data_proc_result_data->number_of_modules_processed; i++) {
-            printf_s(isc_data_proc_result_data->module_status[i].module_names, "%s", dataproc_result_buffer_data->isc_dataproc_resultdata.module_status[i].module_names);
+            sprintf_s(isc_data_proc_result_data->module_status[i].module_names, "%s", dataproc_result_buffer_data->isc_dataproc_resultdata.module_status[i].module_names);
             isc_data_proc_result_data->module_status[i].error_code = dataproc_result_buffer_data->isc_dataproc_resultdata.module_status[i].error_code;
             isc_data_proc_result_data->module_status[i].processing_time = dataproc_result_buffer_data->isc_dataproc_resultdata.module_status[i].processing_time;
         }
@@ -1084,6 +1085,52 @@ int IscDataProcessingControl::RunDataProcModules(IscImageInfo* isc_image_info, I
         }
 
         isc_data_proc_result_data->status.proc_tact_time = measure_time_->GetTaktTime();
+    }
+
+    // copy additional data
+    if ((isc_dataproc_start_mode_.enabled_block_matching) || 
+        (isc_dataproc_start_mode_.enabled_frame_decoder)) {
+
+        IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+        dst_isc_image_info->frameNo = isc_image_info->frameNo;
+        dst_isc_image_info->gain = isc_image_info->gain;
+        dst_isc_image_info->exposure = isc_image_info->exposure;
+
+        dst_isc_image_info->grab = isc_image_info->grab;
+        dst_isc_image_info->color_grab_mode = isc_image_info->color_grab_mode;
+        dst_isc_image_info->shutter_mode = isc_image_info->shutter_mode;
+        dst_isc_image_info->camera_specific_parameter.d_inf = isc_image_info->camera_specific_parameter.d_inf;
+        dst_isc_image_info->camera_specific_parameter.bf = isc_image_info->camera_specific_parameter.bf;
+        dst_isc_image_info->camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
+        dst_isc_image_info->camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
+        dst_isc_image_info->camera_status.error_code = isc_image_info->camera_status.error_code;
+        dst_isc_image_info->camera_status.data_receive_tact_time = isc_image_info->camera_status.data_receive_tact_time;
+
+        dst_isc_image_info->p1.width = isc_image_info->p1.width;
+        dst_isc_image_info->p1.height = isc_image_info->p1.height;
+        dst_isc_image_info->p1.channel_count = isc_image_info->p1.channel_count;
+        size_t cp_size = isc_image_info->p1.width * isc_image_info->p1.height * isc_image_info->p1.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->p1.image, isc_image_info->p1.image, cp_size);
+        }
+
+        dst_isc_image_info->p2.width = isc_image_info->p2.width;
+        dst_isc_image_info->p2.height = isc_image_info->p2.height;
+        dst_isc_image_info->p2.channel_count = isc_image_info->p2.channel_count;
+        cp_size = isc_image_info->p2.width * isc_image_info->p2.height * isc_image_info->p2.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->p2.image, isc_image_info->p2.image, cp_size);
+        }
+
+        dst_isc_image_info->color.width = isc_image_info->color.width;
+        dst_isc_image_info->color.height = isc_image_info->color.height;
+        dst_isc_image_info->color.channel_count = isc_image_info->color.channel_count;
+        cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->color.image, isc_image_info->color.image, cp_size);
+        }
+
     }
 
     // Ended

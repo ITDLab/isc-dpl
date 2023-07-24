@@ -41,8 +41,9 @@ struct IscDataProcModuleConfiguration {
  *  @brief This is the parameter for start process
  */
 struct IscDataProcStartMode {
-    bool enabled_block_matching;                /**< whether to use a soft stereo matching */
+    bool enabled_stereo_matching;               /**< whether to use a soft stereo matching */
     bool enabled_frame_decoder;                 /**< whether to use a frame decoder */
+    bool enabled_disparity_filter;              /**< whether to use a disparity filter */
 };
 
 /** @struct  IscDataProcModuleParameter
@@ -65,7 +66,7 @@ struct IscDataProcModuleParameter {
     wchar_t module_name[32];            /**< module name */
 
     int parameter_count;                /**< number of parameterse */
-    ParameterSet parameter_set[32];     /**< parameters */
+    ParameterSet parameter_set[48];     /**< parameters */
 
 };
 
@@ -105,20 +106,26 @@ struct IscDataProcResultData {
  *  @brief This is the result of BlockMatching
  */
 struct IscBlockDisparityData {
-    int image_width;    /**< 基準画像幅 */
-    int image_height;   /**< 基準画像高さ */
+    int image_width;        /**< 基準画像幅 */
+    int image_height;       /**< 基準画像高さ */
 
-    int pblkhgt;        /**< 視差ブロック高さ */
-    int pblkwdt;        /**< 視差ブロック幅 */
-    int pmtchgt;        /**< マッチングブロック高さ */
-    int pmtcwdt;        /**< マッチングブロック幅 */
-    int pblkofsx;       /**< 視差ブロック横オフセット */
-    int pblkofsy;       /**< 視差ブロック縦オフセット */
-    int pdepth;         /**< マッチング探索幅 */
-    int pshdwdt;        /**< 画像遮蔽幅 */
-    float* pblkdsp;     /**< 視差ブロック視差値 */
-    int* pblkval;       /**< 視差ブロック視差値(1000倍サブピクセル精度の整数) */
-    int* pblkcrst;      /**< マッチングブロックコントラスト */
+    unsigned char* prgtimg; /**< 右（基準）画像データ 右下原点 */
+    int blkhgt;             /**< 視差ブロック高さ */
+    int blkwdt;             /**< 視差ブロック幅 */
+    int mtchgt;             /**< マッチングブロック高さ */
+    int mtcwdt;             /**< マッチングブロック幅 */
+    int dspofsx;            /**< 視差ブロック横オフセット */
+    int dspofsy;            /**< 視差ブロック縦オフセット */
+    int depth;              /**< マッチング探索幅 */
+    int shdwdt;             /**< 画像遮蔽幅 */
+    int* pblkval;           /**< 視差ブロック視差値(1000倍サブピクセル精度の整数) */
+    int* pblkcrst;          /**< ブロックコントラスト */
+    unsigned char* pdspimg; /**< 視差画像 右下原点 */
+    float* ppxldsp;         /**< 視差データ 右下原点 */
+    float* pblkdsp;         /**< ブロック視差データ 右下原点 */
+    unsigned char* pbldimg; /**< 合成画像 右下基点 */
 };
+
+
 
 #endif /* ISC_DATAPROCESSING_DEF_H */

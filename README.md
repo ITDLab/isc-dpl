@@ -5,22 +5,26 @@ Data processing library project for ISC stereo cameras.
 ## Outline 
 ****
 isc-dplは、ISCシリーズのステレオカメラに対応したデータ処理ライブラリと、ライブラリを使用したサンプルプログラムを提供するプロジェクトです。  
-データ処理ライブラリには、現在は２つのライブラリが含まれています。  
+データ処理ライブラリには、現在は２つのライブラリと１つのサポートライブラリが含まれています。  
 
  - Soft Stereo Matching  
 　ステレオマッチングを行います  
 
- - Frame Decoder  
+ - Disparity Filter  
 　カメラ本体又はSoft Stereo Matching出力の視差に対して平均化、補間処理を行います  
+
+ - Frame Decoder  
+　カメラから取得するデータの展開などを行います
 
 本サンプルプログラムを実際のステレオカメラと接続して使用することで、動作の検証が可能となります。  
 
 なお、本プロジェクトにおいてデータ処理ライブラリは、それぞれ以下の名称です。
 
-| Library              | module(class)    | DLL                  |  
-| :------------------- | :--------------- | :------------------- |  
-| Soft Stereo Matching | IscBlockMatching | IscBlockMatching.dll |  
-| Frame Decoder	       | IscFrameDecoder  | IscFrameDecoder.dll  |  
+| Library              | module(class)      | DLL                    |  
+| :------------------- | :---------------   | :-------------------   |  
+| Soft Stereo Matching | IscStereoMatching  | IscStereoMatching.dll  |  
+| Disparity Filter	   | IscDisparityFilter | IscDisparityFilter.dll |  
+| Frame Decoder	       | IscFrameDecoder    | IscFrameDecoder.dll    |  
     
 注意  
 *Soft Stereo Matchingのアルゴリズムは、ISCシリーズのステレオカメラ本体実装と同一のものではありません*  
@@ -62,15 +66,15 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
     
       設定の必要なファイルは、以下です  
       - source\apps\DPC_gui\DPC_guiDlg.cpp  
-      - source\modules\IscBlockMatching\src\isc_blockmatching_interface.cpp  
       - source\modules\IscCameraControl\src\isc_camera_control.cpp  
       - source\modules\IscDataProcessingControl\src\isc_data_processing_control.cpp  
       - source\modules\IscDplMainControl\src\isc_main_control_impl.cpp  
       - source\modules\IscFrameDecoder\src\isc_framedecoder_interface.cpp  
       - source\modules\VmSdkWrapper\src\vm_sdk_wrapper.cpp  
       - source\modules\XcSdkWrapper\src\xc_sdk_wrapper.cpp  
-
-
+      - source\modules\IscDisparityFilter\src\isc_disparityfilter_interface.cpp  
+      - source\modules\IscStereoMatching\src\isc_stereomatching_interface.cpp  
+     
 - run  
     - OpenCVのDLLを実行フォルダへコピーします（バージョンはBuildしたOpenCVによります）  
         - Debug Build: opencv_world470d.dll  
@@ -98,6 +102,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 | Examples              |                           |                               | |  
 |                       | Sample_OpenCV1            | Sample_OpenCV1.exe            | OpenCVを使用するサンプル|  
 |                       | Sample_Yolo1              | Sample_Yolo1.exe              | Yoloを使用するサンプル|  
+|                       | Sample_Python1            |                               | Pythonで使用するサンプル|  
 | Library               | ISC DPL                   |                               | カメラの制御及びデータ処理を行うライブラリ群です|  
 |                       | IscDpl                    | IscDpl.dll                    | インターフェース用DLLです|  
 |                       | IscDplC                   | IscDplC.dll                   | インターフェース用DLLです(Extern C)|  
@@ -106,8 +111,9 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 |                       | VmSdkWrapper              | VmSdkWrapper.dll              | SDKとのインターフェースです|  
 |                       | XcSdkWrapper              | XcSdkWrapper.dll              | SDKとのインターフェースです|  
 |                       | IscDataProcessingControl  | IscDataProcessingControl.dll  | データ処理ライブラリの呼び出しを行います|  
-|                       | IscBlockMatching          | IscBlockMatching.dll          | ステレオマッチングを行います|  
-|                       | IscFrameDecoder           | IscFrameDecoder.dll           | 視差の平均化、補間処理を行います|  
+|                       | IscStereoMatching         | IscStereoMatching.dll         | ステレオマッチングを行います|  
+|                       | IscFrameDecoder           | IscFrameDecoder.dll           | カメラデータの展開を行います|  
+|                       | IscDisparityFilter        | IscDisparityFilter.dll        | 視差の平均化、補間処理を行います|  
 | SDK                   |                           |                               | |  
 |                       |ISC SDK(VM/XC)             |                               | それぞれのカメラに対応したSDKです|  
 

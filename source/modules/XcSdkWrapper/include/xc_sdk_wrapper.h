@@ -327,7 +327,7 @@ public:
 		@return 0, if successful.
 	*/
 	int Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-		const int width, const int height, IscImageInfo* isc_image_info);
+		const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST);
 
 private:
 	char module_path_[_MAX_PATH];		/**< This is the path of dll module */
@@ -422,6 +422,16 @@ private:
 		@return 0, if successful.
 	*/
 	int UnLoadDLLFunction();
+
+	/** @brief get captured data in normal mode.
+		@return 0, if successful.
+	*/
+	int GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info);
+
+	/** @brief get captured data in double shutter mode.
+		@return 0, if successful.
+	*/
+	int GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info);
 
 };// class XCSDKWRAPPER_API XcSdkWrapper
 

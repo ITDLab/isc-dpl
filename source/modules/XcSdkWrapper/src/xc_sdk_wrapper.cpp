@@ -191,6 +191,23 @@ namespace ns_xcsdk_wrapper
 	typedef int (WINAPI* TGetYUVImageEx)(unsigned char*, int, unsigned long);
 	TGetYUVImageEx getYUVImageEx = NULL;
 
+	//ISCSDKLIB_API int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
+	struct RawSrcData {
+		unsigned char* image;
+		int startGrabMode;		// 2:pallax+image 3:correct image 4:before correctimage
+		int type;				// 0:Mono 1:Color
+
+		int index;				// Frame Index
+		int status;				// Header status
+		int errorCode;
+		int gain;
+		int exposure;
+		float d_inf;
+		float bf;
+	};
+	typedef int (WINAPI* TGetFullFrameInfo4)(RawSrcData*, RawSrcData*, int);
+	TGetFullFrameInfo4 getFullFrameInfo4 = NULL;
+
 
 /**
  * constructor
@@ -1779,10 +1796,6 @@ int XcSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 	int width = xc_camera_param_info_.image_width;
 	int height = xc_camera_param_info_.image_height;
 
-	isc_image_info->frameNo = -1;
-	isc_image_info->gain = -1;
-	isc_image_info->exposure = -1;
-
 	isc_image_info->grab = IscGrabMode::kParallax;
 	isc_image_info->color_grab_mode = IscGrabColorMode::kColorOFF;
 	isc_image_info->shutter_mode = IscShutterMode::kManualShutter;
@@ -1791,53 +1804,67 @@ int XcSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 	isc_image_info->camera_specific_parameter.base_length = xc_camera_param_info_.base_length;
 	isc_image_info->camera_specific_parameter.dz = xc_camera_param_info_.dz;
 
-	isc_image_info->camera_status.error_code = ISC_OK;
-	isc_image_info->camera_status.data_receive_tact_time = 0;
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
+		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-	isc_image_info->p1.width = 0;
-	isc_image_info->p1.height = 0;
-	isc_image_info->p1.channel_count = 0;
-	isc_image_info->p1.image = new unsigned char[width * height];
+		isc_image_info->frame_data[i].frameNo = -1;
+		isc_image_info->frame_data[i].gain = -1;
+		isc_image_info->frame_data[i].exposure = -1;
 
-	isc_image_info->p2.width = 0;
-	isc_image_info->p2.height = 0;
-	isc_image_info->p2.channel_count = 0;
-	isc_image_info->p2.image = new unsigned char[width * height];
+		isc_image_info->frame_data[i].p1.width = 0;
+		isc_image_info->frame_data[i].p1.height = 0;
+		isc_image_info->frame_data[i].p1.channel_count = 0;
+		isc_image_info->frame_data[i].p1.image = new unsigned char[width * height];
 
-	isc_image_info->color.width = 0;
-	isc_image_info->color.height = 0;
-	isc_image_info->color.channel_count = 0;
-	isc_image_info->color.image = new unsigned char[width * height * 4];
+		isc_image_info->frame_data[i].p2.width = 0;
+		isc_image_info->frame_data[i].p2.height = 0;
+		isc_image_info->frame_data[i].p2.channel_count = 0;
+		isc_image_info->frame_data[i].p2.image = new unsigned char[width * height];
 
-	isc_image_info->depth.width = 0;
-	isc_image_info->depth.height = 0;
-	isc_image_info->depth.image = new float[width * height];
+		isc_image_info->frame_data[i].color.width = 0;
+		isc_image_info->frame_data[i].color.height = 0;
+		isc_image_info->frame_data[i].color.channel_count = 0;
+		isc_image_info->frame_data[i].color.image = new unsigned char[width * height * 4];
 
-	isc_image_info->raw.width = 0;
-	isc_image_info->raw.height = 0;
-	isc_image_info->raw.channel_count = 0;
-	isc_image_info->raw.image = new unsigned char[width * height * 2];
+		isc_image_info->frame_data[i].depth.width = 0;
+		isc_image_info->frame_data[i].depth.height = 0;
+		isc_image_info->frame_data[i].depth.image = new float[width * height];
 
-	isc_image_info->bayer_base.width = 0;
-	isc_image_info->bayer_base.height = 0;
-	isc_image_info->bayer_base.channel_count = 0;
-	isc_image_info->bayer_base.image = nullptr;
+		isc_image_info->frame_data[i].raw.width = 0;
+		isc_image_info->frame_data[i].raw.height = 0;
+		isc_image_info->frame_data[i].raw.channel_count = 0;
+		isc_image_info->frame_data[i].raw.image = new unsigned char[width * height * 2];
 
-	isc_image_info->bayer_compare.width = 0;
-	isc_image_info->bayer_compare.height = 0;
-	isc_image_info->bayer_compare.channel_count = 0;
-	isc_image_info->bayer_compare.image = nullptr;
+		isc_image_info->frame_data[i].raw_color.width = 0;
+		isc_image_info->frame_data[i].raw_color.height = 0;
+		isc_image_info->frame_data[i].raw_color.channel_count = 0;
+		isc_image_info->frame_data[i].raw_color.image = new unsigned char[width * height * 2];
+
+		isc_image_info->frame_data[i].bayer_base.width = 0;
+		isc_image_info->frame_data[i].bayer_base.height = 0;
+		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
+		isc_image_info->frame_data[i].bayer_base.image = nullptr;
+
+		isc_image_info->frame_data[i].bayer_compare.width = 0;
+		isc_image_info->frame_data[i].bayer_compare.height = 0;
+		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
+		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
 
 
-	size_t image_size = width * height;
-	memset(isc_image_info->p1.image, 0, image_size);
-	memset(isc_image_info->p2.image, 0, image_size);
+		size_t image_size = width * height;
+		memset(isc_image_info->frame_data[i].p1.image, 0, image_size);
+		memset(isc_image_info->frame_data[i].p2.image, 0, image_size);
 
-	image_size = width * height * sizeof(float);
-	memset(isc_image_info->depth.image, 0, image_size);
+		image_size = width * height * sizeof(float);
+		memset(isc_image_info->frame_data[i].depth.image, 0, image_size);
 
-	image_size = width * height * 2;
-	memset(isc_image_info->raw.image, 0, image_size);
+		image_size = width * height * 2;
+		memset(isc_image_info->frame_data[i].raw.image, 0, image_size);
+
+		image_size = width * height * 2;
+		memset(isc_image_info->frame_data[i].raw_color.image, 0, image_size);
+	}
 
 	return DPC_E_OK;
 }
@@ -1854,10 +1881,6 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 		return CAMCONTROL_E_INVALID_PARAMETER;
 	}
 
-	isc_image_info->frameNo = -1;
-	isc_image_info->gain = -1;
-	isc_image_info->exposure = -1;
-
 	isc_image_info->grab = IscGrabMode::kParallax;
 	isc_image_info->color_grab_mode = IscGrabColorMode::kColorOFF;
 	isc_image_info->shutter_mode = IscShutterMode::kManualShutter;
@@ -1866,49 +1889,62 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 	isc_image_info->camera_specific_parameter.base_length = 0;
 	isc_image_info->camera_specific_parameter.dz = 0;
 
-	isc_image_info->camera_status.error_code = ISC_OK;
-	isc_image_info->camera_status.data_receive_tact_time = 0;
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
+		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-	isc_image_info->p1.width = 0;
-	isc_image_info->p1.height = 0;
-	isc_image_info->p1.channel_count = 0;
-	delete[] isc_image_info->p1.image;
-	isc_image_info->p1.image = nullptr;
+		isc_image_info->frame_data[i].frameNo = -1;
+		isc_image_info->frame_data[i].gain = -1;
+		isc_image_info->frame_data[i].exposure = -1;
 
-	isc_image_info->p2.width = 0;
-	isc_image_info->p2.height = 0;
-	isc_image_info->p2.channel_count = 0;
-	delete[] isc_image_info->p2.image;
-	isc_image_info->p2.image = nullptr;
 
-	isc_image_info->color.width = 0;
-	isc_image_info->color.height = 0;
-	isc_image_info->color.channel_count = 0;
-	delete[] isc_image_info->color.image;
-	isc_image_info->color.image = nullptr;
+		isc_image_info->frame_data[i].p1.width = 0;
+		isc_image_info->frame_data[i].p1.height = 0;
+		isc_image_info->frame_data[i].p1.channel_count = 0;
+		delete[] isc_image_info->frame_data[i].p1.image;
+		isc_image_info->frame_data[i].p1.image = nullptr;
 
-	isc_image_info->depth.width = 0;
-	isc_image_info->depth.height = 0;
-	delete[] isc_image_info->depth.image;
-	isc_image_info->depth.image = nullptr;
+		isc_image_info->frame_data[i].p2.width = 0;
+		isc_image_info->frame_data[i].p2.height = 0;
+		isc_image_info->frame_data[i].p2.channel_count = 0;
+		delete[] isc_image_info->frame_data[i].p2.image;
+		isc_image_info->frame_data[i].p2.image = nullptr;
 
-	isc_image_info->raw.width = 0;
-	isc_image_info->raw.height = 0;
-	isc_image_info->raw.channel_count = 0;
-	delete[] isc_image_info->raw.image;
-	isc_image_info->raw.image = nullptr;
+		isc_image_info->frame_data[i].color.width = 0;
+		isc_image_info->frame_data[i].color.height = 0;
+		isc_image_info->frame_data[i].color.channel_count = 0;
+		delete[] isc_image_info->frame_data[i].color.image;
+		isc_image_info->frame_data[i].color.image = nullptr;
 
-	isc_image_info->bayer_base.width = 0;
-	isc_image_info->bayer_base.height = 0;
-	isc_image_info->bayer_base.channel_count = 0;
-	assert(isc_image_info->bayer_base.image == nullptr);
-	isc_image_info->bayer_base.image = nullptr;
+		isc_image_info->frame_data[i].depth.width = 0;
+		isc_image_info->frame_data[i].depth.height = 0;
+		delete[] isc_image_info->frame_data[i].depth.image;
+		isc_image_info->frame_data[i].depth.image = nullptr;
 
-	isc_image_info->bayer_compare.width = 0;
-	isc_image_info->bayer_compare.height = 0;
-	isc_image_info->bayer_compare.channel_count = 0;
-	assert(isc_image_info->bayer_compare.image == nullptr);
-	isc_image_info->bayer_compare.image = nullptr;
+		isc_image_info->frame_data[i].raw.width = 0;
+		isc_image_info->frame_data[i].raw.height = 0;
+		isc_image_info->frame_data[i].raw.channel_count = 0;
+		delete[] isc_image_info->frame_data[i].raw.image;
+		isc_image_info->frame_data[i].raw.image = nullptr;
+
+		isc_image_info->frame_data[i].raw_color.width = 0;
+		isc_image_info->frame_data[i].raw_color.height = 0;
+		isc_image_info->frame_data[i].raw_color.channel_count = 0;
+		delete[] isc_image_info->frame_data[i].raw_color.image;
+		isc_image_info->frame_data[i].raw_color.image = nullptr;
+
+		isc_image_info->frame_data[i].bayer_base.width = 0;
+		isc_image_info->frame_data[i].bayer_base.height = 0;
+		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
+		assert(isc_image_info->frame_data[i].bayer_base.image == nullptr);
+		isc_image_info->frame_data[i].bayer_base.image = nullptr;
+
+		isc_image_info->frame_data[i].bayer_compare.width = 0;
+		isc_image_info->frame_data[i].bayer_compare.height = 0;
+		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
+		assert(isc_image_info->frame_data[i].bayer_compare.image == nullptr);
+		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
+	}
 
 	return DPC_E_OK;
 }
@@ -1922,9 +1958,48 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
  */
 int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info)
 {
-	isc_image_info->frameNo = -1;
-	isc_image_info->gain = -1;
-	isc_image_info->exposure = -1;
+	// check mode
+
+	/*
+		Double Shutterにおいて、処理ライブラリの使用が有効（Rawデータ取得）の場合
+		　連続したRawデータを取得する（SDKでのダブルシャッター合成処理などは行われない）
+	
+	*/
+	bool is_double_shutter_raw_mode = false;
+	if (isc_image_info->shutter_mode == IscShutterMode::kDoubleShutter ||
+		isc_image_info->shutter_mode == IscShutterMode::kDoubleShutter2) {
+
+		if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
+			is_double_shutter_raw_mode = true;
+		}
+	}
+
+	int ret = DPC_E_OK;
+	if (is_double_shutter_raw_mode) {
+		ret = GetDataModeDoubleShutter(isc_get_mode, isc_image_info);
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
+	}
+	else {
+		ret = GetDataModeNormal(isc_get_mode, isc_image_info);
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * get captured data in normal mode.
+ *
+ * @param[in] isc_get_mode a parameter that specifies the acquisition behavior.
+ * @param[in,out] isc_image_info it is a structure to write the acquired data.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info)
+{
 
 	isc_image_info->grab = isc_grab_start_mode_.isc_grab_mode;
 	isc_image_info->color_grab_mode = isc_grab_start_mode_.isc_grab_color_mode;
@@ -1934,27 +2009,37 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 	isc_image_info->camera_specific_parameter.base_length = xc_camera_param_info_.base_length;
 	isc_image_info->camera_specific_parameter.dz = xc_camera_param_info_.dz;
 
-	isc_image_info->camera_status.error_code = ISC_OK;
-	isc_image_info->camera_status.data_receive_tact_time = 0;
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].frameNo = -1;
+		isc_image_info->frame_data[i].gain = -1;
+		isc_image_info->frame_data[i].exposure = -1;
 
-	isc_image_info->p1.width = 0;
-	isc_image_info->p1.height = 0;
-	isc_image_info->p1.channel_count = 0;
+		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
+		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-	isc_image_info->p2.width = 0;
-	isc_image_info->p2.height = 0;
-	isc_image_info->p2.channel_count = 0;
+		isc_image_info->frame_data[i].p1.width = 0;
+		isc_image_info->frame_data[i].p1.height = 0;
+		isc_image_info->frame_data[i].p1.channel_count = 0;
 
-	isc_image_info->color.width = 0;
-	isc_image_info->color.height = 0;
-	isc_image_info->color.channel_count = 0;
+		isc_image_info->frame_data[i].p2.width = 0;
+		isc_image_info->frame_data[i].p2.height = 0;
+		isc_image_info->frame_data[i].p2.channel_count = 0;
 
-	isc_image_info->depth.width = 0;
-	isc_image_info->depth.height = 0;
+		isc_image_info->frame_data[i].color.width = 0;
+		isc_image_info->frame_data[i].color.height = 0;
+		isc_image_info->frame_data[i].color.channel_count = 0;
 
-	isc_image_info->raw.width = 0;
-	isc_image_info->raw.height = 0;
-	isc_image_info->raw.channel_count = 0;
+		isc_image_info->frame_data[i].depth.width = 0;
+		isc_image_info->frame_data[i].depth.height = 0;
+
+		isc_image_info->frame_data[i].raw.width = 0;
+		isc_image_info->frame_data[i].raw.height = 0;
+		isc_image_info->frame_data[i].raw.channel_count = 0;
+
+		isc_image_info->frame_data[i].raw_color.width = 0;
+		isc_image_info->frame_data[i].raw_color.height = 0;
+		isc_image_info->frame_data[i].raw_color.channel_count = 0;
+	}
 
 	/*
 		視差やモノクロ画像と、カラー画像は、本来は独立で取得できるケースがある。
@@ -2002,9 +2087,9 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 	}
 
-
-	int ret = getImageEx(isc_image_info_.p2.image, isc_image_info_.p1.image, 1, isc_get_mode->wait_time);
-	isc_image_info->camera_status.error_code = ret;
+	constexpr int frame_data_id = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	int ret = getImageEx(isc_image_info_.frame_data[frame_data_id].p2.image, isc_image_info_.frame_data[frame_data_id].p1.image, 1, isc_get_mode->wait_time);
+	isc_image_info->frame_data[frame_data_id].camera_status.error_code = ret;
 
 	if (ret != ISC_OK) {
 		if (ret != 0) {
@@ -2035,13 +2120,13 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 		utility_measure_time.Start();
 
-		ret = getFullFrameInfo(isc_image_info->raw.image);
+		ret = getFullFrameInfo(isc_image_info->frame_data[frame_data_id].raw.image);
 		if (ret != 0) {
 			return CAMCONTROL_E_GET_FULL_FRAME_FAILED;
 		}
-		isc_image_info->raw.width = width * 2;
-		isc_image_info->raw.height = height;
-		isc_image_info->raw.channel_count = 1;
+		isc_image_info->frame_data[frame_data_id].raw.width = width * 2;
+		isc_image_info->frame_data[frame_data_id].raw.height = height;
+		isc_image_info->frame_data[frame_data_id].raw.channel_count = 1;
 
 		// 反転不要です
 
@@ -2055,13 +2140,13 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 		utility_measure_time.Start();
 		// 基準側画像
-		isc_image_info->p1.width = width;
-		isc_image_info->p1.height = height;
-		isc_image_info->p1.channel_count = 1;
+		isc_image_info->frame_data[frame_data_id].p1.width = width;
+		isc_image_info->frame_data[frame_data_id].p1.height = height;
+		isc_image_info->frame_data[frame_data_id].p1.channel_count = 1;
 
 		// 他のカメラとの互換性のために左右を反転します
-		cv::Mat mat_src_image_p1(isc_image_info->p1.height, isc_image_info->p1.width, CV_8UC1, isc_image_info_.p1.image);
-		cv::Mat mat_dst_image_p1(isc_image_info->p1.height, isc_image_info->p1.width, CV_8UC1, isc_image_info->p1.image);
+		cv::Mat mat_src_image_p1(isc_image_info->frame_data[frame_data_id].p1.height, isc_image_info->frame_data[frame_data_id].p1.width, CV_8UC1, isc_image_info_.frame_data[frame_data_id].p1.image);
+		cv::Mat mat_dst_image_p1(isc_image_info->frame_data[frame_data_id].p1.height, isc_image_info->frame_data[frame_data_id].p1.width, CV_8UC1, isc_image_info->frame_data[frame_data_id].p1.image);
 		cv::flip(mat_src_image_p1, mat_dst_image_p1, 1);
 
 		elp_time[1] = utility_measure_time.Stop();
@@ -2069,61 +2154,61 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 		if (isc_grab_start_mode_.isc_grab_mode == IscGrabMode::kParallax) {
 			utility_measure_time.Start();
 
-			ret = getDepthInfo(isc_image_info_.depth.image);
+			ret = getDepthInfo(isc_image_info_.frame_data[frame_data_id].depth.image);
 			if (ret != ISC_OK) {
 				return CAMCONTROL_E_GET_DEPTH_FAILED;
 			}
-			isc_image_info->depth.width = width;
-			isc_image_info->depth.height = height;
+			isc_image_info->frame_data[frame_data_id].depth.width = width;
+			isc_image_info->frame_data[frame_data_id].depth.height = height;
 
 			// 他のカメラとの互換性のために左右を反転します
-			cv::Mat mat_src_image_depth(isc_image_info->depth.height, isc_image_info->depth.width, CV_32FC1, isc_image_info_.depth.image);
-			cv::Mat mat_dst_image_depth(isc_image_info->depth.height, isc_image_info->depth.width, CV_32FC1, isc_image_info->depth.image);
+			cv::Mat mat_src_image_depth(isc_image_info->frame_data[frame_data_id].depth.height, isc_image_info->frame_data[frame_data_id].depth.width, CV_32FC1, isc_image_info_.frame_data[frame_data_id].depth.image);
+			cv::Mat mat_dst_image_depth(isc_image_info->frame_data[frame_data_id].depth.height, isc_image_info->frame_data[frame_data_id].depth.width, CV_32FC1, isc_image_info->frame_data[frame_data_id].depth.image);
 			cv::flip(mat_src_image_depth, mat_dst_image_depth, 1);
 
 			elp_time[2] = utility_measure_time.Stop();
 		}
 		else {
 			// 補正後比較画像/補正前比較画像
-			isc_image_info->p2.width = width;
-			isc_image_info->p2.height = height;
-			isc_image_info->p2.channel_count = 1;
+			isc_image_info->frame_data[frame_data_id].p2.width = width;
+			isc_image_info->frame_data[frame_data_id].p2.height = height;
+			isc_image_info->frame_data[frame_data_id].p2.channel_count = 1;
 
 			// 他のカメラとの互換性のために左右を反転します
-			cv::Mat mat_src_image_p2(isc_image_info->p2.height, isc_image_info->p2.width, CV_8UC1, isc_image_info_.p2.image);
-			cv::Mat mat_dst_image_p2(isc_image_info->p2.height, isc_image_info->p2.width, CV_8UC1, isc_image_info->p2.image);
+			cv::Mat mat_src_image_p2(isc_image_info->frame_data[frame_data_id].p2.height, isc_image_info->frame_data[frame_data_id].p2.width, CV_8UC1, isc_image_info_.frame_data[frame_data_id].p2.image);
+			cv::Mat mat_dst_image_p2(isc_image_info->frame_data[frame_data_id].p2.height, isc_image_info->frame_data[frame_data_id].p2.width, CV_8UC1, isc_image_info->frame_data[frame_data_id].p2.image);
 			cv::flip(mat_src_image_p2, mat_dst_image_p2, 1);
 		}
 	}
 	else {
 		// 基準側画像
-		isc_image_info->p1.width = width;
-		isc_image_info->p1.height = height;
-		isc_image_info->p1.channel_count = 1;
+		isc_image_info->frame_data[frame_data_id].p1.width = width;
+		isc_image_info->frame_data[frame_data_id].p1.height = height;
+		isc_image_info->frame_data[frame_data_id].p1.channel_count = 1;
 
-		size_t cp_size = isc_image_info->p1.width * isc_image_info->p1.height;
-		memcpy(isc_image_info->p1.image, isc_image_info_.p1.image, cp_size);
+		size_t cp_size = isc_image_info->frame_data[frame_data_id].p1.width * isc_image_info->frame_data[frame_data_id].p1.height;
+		memcpy(isc_image_info->frame_data[frame_data_id].p1.image, isc_image_info_.frame_data[frame_data_id].p1.image, cp_size);
 
 		if (isc_grab_start_mode_.isc_grab_mode == IscGrabMode::kParallax) {
-			ret = getDepthInfo(isc_image_info_.depth.image);
+			ret = getDepthInfo(isc_image_info_.frame_data[frame_data_id].depth.image);
 			if (ret != ISC_OK) {
 				OutputDebugStringA("[GetData]GetDepthInfo Failed\n");
 				return CAMCONTROL_E_GET_DEPTH_FAILED;
 			}
-			isc_image_info->depth.width = width;
-			isc_image_info->depth.height = height;
+			isc_image_info->frame_data[frame_data_id].depth.width = width;
+			isc_image_info->frame_data[frame_data_id].depth.height = height;
 
-			cp_size = isc_image_info->depth.width * isc_image_info->depth.height * sizeof(float);
-			memcpy(isc_image_info->depth.image, isc_image_info_.depth.image, cp_size);
+			cp_size = isc_image_info->frame_data[frame_data_id].depth.width * isc_image_info->frame_data[frame_data_id].depth.height * sizeof(float);
+			memcpy(isc_image_info->frame_data[frame_data_id].depth.image, isc_image_info_.frame_data[frame_data_id].depth.image, cp_size);
 		}
 		else {
 			// 補正後比較画像/補正前比較画像
-			isc_image_info->p2.width = width;
-			isc_image_info->p2.height = height;
-			isc_image_info->p2.channel_count = 1;
+			isc_image_info->frame_data[frame_data_id].p2.width = width;
+			isc_image_info->frame_data[frame_data_id].p2.height = height;
+			isc_image_info->frame_data[frame_data_id].p2.channel_count = 1;
 
-			cp_size = isc_image_info->p2.width * isc_image_info->p2.height;
-			memcpy(isc_image_info->p2.image, isc_image_info_.p2.image, cp_size);
+			cp_size = isc_image_info->frame_data[frame_data_id].p2.width * isc_image_info->frame_data[frame_data_id].p2.height;
+			memcpy(isc_image_info->frame_data[frame_data_id].p2.image, isc_image_info_.frame_data[frame_data_id].p2.image, cp_size);
 		}
 	}
 
@@ -2141,9 +2226,9 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 		if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kYuv) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 1;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 1;
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2155,7 +2240,7 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 
 				for (int y = 0; y < height; y++) {
 					unsigned char* src = work_buffer_.buffer[0] + (y * line_step) + (line_step - 4);
-					unsigned char* dst = isc_image_info->color.image + (y * line_step);
+					unsigned char* dst = isc_image_info->frame_data[frame_data_id].color.image + (y * line_step);
 					for (int x = 0; x < width / 2; x++) {
 						//temp_yuv[0] = *src++;
 						//temp_yuv[1] = *src++;
@@ -2172,15 +2257,15 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 				}
 			}
 			else {
-				size_t cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count * 2;
-				memcpy(isc_image_info->color.image, work_buffer_.buffer[0], cp_size);
+				size_t cp_size = isc_image_info->frame_data[frame_data_id].color.width * isc_image_info->frame_data[frame_data_id].color.height * isc_image_info->frame_data[frame_data_id].color.channel_count * 2;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[0], cp_size);
 			}
 		}
 		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kBGR) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width* height * 2);
@@ -2188,12 +2273,12 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, work_buffer_.buffer[1]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, work_buffer_.buffer[1], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[1], cp_size);
 			}
 		}
 		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kCorrect) {
@@ -2218,9 +2303,9 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 				}
 			}
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
@@ -2231,19 +2316,19 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, work_buffer_.buffer[2]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, work_buffer_.buffer[2], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[2], cp_size);
 			}
 		}
 		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kAwb) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
@@ -2257,19 +2342,19 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, work_buffer_.buffer[3]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, work_buffer_.buffer[3], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[3], cp_size);
 			}
 		}
 		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kAwbNoCorrect) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
@@ -2280,12 +2365,12 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, work_buffer_.buffer[2]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, work_buffer_.buffer[2], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[2], cp_size);
 			}
 		}
 
@@ -2302,6 +2387,130 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 }
 
 /**
+ * get captured data in double shutter mode.
+ *
+ * @param[in] isc_get_mode a parameter that specifies the acquisition behavior.
+ * @param[in,out] isc_image_info it is a structure to write the acquired data.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info)
+{
+	isc_image_info->grab = isc_grab_start_mode_.isc_grab_mode;
+	isc_image_info->color_grab_mode = isc_grab_start_mode_.isc_grab_color_mode;
+	isc_image_info->shutter_mode = isc_shutter_mode_;
+	isc_image_info->camera_specific_parameter.d_inf = xc_camera_param_info_.d_inf;
+	isc_image_info->camera_specific_parameter.bf = xc_camera_param_info_.bf;
+	isc_image_info->camera_specific_parameter.base_length = xc_camera_param_info_.base_length;
+	isc_image_info->camera_specific_parameter.dz = xc_camera_param_info_.dz;
+
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].frameNo = -1;
+		isc_image_info->frame_data[i].gain = -1;
+		isc_image_info->frame_data[i].exposure = -1;
+
+		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
+		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
+
+		isc_image_info->frame_data[i].p1.width = 0;
+		isc_image_info->frame_data[i].p1.height = 0;
+		isc_image_info->frame_data[i].p1.channel_count = 0;
+
+		isc_image_info->frame_data[i].p2.width = 0;
+		isc_image_info->frame_data[i].p2.height = 0;
+		isc_image_info->frame_data[i].p2.channel_count = 0;
+
+		isc_image_info->frame_data[i].color.width = 0;
+		isc_image_info->frame_data[i].color.height = 0;
+		isc_image_info->frame_data[i].color.channel_count = 0;
+
+		isc_image_info->frame_data[i].depth.width = 0;
+		isc_image_info->frame_data[i].depth.height = 0;
+
+		isc_image_info->frame_data[i].raw.width = 0;
+		isc_image_info->frame_data[i].raw.height = 0;
+		isc_image_info->frame_data[i].raw.channel_count = 0;
+
+		isc_image_info->frame_data[i].raw_color.width = 0;
+		isc_image_info->frame_data[i].raw_color.height = 0;
+		isc_image_info->frame_data[i].raw_color.channel_count = 0;
+	}
+
+	// 前後のRawデータを取得
+	RawSrcData rawsrcdata_latest = {};
+	RawSrcData rawsrcdata_previous = {};
+
+	rawsrcdata_latest.image = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].raw.image;
+	rawsrcdata_previous.image = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.image;
+
+	int ret = getFullFrameInfo4(&rawsrcdata_latest, &rawsrcdata_previous, isc_get_mode->wait_time);
+
+	if (ret != ISC_OK) {
+		if (ret != 0) {
+			if (ret == ERR_USB_NO_IMAGE) {
+				/*ERR_USB_NO_IMAGE*/
+				return CAMCONTROL_E_NO_IMAGE;
+			}
+			else if (ret == 4 /*FT_IO_ERROR*/) {
+				/*FT_IO_ERROR*/
+				return CAMCONTROL_E_FTDI_ERROR;
+			}
+			else if (ret == ERR_NO_VALID_IMAGES_CALIBRATING) {
+				/*ERR_NO_VALID_IMAGES_CALIBRATING*/
+				return CAMCONTROL_E_CAMERA_UNDER_CARIBRATION;
+			}
+			else {
+				// 画像を確認するため継続
+			}
+		}
+	}
+
+	int width = xc_camera_param_info_.image_width;
+	int height = xc_camera_param_info_.image_height;
+
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].raw.width = width;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].raw.height = height;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].raw.channel_count = 1;
+
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].camera_status.error_code = ret;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].camera_status.data_receive_tact_time = 0;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].frameNo = rawsrcdata_latest.index;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].gain = rawsrcdata_latest.gain;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].exposure = rawsrcdata_latest.exposure;
+
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.width = width;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.height = height;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.channel_count = 1;
+
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].camera_status.error_code = ret;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].camera_status.data_receive_tact_time = 0;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].frameNo = rawsrcdata_previous.index;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].gain = rawsrcdata_previous.gain;
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].exposure = rawsrcdata_previous.exposure;
+
+	// 展開
+	IscGetModeColor isc_get_color_mode = isc_grab_start_mode_.isc_get_color_mode;
+	IscGrabColorMode color_mode = isc_grab_start_mode_.isc_grab_color_mode;
+
+	// latest
+	ret = Decode(isc_image_info->grab, color_mode, isc_get_color_mode, width, height, isc_image_info, kISCIMAGEINFO_FRAMEDATA_LATEST);
+	if (ret != DPC_E_OK) {
+		return CAMCONTROL_E_NO_IMAGE;
+	}
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].raw.width = width * 2;
+
+	// previous
+	ret = Decode(isc_image_info->grab, color_mode, isc_get_color_mode, width, height, isc_image_info, kISCIMAGEINFO_FRAMEDATA_PREVIOUS);
+	if (ret != DPC_E_OK) {
+		return CAMCONTROL_E_NO_IMAGE;
+	}
+	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.width = width * 2;
+
+	// make merged image
+
+	return DPC_E_OK;
+}
+
+/**
  * Unpack parallax data.
  *
  * @param[in] IscGrabMode mode for grabing.
@@ -2312,13 +2521,15 @@ int XcSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
  * @return 0 if successful.
  */
 int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-	const int width, const int height, IscImageInfo* isc_image_info)
+	const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index)
 {
 
 	constexpr bool is_flip_for_compatibility = true;
 	int ret = DPC_E_OK;
 
+	const int frame_data_id = frame_data_index;
 	if (isc_grab_color_mode == IscGrabColorMode::kColorON) {
+
 		// color
 
 		//enum class IscGetModeColor {
@@ -2331,13 +2542,13 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 		//};
 
 		size_t cp_size = width * height * 2;
-		memcpy(decode_buffer_.work_buffer.buffer[0], isc_image_info->raw.image, cp_size);
+		memcpy(decode_buffer_.work_buffer.buffer[0], isc_image_info->frame_data[frame_data_id].raw_color.image, cp_size);
 
 		if (isc_get_color_mode == IscGetModeColor::kYuv) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 1;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 1;
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2349,7 +2560,7 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 
 				for (int y = 0; y < height; y++) {
 					unsigned char* src = decode_buffer_.work_buffer.buffer[0] + (y * line_step) + (line_step - 4);
-					unsigned char* dst = isc_image_info->color.image + (y * line_step);
+					unsigned char* dst = isc_image_info->frame_data[frame_data_id].color.image + (y * line_step);
 					for (int x = 0; x < width / 2; x++) {
 						//temp_yuv[0] = *src++;
 						//temp_yuv[1] = *src++;
@@ -2366,15 +2577,15 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 				}
 			}
 			else {
-				size_t cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count * 2;
-				memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[0], cp_size);
+				size_t cp_size = isc_image_info->frame_data[frame_data_id].color.width * isc_image_info->frame_data[frame_data_id].color.height * isc_image_info->frame_data[frame_data_id].color.channel_count * 2;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[0], cp_size);
 			}
 		}
 		else if (isc_get_color_mode == IscGetModeColor::kBGR) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
@@ -2382,12 +2593,12 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, decode_buffer_.work_buffer.buffer[1]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[1], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[1], cp_size);
 			}
 		}
 		else if (isc_get_color_mode == IscGetModeColor::kCorrect) {
@@ -2412,9 +2623,9 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 				}
 			}
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
@@ -2425,19 +2636,19 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, decode_buffer_.work_buffer.buffer[2]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[2], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[2], cp_size);
 			}
 		}
 		else if (isc_get_color_mode == IscGetModeColor::kAwb) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
@@ -2451,19 +2662,19 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, decode_buffer_.work_buffer.buffer[3]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[3], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[3], cp_size);
 			}
 		}
 		else if (isc_get_color_mode == IscGetModeColor::kAwbNoCorrect) {
 
-			isc_image_info->color.width = width;
-			isc_image_info->color.height = height;
-			isc_image_info->color.channel_count = 3;
+			isc_image_info->frame_data[frame_data_id].color.width = width;
+			isc_image_info->frame_data[frame_data_id].color.height = height;
+			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
 			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
@@ -2474,19 +2685,19 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
 				cv::Mat mat_src_color_image(height, width, CV_8UC3, decode_buffer_.work_buffer.buffer[2]);
-				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->color.image);
+				cv::Mat mat_dst_color_image(height, width, CV_8UC3, isc_image_info->frame_data[frame_data_id].color.image);
 				cv::flip(mat_src_color_image, mat_dst_color_image, 1);
 			}
 			else {
-				size_t cp_size = width * height * isc_image_info->color.channel_count;
-				memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[2], cp_size);
+				size_t cp_size = width * height * isc_image_info->frame_data[frame_data_id].color.channel_count;
+				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[2], cp_size);
 			}
 		}
 	}
 	else {
 		// 画像分割処理を行います
 		const bool is_disparity = (isc_grab_mode == IscGrabMode::kParallax) ? true : false;
-		int ret = SplitImage(is_disparity, width, height, isc_image_info->raw.image, decode_buffer_.split_images[0], decode_buffer_.split_images[1], decode_buffer_.split_images[2]);
+		int ret = SplitImage(is_disparity, width, height, isc_image_info->frame_data[frame_data_id].raw.image, decode_buffer_.split_images[0], decode_buffer_.split_images[1], decode_buffer_.split_images[2]);
 		if (ret != DPC_E_OK) {
 			return ret;
 		}
@@ -2497,53 +2708,53 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			ReCreateParallaxImage(width, height, decode_buffer_.split_images[2], decode_buffer_.disparity, decode_buffer_.disparity_image, decode_buffer_.mask_image);
 			//memcpy(isc_image_info->depth.image, decode_buffer_.disparity, width * height * sizeof(float));
 			// 他のカメラとの互換性のために左右を反転します
-			isc_image_info->depth.width = width;
-			isc_image_info->depth.height = height;
+			isc_image_info->frame_data[frame_data_id].depth.width = width;
+			isc_image_info->frame_data[frame_data_id].depth.height = height;
 			{
-				cv::Mat mat_src_image_depth(isc_image_info->depth.height, isc_image_info->depth.width, CV_32FC1, decode_buffer_.disparity);
-				cv::Mat mat_dst_image_depth(isc_image_info->depth.height, isc_image_info->depth.width, CV_32FC1, isc_image_info->depth.image);
+				cv::Mat mat_src_image_depth(isc_image_info->frame_data[frame_data_id].depth.height, isc_image_info->frame_data[frame_data_id].depth.width, CV_32FC1, decode_buffer_.disparity);
+				cv::Mat mat_dst_image_depth(isc_image_info->frame_data[frame_data_id].depth.height, isc_image_info->frame_data[frame_data_id].depth.width, CV_32FC1, isc_image_info->frame_data[frame_data_id].depth.image);
 				cv::flip(mat_src_image_depth, mat_dst_image_depth, 1);
 			}
 
 			// 画像を左右を反転します -> このライブラリでは反転しない
 			//FlipImage(width, height, decode_buffer_.split_images[1], isc_image_info->p1.image);
-			memcpy(isc_image_info->p1.image, decode_buffer_.split_images[1], width * height);
-			isc_image_info->p1.width = width;
-			isc_image_info->p1.height = height;
-			isc_image_info->p1.channel_count = 1;
+			memcpy(isc_image_info->frame_data[frame_data_id].p1.image, decode_buffer_.split_images[1], width * height);
+			isc_image_info->frame_data[frame_data_id].p1.width = width;
+			isc_image_info->frame_data[frame_data_id].p1.height = height;
+			isc_image_info->frame_data[frame_data_id].p1.channel_count = 1;
 			break;
 
 		case IscGrabMode::kCorrect:
 			// 画像を左右を反転します -> このライブラリでは反転しない
 			//FlipImage(width, height, decode_buffer_.split_images[1], isc_image_info->p1.image);
-			memcpy(isc_image_info->p1.image, decode_buffer_.split_images[1], width * height);
-			isc_image_info->p1.width = width;
-			isc_image_info->p1.height = height;
-			isc_image_info->p1.channel_count = 1;
+			memcpy(isc_image_info->frame_data[frame_data_id].p1.image, decode_buffer_.split_images[1], width * height);
+			isc_image_info->frame_data[frame_data_id].p1.width = width;
+			isc_image_info->frame_data[frame_data_id].p1.height = height;
+			isc_image_info->frame_data[frame_data_id].p1.channel_count = 1;
 
 			// 画像を左右を反転します -> このライブラリでは反転しない
 			//FlipImage(width, height, decode_buffer_.split_images[0], isc_image_info->p2.image);
-			memcpy(isc_image_info->p2.image, decode_buffer_.split_images[0], width * height);
-			isc_image_info->p2.width = width;
-			isc_image_info->p2.height = height;
-			isc_image_info->p2.channel_count = 1;
+			memcpy(isc_image_info->frame_data[frame_data_id].p2.image, decode_buffer_.split_images[0], width * height);
+			isc_image_info->frame_data[frame_data_id].p2.width = width;
+			isc_image_info->frame_data[frame_data_id].p2.height = height;
+			isc_image_info->frame_data[frame_data_id].p2.channel_count = 1;
 
 			break;
 
 		case IscGrabMode::kBeforeCorrect:
 			// 画像を左右を反転します -> このライブラリでは反転しない
 			//FlipImage(width, height, decode_buffer_.split_images[1], isc_image_info->p1.image);
-			memcpy(isc_image_info->p1.image, decode_buffer_.split_images[1], width * height);
-			isc_image_info->p1.width = width;
-			isc_image_info->p1.height = height;
-			isc_image_info->p1.channel_count = 1;
+			memcpy(isc_image_info->frame_data[frame_data_id].p1.image, decode_buffer_.split_images[1], width * height);
+			isc_image_info->frame_data[frame_data_id].p1.width = width;
+			isc_image_info->frame_data[frame_data_id].p1.height = height;
+			isc_image_info->frame_data[frame_data_id].p1.channel_count = 1;
 
 			// 画像を左右を反転します -> このライブラリでは反転しない
 			//FlipImage(width, height, decode_buffer_.split_images[0], isc_image_info->p2.image);
-			memcpy(isc_image_info->p2.image, decode_buffer_.split_images[0], width * height);
-			isc_image_info->p2.width = width;
-			isc_image_info->p2.height = height;
-			isc_image_info->p2.channel_count = 1;
+			memcpy(isc_image_info->frame_data[frame_data_id].p2.image, decode_buffer_.split_images[0], width * height);
+			isc_image_info->frame_data[frame_data_id].p2.width = width;
+			isc_image_info->frame_data[frame_data_id].p2.height = height;
+			isc_image_info->frame_data[frame_data_id].p2.channel_count = 1;
 
 			break;
 		}
@@ -3160,6 +3371,14 @@ int XcSdkWrapper::LoadDLLFunction(char* module_path)
 	}
 	getYUVImageEx = reinterpret_cast<TGetYUVImageEx>(proc);
 
+	//ISCSDKLIB_API int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
+	proc = GetProcAddress(dll_handle_, "GetFullFrameInfo4");
+	if (proc == NULL) {
+		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getFullFrameInfo4 = reinterpret_cast<TGetFullFrameInfo4>(proc);
+
 	return DPC_E_OK;
 }
 
@@ -3210,6 +3429,7 @@ int XcSdkWrapper::UnLoadDLLFunction()
 	getCameraRegData = NULL;
 	getImageEx = NULL;
 	getYUVImageEx = NULL;
+	getFullFrameInfo4 = NULL;
 
 	return DPC_E_OK;
 }

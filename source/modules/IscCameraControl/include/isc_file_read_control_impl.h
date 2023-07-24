@@ -81,13 +81,13 @@ private:
 		HANDLE handle_file;
 		bool is_file_ready;
 
-		IscRawFileHeader raw_file_hedaer;
+		IscRawFileHeader raw_file_header;
 		unsigned __int64 total_read_size;
 	};
 	FileRaedInformation file_read_information_;
 
 	struct RawReadData {
-		IscRawDataHeader isc_raw_data_heaer;
+		IscRawDataHeader isc_raw_data_header;
 		int width, height;
 		unsigned char* buffer;
 	};
@@ -97,5 +97,6 @@ private:
 
 	bool GetDatFileSize(TCHAR* file_name, unsigned __int64* file_size);
 
+	int ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode);
 
 };

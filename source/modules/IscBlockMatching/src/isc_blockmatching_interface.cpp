@@ -678,17 +678,29 @@ int IscBlockMatchingInterface::InitializeIscBlockDisparityData(IscBlockDisparity
 
     size_t frame_size = isc_data_proc_module_configuration_.max_image_height * isc_data_proc_module_configuration_.max_image_width;
 
-    isc_block_disparity_data->pblkhgt = 0;
-    isc_block_disparity_data->pblkwdt = 0;
-    isc_block_disparity_data->pmtchgt = 0;
-    isc_block_disparity_data->pmtcwdt = 0;
-    isc_block_disparity_data->pblkofsx = 0;
-    isc_block_disparity_data->pblkofsy = 0;
-    isc_block_disparity_data->pdepth = 0;
-    isc_block_disparity_data->pshdwdt = 0;
-    isc_block_disparity_data->pblkdsp = new float[frame_size];
+    isc_block_disparity_data->image_width = 0;
+    isc_block_disparity_data->image_width = 0;
+
+    isc_block_disparity_data->prgtimg = 0;
+    isc_block_disparity_data->blkhgt = 0;
+    isc_block_disparity_data->blkwdt = 0;
+
+    isc_block_disparity_data->mtchgt = 0;
+    isc_block_disparity_data->mtcwdt = 0;
+
+    isc_block_disparity_data->dspofsx = 0;
+    isc_block_disparity_data->dspofsy = 0;
+
+    isc_block_disparity_data->depth = 0;
+    isc_block_disparity_data->shdwdt = 0;
+
     isc_block_disparity_data->pblkval = new int[frame_size];
     isc_block_disparity_data->pblkcrst = new int[frame_size];
+
+    isc_block_disparity_data->pdspimg = new unsigned char[frame_size];
+    isc_block_disparity_data->ppxldsp = new float[frame_size];
+    isc_block_disparity_data->pblkdsp = new float[frame_size];
+    isc_block_disparity_data->pbldimg = new unsigned char[frame_size];
 
     return DPC_E_OK;
 }
@@ -703,20 +715,35 @@ int IscBlockMatchingInterface::InitializeIscBlockDisparityData(IscBlockDisparity
 int IscBlockMatchingInterface::ReleaeIscIscBlockDisparityData(IscBlockDisparityData* isc_block_disparity_data)
 {
 
-    isc_block_disparity_data->pblkhgt = 0;
-    isc_block_disparity_data->pblkwdt = 0;
-    isc_block_disparity_data->pmtchgt = 0;
-    isc_block_disparity_data->pmtcwdt = 0;
-    isc_block_disparity_data->pblkofsx = 0;
-    isc_block_disparity_data->pblkofsy = 0;
-    isc_block_disparity_data->pdepth = 0;
-    isc_block_disparity_data->pshdwdt = 0;
-    delete[] isc_block_disparity_data->pblkdsp;
-    isc_block_disparity_data->pblkdsp = nullptr;
+    isc_block_disparity_data->image_width = 0;
+    isc_block_disparity_data->image_width = 0;
+
+    isc_block_disparity_data->prgtimg = 0;
+    isc_block_disparity_data->blkhgt = 0;
+    isc_block_disparity_data->blkwdt = 0;
+
+    isc_block_disparity_data->mtchgt = 0;
+    isc_block_disparity_data->mtcwdt = 0;
+
+    isc_block_disparity_data->dspofsx = 0;
+    isc_block_disparity_data->dspofsy = 0;
+
+    isc_block_disparity_data->depth = 0;
+    isc_block_disparity_data->shdwdt = 0;
+
     delete[] isc_block_disparity_data->pblkval;
     isc_block_disparity_data->pblkval = nullptr;
     delete[] isc_block_disparity_data->pblkcrst;
     isc_block_disparity_data->pblkcrst = nullptr;
+
+    delete[] isc_block_disparity_data->pdspimg;
+    isc_block_disparity_data->pdspimg = nullptr;
+    delete[] isc_block_disparity_data->ppxldsp;
+    isc_block_disparity_data->ppxldsp = nullptr;
+    delete[] isc_block_disparity_data->pblkdsp;
+    isc_block_disparity_data->pblkdsp = nullptr;
+    delete[] isc_block_disparity_data->pbldimg;
+    isc_block_disparity_data->pbldimg = nullptr;
 
     return DPC_E_OK;
 }
@@ -735,11 +762,13 @@ int IscBlockMatchingInterface::GetDisparity(IscImageInfo* isc_image_Info, IscDat
         return DPCPROCESS_E_INVALID_MODE;
     }
 
-    if ((isc_image_Info->p1.width == 0) || (isc_image_Info->p1.height == 0)) {
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_Info->frame_data[fd_index].p1.width == 0) || (isc_image_Info->frame_data[fd_index].p1.height == 0)) {
         return DPC_E_OK;
     }
 
-    if ((isc_image_Info->p2.width == 0) || (isc_image_Info->p2.height == 0)) {
+    if ((isc_image_Info->frame_data[fd_index].p2.width == 0) || (isc_image_Info->frame_data[fd_index].p2.height == 0)) {
         return DPC_E_OK;
     }
 
@@ -751,21 +780,21 @@ int IscBlockMatchingInterface::GetDisparity(IscImageInfo* isc_image_Info, IscDat
     IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->p1.image;
-    unsigned char* compare_image = isc_image_Info->p2.image;
+    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
 
     BlockMatching::matching(bade_image, compare_image);
 
     // (2) get disparity
 
-    int width = isc_image_Info->p1.width;
-    int height = isc_image_Info->p1.height;
+    int width = isc_image_Info->frame_data[fd_index].p1.width;
+    int height = isc_image_Info->frame_data[fd_index].p1.height;
 
     unsigned char* display_image = work_buffers_.buff_image[0].image;
 
-    dst_isc_image_info->depth.width = width;
-    dst_isc_image_info->depth.height = height;
-    float* disparity = dst_isc_image_info->depth.image;
+    dst_isc_image_info->frame_data[fd_index].depth.width = width;
+    dst_isc_image_info->frame_data[fd_index].depth.height = height;
+    float* disparity = dst_isc_image_info->frame_data[fd_index].depth.image;
     
     BlockMatching::getDisparity(height, width, display_image, disparity);
 
@@ -786,11 +815,13 @@ int IscBlockMatchingInterface::GetBlockDisparity(IscImageInfo* isc_image_Info, I
         return DPCPROCESS_E_INVALID_MODE;
     }
 
-    if ((isc_image_Info->p1.width == 0) || (isc_image_Info->p1.height == 0)) {
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_Info->frame_data[fd_index].p1.width == 0) || (isc_image_Info->frame_data[fd_index].p1.height == 0)) {
         return DPC_E_OK;
     }
 
-    if ((isc_image_Info->p2.width == 0) || (isc_image_Info->p2.height == 0)) {
+    if ((isc_image_Info->frame_data[fd_index].p2.width == 0) || (isc_image_Info->frame_data[fd_index].p2.height == 0)) {
         return DPC_E_OK;
     }
 
@@ -800,25 +831,25 @@ int IscBlockMatchingInterface::GetBlockDisparity(IscImageInfo* isc_image_Info, I
     }
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->p1.image;
-    unsigned char* compare_image = isc_image_Info->p2.image;
+    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
 
     BlockMatching::matching(bade_image, compare_image);
 
     // (2) get block disparity
 
-    isc_block_disparity_data->image_width = isc_image_Info->p1.width;
-    isc_block_disparity_data->image_height = isc_image_Info->p1.height;
+    isc_block_disparity_data->image_width = isc_image_Info->frame_data[fd_index].p1.width;
+    isc_block_disparity_data->image_height = isc_image_Info->frame_data[fd_index].p1.height;
 
-    int* block_width = &isc_block_disparity_data->pblkhgt;
-    int* block_height = &isc_block_disparity_data->pblkwdt;
+    int* block_width = &isc_block_disparity_data->blkhgt;
+    int* block_height = &isc_block_disparity_data->blkwdt;
 
-    int* pmtchgt = &isc_block_disparity_data->pmtchgt;
-    int* pmtcwdt = &isc_block_disparity_data->pmtcwdt;
-    int* pblkofsx = &isc_block_disparity_data->pblkofsx;
-    int* pblkofsy = &isc_block_disparity_data->pblkofsy;
-    int* pdepth = &isc_block_disparity_data->pdepth;
-    int* pshdwdt = &isc_block_disparity_data->pshdwdt;
+    int* pmtchgt = &isc_block_disparity_data->mtchgt;
+    int* pmtcwdt = &isc_block_disparity_data->mtcwdt;
+    int* pblkofsx = &isc_block_disparity_data->dspofsx;
+    int* pblkofsy = &isc_block_disparity_data->dspofsy;
+    int* pdepth = &isc_block_disparity_data->depth;
+    int* pshdwdt = &isc_block_disparity_data->shdwdt;
 
     float* pblkdsp = isc_block_disparity_data->pblkdsp;
     int* pblkval = isc_block_disparity_data->pblkval;

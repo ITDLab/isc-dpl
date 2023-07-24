@@ -74,12 +74,12 @@ public:
 	/** @brief Decode the parallax data, return it to the parallax image and parallax information, and perform averaging and interpolation processing.
 		@return 0, if successful.
 	*/
-	int GetDecodeData(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data);
+	int GetDecodeData(IscImageInfo* isc_image_Info, IscBlockDisparityData* isc_block_disparity_data);
 
-	/** @brief average the parallax.
+	/** @brief Decode the parallax data in Double-Shutter mode, return it to the parallax image and parallax information, and perform averaging and interpolation processing.
 		@return 0, if successful.
 	*/
-	int GetDecodeAverageDisparityData(IscImageInfo* isc_image_Info, IscBlockDisparityData* isc_block_disparity_data, IscDataProcResultData* isc_data_proc_result_data);
+	int GetDecodeDataDoubleShutter(IscImageInfo* isc_image_info_in, IscBlockDisparityData* isc_block_disparity_data, IscImageInfo* isc_image_info_out);
 
 private:
 
@@ -89,8 +89,9 @@ private:
 
 	wchar_t parameter_file_name_[_MAX_PATH];
 
-	struct SystemParameter {
-		bool enabled_opencl_for_avedisp;	/**< 視差平均化処理にOpenCLの使用を設定する */
+	struct DecodeParameter {
+		int crstthr;	/**< コントラスト閾値 */
+		int crsthrm;	/**< センサー輝度高解像度モードステータス 0:オフ 1:オン */
 	};
 
 	struct DisparityLimitationParameter {
@@ -99,53 +100,24 @@ private:
 		int upper;		/**< 視差値の上限 */
 	};
 
-	struct AveragingParameter {
-		int enb;		/**< 平均化処理しない：0 する：1 */
-		int blkshgt;	/**< 平均化ブロック高さ（片側）*/
-		int blkswdt;	/**< 平均化ブロック幅（片側）*/
-		double intg;	/**< 平均化移動積分幅（片側）*/
-		double range;	/**< 平均化分布範囲最大幅（片側）*/
-		int dsprt;		/**< 平均化視差含有率 */
-		int vldrt;		/**< 平均化有効比率 */
-		int reprt;		/**< 平均化置換有効比率 */
-	};
-
-	struct AveragingBlockWeightParameter {
-		int cntwgt;		/**< ブロックの重み（中央） */
-		int nrwgt;		/**< ブロックの重み（近傍） */
-		int rndwgt;		/**< ブロックの重み（周辺） */
-	};
-
-	struct ComplementParameter {
-		int enb;		/**< 補完処理しない：0 する：1 */
-		double lowlmt;	/**< 視補完最小視差値 */
-		double slplmt;	/**< 補完幅の最大視差勾配 */
-		double insrt;	/**< 補完画素幅の視差値倍率（内側） */
-		double rndrt;	/**< 補完画素幅の視差値倍率（周辺） */
-		double btmrt;	/**< 補完画素幅の視差値倍率（下端） */
-		int crstlmt;	/**< 補完ブロックのコントラスト上限値 */
-		int hlfil;		/**< 穴埋め処理しない：0 する：1 */
-		double hlsz;	/**< 穴埋め幅 */
-	};
-
-	struct DecodeParameter {
-		int crstthr;	/**< コントラスト閾値 */
-	};
-
 	struct FrameDecoderParameters {
-		SystemParameter system_parameter;
 		DisparityLimitationParameter disparity_limitation_parameter;
-		AveragingParameter averaging_parameter;
-		AveragingBlockWeightParameter averaging_block_weight_parameter;
-		ComplementParameter complement_parameter;
 		DecodeParameter decode_parameter;
 	};
 
 	FrameDecoderParameters frame_decoder_parameters_;
 
+	struct ImageIntType {
+		int width;              /**< width */
+		int height;             /**< height */
+		int channel_count;      /**< number of channels */
+		int* image;				/**< data */
+	};
+
 	struct WorkBuffers {
-		IscImageInfo::ImageType buff_image[4];
-		IscImageInfo::DepthType buff_depth[4];
+		IscImageInfo::ImageType buff_image[8];
+		IscImageInfo::DepthType buff_depth[8];
+		ImageIntType			buff_int_image[8];
 	};
 	WorkBuffers work_buffers_;
 

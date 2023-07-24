@@ -228,10 +228,10 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 
 
 	// read header
-	DWORD bytes_to_read = sizeof(file_read_information_.raw_file_hedaer);
+	DWORD bytes_to_read = sizeof(file_read_information_.raw_file_header);
 	DWORD readed_size = 0;
 	
-	if (FALSE == ReadFile(file_read_information_.handle_file, &file_read_information_.raw_file_hedaer, bytes_to_read, &readed_size, NULL)) {
+	if (FALSE == ReadFile(file_read_information_.handle_file, &file_read_information_.raw_file_header, bytes_to_read, &readed_size, NULL)) {
 		CloseHandle(file_read_information_.handle_file);
 		file_read_information_.handle_file = NULL;
 		file_read_information_.is_file_ready = false;
@@ -240,8 +240,8 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 	}
 	file_read_information_.total_read_size += readed_size;
 
-	raw_read_data_.width = file_read_information_.raw_file_hedaer.max_width;
-	raw_read_data_.height = file_read_information_.raw_file_hedaer.max_height;
+	raw_read_data_.width = file_read_information_.raw_file_header.max_width;
+	raw_read_data_.height = file_read_information_.raw_file_header.max_height;
 
 	size_t buff_size = raw_read_data_.width * raw_read_data_.height * 2;
 	raw_read_data_.buffer = new unsigned char[buff_size];
@@ -252,7 +252,7 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 	IscCameraModel camera_model_in_file = IscCameraModel::kVM;
 
 	// model  0:VM 1:XC 2:4K 3:4KA 4:4KJ 99:unknown
-	switch (file_read_information_.raw_file_hedaer.camera_model) {
+	switch (file_read_information_.raw_file_header.camera_model) {
 	case 0:camera_model_in_file = IscCameraModel::kVM;
 		break;
 	case 1:camera_model_in_file = IscCameraModel::kXC;
@@ -324,7 +324,7 @@ int IscFileReadControlImpl::Stop()
 int IscFileReadControlImpl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 {
 	isc_grab_start_mode->isc_grab_mode = IscGrabMode::kParallax;
-	switch (file_read_information_.raw_file_hedaer.grab_mode) {
+	switch (file_read_information_.raw_file_header.grab_mode) {
 	case 0:
 		// ?
 		isc_grab_start_mode->isc_grab_mode = IscGrabMode::kParallax;
@@ -356,7 +356,7 @@ int IscFileReadControlImpl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 	}
 
 	isc_grab_start_mode->isc_grab_color_mode = IscGrabColorMode::kColorOFF;
-	switch (file_read_information_.raw_file_hedaer.color_mode) {
+	switch (file_read_information_.raw_file_header.color_mode) {
 	case 0:
 		isc_grab_start_mode->isc_grab_color_mode = IscGrabColorMode::kColorOFF;
 		break;
@@ -399,45 +399,31 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 		return CAMCONTROL_E_NO_IMAGE;
 	}
 
-	unsigned __int64 next_to_read = file_read_information_.total_read_size + sizeof(raw_read_data_.isc_raw_data_heaer) + raw_read_data_.isc_raw_data_heaer.data_size;
-	if (next_to_read >= file_read_information_.file_size) {
-		return CAMCONTROL_E_NO_IMAGE;
+	// Colorモードを確認する
+	// Color ModeがOnの場合は、mono/colorをペアで読み込み
+
+	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_header.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;
+	if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
+		unsigned __int64 next_to_read = file_read_information_.total_read_size + sizeof(raw_read_data_.isc_raw_data_header) + raw_read_data_.isc_raw_data_header.data_size;
+		if (next_to_read >= file_read_information_.file_size) {
+			return CAMCONTROL_E_NO_IMAGE;
+		}
 	}
+	else if (isc_grab_color_mode == IscGrabColorMode::kColorON) {
+		// it read 2 raw datas
+		unsigned __int64 next_to_read = (file_read_information_.total_read_size + sizeof(raw_read_data_.isc_raw_data_header) + raw_read_data_.isc_raw_data_header.data_size) * 2;
+		if (next_to_read >= file_read_information_.file_size) {
+			return CAMCONTROL_E_NO_IMAGE;
+		}
 
-	// read from file
-	DWORD bytes_to_read = sizeof(raw_read_data_.isc_raw_data_heaer);
-	DWORD readed_size = 0;
-
-	// haeder
-	if (FALSE == ReadFile(file_read_information_.handle_file, &raw_read_data_.isc_raw_data_heaer, bytes_to_read, &readed_size, NULL)) {
-		CloseHandle(file_read_information_.handle_file);
-		file_read_information_.handle_file = NULL;
-		file_read_information_.is_file_ready = false;
-
+	}
+	else {
 		return CAMCONTROL_E_READ_FILE_FAILED;
 	}
-	file_read_information_.total_read_size += readed_size;
-
-	// data
-	bytes_to_read = raw_read_data_.isc_raw_data_heaer.data_size;
-	if (FALSE == ReadFile(file_read_information_.handle_file, raw_read_data_.buffer, bytes_to_read, &readed_size, NULL)) {
-		
-		DWORD last_err = GetLastError();
-		
-		CloseHandle(file_read_information_.handle_file);
-		file_read_information_.handle_file = NULL;
-		file_read_information_.is_file_ready = false;
-
-		return CAMCONTROL_E_READ_FILE_FAILED;
-	}
-	file_read_information_.total_read_size += readed_size;
 
 	// setup
-	isc_image_info->frameNo = raw_read_data_.isc_raw_data_heaer.frame_index;
-	isc_image_info->gain = raw_read_data_.isc_raw_data_heaer.gain;
-	isc_image_info->exposure = raw_read_data_.isc_raw_data_heaer.exposure;
 	IscGrabMode isc_grab_mode = IscGrabMode::kParallax;
-	switch (file_read_information_.raw_file_hedaer.grab_mode) {
+	switch (file_read_information_.raw_file_header.grab_mode) {
 	case 1:
 		isc_grab_mode = IscGrabMode::kParallax;
 		break;
@@ -456,11 +442,8 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 	}
 	isc_image_info->grab = isc_grab_mode;
 
-	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_hedaer.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;
-	isc_image_info->color_grab_mode = isc_grab_color_mode;
-
 	IscShutterMode isc_shutter_mode = IscShutterMode::kManualShutter;
-	switch (file_read_information_.raw_file_hedaer.shutter_mode) {
+	switch (file_read_information_.raw_file_header.shutter_mode) {
 	case 0:
 		isc_shutter_mode = IscShutterMode::kManualShutter;
 		break;
@@ -472,88 +455,49 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 		break;
 	}
 	isc_image_info->shutter_mode = isc_shutter_mode;
-	isc_image_info->camera_specific_parameter.d_inf = file_read_information_.raw_file_hedaer.d_inf;
-	isc_image_info->camera_specific_parameter.bf = file_read_information_.raw_file_hedaer.bf;
-	isc_image_info->camera_specific_parameter.base_length = file_read_information_.raw_file_hedaer.base_length;
-	isc_image_info->camera_specific_parameter.dz = file_read_information_.raw_file_hedaer.dz;
+	isc_image_info->camera_specific_parameter.d_inf = file_read_information_.raw_file_header.d_inf;
+	isc_image_info->camera_specific_parameter.bf = file_read_information_.raw_file_header.bf;
+	isc_image_info->camera_specific_parameter.base_length = file_read_information_.raw_file_header.base_length;
+	isc_image_info->camera_specific_parameter.dz = file_read_information_.raw_file_header.dz;
 
-	isc_image_info->camera_status.error_code = raw_read_data_.isc_raw_data_heaer.error_code;
-	isc_image_info->camera_status.data_receive_tact_time = 0;
+	if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
+		const bool specify_mode = false;
+		const IscGrabColorMode requested_color_mode = IscGrabColorMode::kColorOFF;
+		IscGrabColorMode obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-	isc_image_info->p1.width = 0;
-	isc_image_info->p1.height = 0;
-	isc_image_info->p1.channel_count = 0;
-
-	isc_image_info->p2.width = 0;
-	isc_image_info->p2.height = 0;
-	isc_image_info->p2.channel_count = 0;
-
-	isc_image_info->color.width = 0;
-	isc_image_info->color.height = 0;
-	isc_image_info->color.channel_count = 0;
-
-	isc_image_info->depth.width = 0;
-	isc_image_info->depth.height = 0;
-
-	isc_image_info->raw.width = 0;
-	isc_image_info->raw.height = 0;
-	isc_image_info->raw.channel_count = 0;
-
-	isc_image_info->bayer_base.width = 0;
-	isc_image_info->bayer_base.height = 0;
-	isc_image_info->bayer_base.channel_count = 0;
-
-	isc_image_info->bayer_compare.width = 0;
-	isc_image_info->bayer_compare.height = 0;
-	isc_image_info->bayer_compare.channel_count = 0;
-
-	// decode
-
-	// camera modesl 0:VM 1:XC 2:4K 3:4KA 4:4KJ 99:unknown
-	if (file_read_information_.raw_file_hedaer.camera_model == 0) {
-		IscCameraModel isc_camera_model = IscCameraModel::kVM;
-		IscGetModeColor isc_get_color_mode = IscGetModeColor::kAwb;
-
-		int width = file_read_information_.raw_file_hedaer.max_width;
-		int height = file_read_information_.raw_file_hedaer.max_height;
-
-		isc_image_info->raw.width = width;
-		isc_image_info->raw.height = height;
-		isc_image_info->raw.channel_count = 1;
-		size_t cp_size = isc_image_info->raw.width * isc_image_info->raw.height * 2;
-		memcpy(isc_image_info->raw.image, raw_read_data_.buffer, cp_size);
-
-		int ret = raw_data_decoder_->Decode(isc_camera_model, isc_image_info->grab, isc_image_info->color_grab_mode, isc_get_color_mode, width, height, isc_image_info);
+		int ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
+		
 		if (ret != DPC_E_OK) {
-			return CAMCONTROL_E_READ_FILE_FAILED;
+			return ret;
 		}
 	}
-	else if (file_read_information_.raw_file_hedaer.camera_model == 1) {
-		IscCameraModel isc_camera_model = IscCameraModel::kXC;
-		IscGetModeColor isc_get_color_mode = IscGetModeColor::kAwbNoCorrect;
+	else if (isc_grab_color_mode == IscGrabColorMode::kColorON) {
+		// 1st data
+		bool specify_mode = false;
+		IscGrabColorMode requested_color_mode = IscGrabColorMode::kColorOFF;
+		IscGrabColorMode obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-		int width = file_read_information_.raw_file_hedaer.max_width;
-		int height = file_read_information_.raw_file_hedaer.max_height;
+		int ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
 
-		isc_image_info->raw.width = width;
-		isc_image_info->raw.height = height;
-		isc_image_info->raw.channel_count = 1;
-		size_t cp_size = isc_image_info->raw.width * isc_image_info->raw.height * 2;
-		memcpy(isc_image_info->raw.image, raw_read_data_.buffer, cp_size);
-
-		int ret = raw_data_decoder_->Decode(isc_camera_model, isc_image_info->grab, isc_image_info->color_grab_mode, isc_get_color_mode, width, height, isc_image_info);
 		if (ret != DPC_E_OK) {
-			return CAMCONTROL_E_READ_FILE_FAILED;
+			return ret;
 		}
-	}
-	else if (file_read_information_.raw_file_hedaer.camera_model == 2) {
 
-	}
-	else if (file_read_information_.raw_file_hedaer.camera_model == 3) {
+		// 2nd data
+		if (obtained_color_mode == IscGrabColorMode::kColorOFF) {
+			requested_color_mode = IscGrabColorMode::kColorON;
+		}
+		else {
+			requested_color_mode = IscGrabColorMode::kColorOFF;
+		}
+		specify_mode = true;
+		obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-	}
-	else if (file_read_information_.raw_file_hedaer.camera_model == 4) {
+		ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
 
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
 	}
 	else {
 		return CAMCONTROL_E_READ_FILE_FAILED;
@@ -561,6 +505,176 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 
 	// adjust the time
 	Sleep(isc_grab_start_mode_.isc_play_mode_parameter.interval);
+
+	return DPC_E_OK;
+}
+
+/**
+ * RAW Dataを1個読み込みます
+ *
+ * @param[out] isc_image_info　データ
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode)
+{
+	// read from file
+	DWORD bytes_to_read = sizeof(raw_read_data_.isc_raw_data_header);
+	DWORD readed_size = 0;
+
+	// haeder
+	if (FALSE == ReadFile(file_read_information_.handle_file, &raw_read_data_.isc_raw_data_header, bytes_to_read, &readed_size, NULL)) {
+		CloseHandle(file_read_information_.handle_file);
+		file_read_information_.handle_file = NULL;
+		file_read_information_.is_file_ready = false;
+
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+	file_read_information_.total_read_size += readed_size;
+
+	// data
+	bytes_to_read = raw_read_data_.isc_raw_data_header.data_size;
+	if (FALSE == ReadFile(file_read_information_.handle_file, raw_read_data_.buffer, bytes_to_read, &readed_size, NULL)) {
+
+		DWORD last_err = GetLastError();
+
+		CloseHandle(file_read_information_.handle_file);
+		file_read_information_.handle_file = NULL;
+		file_read_information_.is_file_ready = false;
+
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+	file_read_information_.total_read_size += readed_size;
+
+	const int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
+	isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
+	isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
+
+	isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
+	isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time = 0;
+
+	isc_image_info->frame_data[frame_data_index].p1.width = 0;
+	isc_image_info->frame_data[frame_data_index].p1.height = 0;
+	isc_image_info->frame_data[frame_data_index].p1.channel_count = 0;
+
+	isc_image_info->frame_data[frame_data_index].p2.width = 0;
+	isc_image_info->frame_data[frame_data_index].p2.height = 0;
+	isc_image_info->frame_data[frame_data_index].p2.channel_count = 0;
+
+	isc_image_info->frame_data[frame_data_index].color.width = 0;
+	isc_image_info->frame_data[frame_data_index].color.height = 0;
+	isc_image_info->frame_data[frame_data_index].color.channel_count = 0;
+
+	isc_image_info->frame_data[frame_data_index].depth.width = 0;
+	isc_image_info->frame_data[frame_data_index].depth.height = 0;
+
+	isc_image_info->frame_data[frame_data_index].raw.width = 0;
+	isc_image_info->frame_data[frame_data_index].raw.height = 0;
+	isc_image_info->frame_data[frame_data_index].raw.channel_count = 0;
+
+	isc_image_info->frame_data[frame_data_index].bayer_base.width = 0;
+	isc_image_info->frame_data[frame_data_index].bayer_base.height = 0;
+	isc_image_info->frame_data[frame_data_index].bayer_base.channel_count = 0;
+
+	isc_image_info->frame_data[frame_data_index].bayer_compare.width = 0;
+	isc_image_info->frame_data[frame_data_index].bayer_compare.height = 0;
+	isc_image_info->frame_data[frame_data_index].bayer_compare.channel_count = 0;
+
+	// decode
+	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_header.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;
+
+	*obtained_color_mode = isc_grab_color_mode;
+	if (specify_mode) {
+		if (isc_grab_color_mode == requested_color_mode) {
+			// OK
+		}
+		else {
+			// NG
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+	}
+
+	// camera modesl 0:VM 1:XC 2:4K 3:4KA 4:4KJ 99:unknown
+	if (file_read_information_.raw_file_header.camera_model == 0) {
+		IscCameraModel isc_camera_model = IscCameraModel::kVM;
+		IscGetModeColor isc_get_color_mode = IscGetModeColor::kAwb;
+
+		int width = file_read_information_.raw_file_header.max_width;
+		int height = file_read_information_.raw_file_header.max_height;
+
+		isc_image_info->frame_data[frame_data_index].raw.width = width;
+		isc_image_info->frame_data[frame_data_index].raw.height = height;
+		isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
+		size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+		memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
+
+		IscGrabColorMode raw_color_mode = IscGrabColorMode::kColorOFF;
+
+		int ret = raw_data_decoder_->Decode(isc_camera_model, isc_image_info->grab, raw_color_mode, isc_get_color_mode, width, height, isc_image_info);
+		if (ret != DPC_E_OK) {
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+	}
+	else if (file_read_information_.raw_file_header.camera_model == 1) {
+		IscCameraModel isc_camera_model = IscCameraModel::kXC;
+		IscGetModeColor isc_get_color_mode = IscGetModeColor::kAwbNoCorrect;
+
+		int width = file_read_information_.raw_file_header.max_width;
+		int height = file_read_information_.raw_file_header.max_height;
+
+		IscGrabColorMode raw_color_mode = IscGrabColorMode::kColorOFF;
+
+		if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
+			// mono
+			isc_image_info->frame_data[frame_data_index].raw.width = width;
+			isc_image_info->frame_data[frame_data_index].raw.height = height;
+			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
+		}
+		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
+			// mono
+			isc_image_info->frame_data[frame_data_index].raw.width = width;
+			isc_image_info->frame_data[frame_data_index].raw.height = height;
+			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
+		}
+		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
+			// color
+			isc_image_info->frame_data[frame_data_index].raw_color.width = width;
+			isc_image_info->frame_data[frame_data_index].raw_color.height = height;
+			isc_image_info->frame_data[frame_data_index].raw_color.channel_count = 1;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw_color.width * isc_image_info->frame_data[frame_data_index].raw_color.height * 2;
+			memcpy(isc_image_info->frame_data[frame_data_index].raw_color.image, raw_read_data_.buffer, cp_size);
+
+			// this raw data is color;
+			raw_color_mode = IscGrabColorMode::kColorON;
+		}
+		else {
+			// error
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+
+		int ret = raw_data_decoder_->Decode(isc_camera_model, isc_image_info->grab, raw_color_mode, isc_get_color_mode, width, height, isc_image_info);
+		if (ret != DPC_E_OK) {
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+	}
+	else if (file_read_information_.raw_file_header.camera_model == 2) {
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+	else if (file_read_information_.raw_file_header.camera_model == 3) {
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+	else if (file_read_information_.raw_file_header.camera_model == 4) {
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+	else {
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
 
 	return DPC_E_OK;
 }

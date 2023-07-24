@@ -134,7 +134,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscBlockMatching\include;..\IscFrameDecoder\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,7 +153,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscBlockMatching\include;..\IscFrameDecoder\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

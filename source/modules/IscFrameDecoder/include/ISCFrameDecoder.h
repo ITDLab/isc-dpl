@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/ocl.hpp>
-
 /**
  * @class   ISCFrameDecoder
  * @brief   implementation class
@@ -37,186 +34,77 @@ public:
 	 */
 	static void initialize(int imghgt, int imgwdt);
 
-	/** @brief exit frame decoder.
+	/** @brief configure use of OpenCL for parallax averaging.
 		@return none.
 	 */
 	static void finalize();
 
-	/** @brief configure use of OpenCL for parallax averaging.
+	/** @brief set decoder parameters.
 		@return none.
 	 */
-	static void setUseOpenCLForAveragingDisparity(int usecl);
-
-	/** @brief store block parallax value.
-		@return none.
-	 */
-	static void saveBlockDisparity();
+	static void setFrameDecoderParameter(int crstthr, int crsthrm);
 
 	/** @brief set the upper and lower limits of parallax.
 		@return none.
 	 */
 	static void setDisparityLimitation(int limit, double lower, double upper);
 
-	/** @brief set parallax averaging parameters.
+	/** @brief set the parameter for double shutter mode.
 		@return none.
 	 */
-	static void setAveragingParameter(int enb, int blkshgt, int blkswdt,
-		double intg, double range, int dsprt, int vldrt, int reprt);
-
-	/** @brief set the weight of the parallax averaging block.
-		@return none.
-	 */
-	static void setAveragingBlockWeight(int cntwgt, int nrwgt, int rndwgt);
-
-	/** @brief set parallax interpolation parameters.
-		@return none.
-	 */
-	static void setComplementParameter(int enb, double lowlmt, double slplmt,
-		double insrt, double rndrt, double btmrt, int crstlmt, int hlfil, double hlsz);
+	static void setDoubleShutterOutput(int dbdout, int dbcout);
 
 	/** @brief split frame data into image data.
 		@return none.
 	 */
 	static void decodeFrameData(int imghgt, int imgwdt, unsigned char* pfrmdat,
-		unsigned char* prgtimg, unsigned char* plftimg, unsigned char* pdspenc);
+		unsigned char* prgtimg, unsigned char* plftimg);
 
-	/** @brief decode the parallax data, return it to the parallax image and parallax information, and perform averaging and interpolation processing.
+	/** @brief Decode disparity encoded data, perform disparity averaging and completion processing.
 		@return none.
 	 */
-	static void decodeDisparityData(int imghgt, int imgwdt,
-		unsigned char* prgtimg, int crstthr, unsigned char* pdspenc,
-		unsigned char* pdspimg, float* ppxldsp, float* pblkdsp);
+	static void getDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, unsigned char* pdspenc,
+		int* pblkhgt, int* pblkwdt, int* pmtchgt, int* pmtcwdt,
+		int* pblkofsx, int* pblkofsy, int* pdepth, int* pshdwdt,
+		unsigned char* pdspimg, float* ppxldsp, float* pblkdsp, int *pblkval, int *pblkcrst);
 
-	/** @brief average the parallax.
+	/** @brief Decodes double-shutter disparity encoded data, performs disparity averaging and completion processing.
 		@return none.
 	 */
-	static bool averageDisparityData(int imghgt, int imgwdt,
-		int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int dspofsx, int dspofsy, int depth, int shdwdt,
-		int *pblkval, int *pblkcrst,
-		unsigned char* pdspimg, float* ppxldsp, float* pblkdsp);
-
-	/** @brief spawn parallax averaging thread.
-		@return none.
-	 */
-	static void createAveragingThread();
-
-	/** @brief Destroy parallax averaging thread.
-		@return none.
-	 */
-	static void deleteAveragingThread();
+	static void getDoubleDisparityData(int imghgt, int imgwdt,
+		unsigned char* pimgcur, unsigned char* penccur, int expcur, int gaincur,
+		unsigned char* pimgprev, unsigned char* pencprev, int expprev, int gainprev,
+		int* pblkhgt, int* pblkwdt, int* pmtchgt, int* pmtcwdt,
+		int* pblkofsx, int* pblkofsy, int* pdepth, int* pshdwdt,
+		unsigned char* pbldimg, unsigned char* pdspimg, float* ppxldsp, float* pblkdsp,
+		int* pblkval, int* pblkcrst);
 
 
 private:
 
-	/** @brief get block parallax value and mask data from parallax encoded data and expand to pixels.
+	/** @brief Decode parallax encoded data.
 		@return none.
 	 */
-	static void decodeDisparityDirect(int imghgt, int imgwdt,
-		unsigned char* pSrcImage, unsigned char* pDispImage, float* pTempParallax, float* pBlockDepth);
+	static void decodeDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, unsigned char* pSrcImage,
+		unsigned char* pDispImage, float* pTempParallax, float* pBlockDepth,
+		int* pblkval, int* pblkcrst);
 
-	/** @brief get block disparity value and contrast from disparity encoded data.
+	/** @brief Decode double shutter parallax encoded data.
 		@return none.
 	 */
-	static void getDisparityData(int imghgt, int imgwdt,
-		unsigned char* prgtimg, int crstthr, int crstofs, int bgtmax,
-		unsigned char* pdspenc, int* pblkdsp, int* pblkcrst);
+	static void decodeDoubleDisparityData(int imghgt, int imgwdt,
+		unsigned char* pimghigh, unsigned char* penchigh,
+		unsigned char* pimglow, unsigned char* penclow,
+		unsigned char* pbldimg, unsigned char* pdspimg, float* ppxldsp, float* pblkdsp,
+		int* pblkval, int* pblkcrst);
 
-	/** @brief average disparity values.
+	/** @brief Synthesize parallax data.
 		@return none.
 	 */
-	static void getAveragingDisparity(int imghgt, int imgwdt, int* pblkval, float *pavedsp);
+	static void blendDisparityData(int imghgt, int imgwdt,
+		unsigned char* pbldimg_h, unsigned char* pdspimg_h, float* ppxldsp_h, float* pblkdsp_h, int* pblkval_h, int* pblkcrst_h,
+		unsigned char* pbldimg_l, unsigned char* pdspimg_l, float* ppxldsp_l, float* pblkdsp_l, int* pblkval_l, int* pblkcrst_l);
 
-	/** @brief averaging disparity values using OpenCV.
-		@return none.
-	 */
-	static void getAveragingDisparityOpenCV(int imghgt, int imgwdt, int* pblkval, float *pavedsp);
-
-	/** @brief average disparity values (call OpenCL).
-		@return none.
-	 */
-	static void getAveragingDisparityOpenCL(int imghgtblk, int imgwdtblk, int dspwdtblk,
-		int depth, int dspsubrt, cv::UMat src, cv::UMat dst);
-
-	/** @brief average disparity values.
-		@return none.
-	 */
-	static void getWholeAveragingDisparity(int imghgt, int imgwdt, int* pblkval, float *pavedsp);
-
-	/** @brief average disparity values.
-		@return none.
-	 */
-	static void getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, int dspwdtblk,
-		int* pblkval, float *pavedsp, int jstart, int jend);
-
-	/** @brief expand block parallax to pixels.
-		@return none.
-	 */
-	static void getDisparityImage(int imghgt, int imgwdt,
-		int* pblkval, float *pavedsp, unsigned char* pDestImage, float* pTempParallax, float* pBlockDepth);
-
-	/** @brief complement parallax.
-		@return none.
-	 */
-	static void getComplementDisparity(int imghgt, int imgwdt, int* pblkval, float *pavedsp,
-		int* pblkcrst);
-
-	/** @brief fill in the parallax.
-		@return none.
-	 */
-	static void getHoleFillingDisparity(int imghgt, int imgwdt, int* pblkval, float *pavedsp,
-		int* pblkcrst);
-
-	/** @brief complement no parallax with horizontal scanning.
-		@return none.
-	 */
-	static void getHorizontalComplementDisparity(int imghgt, int imgwdt, bool holefill,
-		int* pblkval, float *pavedsp, int* pblkcrst);
-
-	/** @brief complement no parallax with vertical scanning.
-		@return none.
-	 */
-	static void getVerticalComplementDisparity(int imghgt, int imgwdt, bool holefill,
-		int* pblkval, float *pavedsp, int* pblkcrst);
-
-	/** @brief complement no parallax with diagonal downward scanning.
-		@return none.
-	 */
-	static void getDiagonalDownComplementDisparity(int imghgt, int imgwdt, bool holefill,
-		int* pblkval, float *pavedsp, int* pblkcrst);
-
-	/** @brief complement no parallax with diagonal upward scanning.
-		@return none.
-	 */
-	static void getDiagonalUpComplementDisparity(int imghgt, int imgwdt, bool holefill,
-		int* pblkval, float *pavedsp, int* pblkcrst);
-
-	/** @brief complement the target block by ascending scanning of the parallax block array.
-		@return none.
-	 */
-	static void complementForward(int imgblkwdt, int ii, int sti, int jd, int id,
-		int* pblkval, float *pavedsp);
-
-	/** @brief complement the block of interest by descending scanning of the parallax block array.
-		@return none.
-	 */
-	static void complementBackward(int imgblkwdt, int ii, int sti, int jd, int id,
-		int* pblkval, float *pavedsp, int *pblkcrst, bool holefill,
-		double blkwdt, double midrt, double toprt, double btmrt);
-
-	/** @brief export Block Parallax Values.
-		@return none.
-	 */
-	static void writeBlockDisparity(int imghgt, int imgwdt, float *pavedsp);
-
-	/** @brief parallax averaging thread.
-		@return none.
-	 */
-	static UINT averagingBandThread(LPVOID parg);
-
-	/** @brief average disparity values.
-		@return none.
-	 */
-	static void getBandAveragingDisparity(int imghgt, int imgwdt, int* pblkval, float *pavedsp);
 
 };
 

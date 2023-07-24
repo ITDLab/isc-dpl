@@ -46,7 +46,8 @@
 #include "isc_camera_control.h"
 #include "isc_dataproc_resultdata_ring_buffer.h"
 #include "isc_framedecoder_interface.h"
-#include "isc_blockmatching_interface.h"
+#include "isc_stereomatching_interface.h"
+#include "isc_disparityfilter_interface.h"
 #include "isc_data_processing_control.h"
 #include "isc_main_control_impl.h"
 
@@ -74,18 +75,18 @@ IscMainControl::~IscMainControl()
 /**
  * クラスを初期化します.
  *
- * @param[in] ipc_dpl_configuratio 初期化パラメータ構造体
+ * @param[in] ipc_dpl_configuration 初期化パラメータ構造体
  * @retval 0 成功
  * @retval other 失敗
  */
-int IscMainControl::Initialize(const IscDplConfiguration* ipc_dpl_configuratio)
+int IscMainControl::Initialize(const IscDplConfiguration* ipc_dpl_configuration)
 {
 	if (isc_main_control_impl_ != nullptr) {
 		return ISCDPL_E_OPVERLAPED_OPERATION;
 	}
 
 	isc_main_control_impl_ = new IscMainControlImpl;
-	int ret = isc_main_control_impl_->Initialize(ipc_dpl_configuratio);
+	int ret = isc_main_control_impl_->Initialize(ipc_dpl_configuration);
 	if (ret != DPC_E_OK) {
 		return ret;
 	}

@@ -38,15 +38,18 @@
 #include "isc_image_info_ring_buffer.h"
 #include "isc_dataproc_resultdata_ring_buffer.h"
 #include "isc_framedecoder_interface.h"
-#include "isc_blockmatching_interface.h"
+#include "isc_stereomatching_interface.h"
+#include "isc_disparityfilter_interface.h"
 
 #include "isc_data_processing_control.h"
 
 #include "opencv2\opencv.hpp"
-#include <opencv2\core\ocl.hpp>
+#include "opencv2\core\ocl.hpp"
 
 #pragma comment (lib, "IscFrameDecoder")
-#pragma comment (lib, "IscBlockMatching")
+#pragma comment (lib, "IscStereoMatching")
+#pragma comment (lib, "IscDisparityFilter")
+
 
 #ifdef _DEBUG
 #pragma comment (lib,"opencv_world470d")
@@ -55,8 +58,8 @@
 #endif
 
 
-constexpr int ISC_DPL_MODULE_COUNT = 2;
-wchar_t ISC_DPL_MODULE_NAME[ISC_DPL_MODULE_COUNT][32] = { L"Block Matchng", L"Frame Decoder" };
+constexpr int kISC_DPL_MODULE_COUNT = 3;
+const wchar_t kISC_DPL_MODULE_NAME[kISC_DPL_MODULE_COUNT][32] = { L"Stereo Matching", L"Frame Decoder", L"Disparity Filter" };
 
 /**
  * constructor
@@ -70,7 +73,8 @@ IscDataProcessingControl::IscDataProcessingControl():
     isc_dataproc_resultdata_ring_buffer_(nullptr),
     isc_block_disparity_data_(),
     isc_frame_decoder_(nullptr),
-    isc_block_matching_(nullptr),
+    isc_stereo_matching_(nullptr),
+    isc_disparity_filter_(nullptr),
 	thread_control_dataproc_(),
 	handle_semaphore_dataproc_(NULL),
 	thread_handle_dataproc_(NULL),
@@ -113,11 +117,17 @@ int IscDataProcessingControl::Initialize(IscDataProcModuleConfiguration* isc_dat
     isc_frame_decoder_ = new IscFramedecoderInterface;
     isc_frame_decoder_->Initialize(&isc_data_proc_module_configuration_);
 
-    isc_block_matching_ = new IscBlockMatchingInterface;
-    isc_block_matching_->Initialize(&isc_data_proc_module_configuration_);
-    // get temporary buffer
-    isc_block_matching_->InitializeIscBlockDisparityData(&isc_block_disparity_data_);
+    isc_stereo_matching_ = new IscStereoMatchingInterface;
+    isc_stereo_matching_->Initialize(&isc_data_proc_module_configuration_);
 
+    isc_disparity_filter_ = new IscDisparityFilterInterface;
+    isc_disparity_filter_->Initialize(&isc_data_proc_module_configuration_);
+
+
+    // get temporary buffer
+    InitializeIscBlockDisparityData(&isc_block_disparity_data_);
+
+    // setup openCL
     if (cv::ocl::haveOpenCL()) {
         cv::ocl::setUseOpenCL(true);
     }
@@ -143,6 +153,7 @@ int IscDataProcessingControl::Initialize(IscDataProcModuleConfiguration* isc_dat
     handle_semaphore_dataproc_ = CreateSemaphoreA(NULL, 0, 1, semaphoreName);
     if (handle_semaphore_dataproc_ == NULL) {
         // fail
+
         return DPCCONTROL_E_INVALID_DEVICEHANDLE;
     }
     InitializeCriticalSection(&threads_critical_dataproc_);
@@ -207,11 +218,16 @@ int IscDataProcessingControl::Terminate()
     }
     DeleteCriticalSection(&threads_critical_dataproc_);
 
-    if (isc_block_matching_ != nullptr) {
-        isc_block_matching_->ReleaeIscIscBlockDisparityData(&isc_block_disparity_data_);
-        isc_block_matching_->Terminate();
-        delete isc_block_matching_;
-        isc_block_matching_ = nullptr;
+    if (isc_disparity_filter_ != nullptr) {
+        isc_disparity_filter_->Terminate();
+        delete isc_disparity_filter_;
+        isc_disparity_filter_ = nullptr;
+    }
+
+    if (isc_stereo_matching_ != nullptr) {
+        isc_stereo_matching_->Terminate();
+        delete isc_stereo_matching_;
+        isc_stereo_matching_ = nullptr;
     }
 
     if (isc_frame_decoder_ != nullptr) {
@@ -231,7 +247,9 @@ int IscDataProcessingControl::Terminate()
         delete isc_image_info_ring_buffer_;
         isc_image_info_ring_buffer_ = nullptr;
     }
-    
+
+    ReleaeIscIscBlockDisparityData(&isc_block_disparity_data_);
+
     return DPC_E_OK;
 }
 
@@ -245,9 +263,10 @@ int IscDataProcessingControl::Terminate()
 int IscDataProcessingControl::Start(const IscDataProcStartMode* isc_dataproc_start_mode)
 {
 
-    isc_dataproc_start_mode_.enabled_block_matching = isc_dataproc_start_mode->enabled_block_matching;
+    isc_dataproc_start_mode_.enabled_stereo_matching = isc_dataproc_start_mode->enabled_stereo_matching;
     isc_dataproc_start_mode_.enabled_frame_decoder = isc_dataproc_start_mode->enabled_frame_decoder;
-    
+    isc_dataproc_start_mode_.enabled_disparity_filter = isc_dataproc_start_mode->enabled_disparity_filter;
+
     isc_image_info_ring_buffer_->Clear();
     isc_dataproc_resultdata_ring_buffer_->Clear();
     measure_time_->Init();
@@ -277,7 +296,7 @@ int IscDataProcessingControl::Stop()
  */
 int IscDataProcessingControl::GetTotalModuleCount(int* total_count)
 {
-    *total_count = ISC_DPL_MODULE_COUNT;
+    *total_count = kISC_DPL_MODULE_COUNT;
 
     return DPC_E_OK;
 }
@@ -294,11 +313,11 @@ int IscDataProcessingControl::GetTotalModuleCount(int* total_count)
 int IscDataProcessingControl::GetModuleNameByIndex(const int module_index, wchar_t* module_name, int max_length)
 {
 
-    if (module_index >= ISC_DPL_MODULE_COUNT) {
+    if (module_index >= kISC_DPL_MODULE_COUNT) {
         return DPCCONTROL_E_INVALID_PARAMETER;
     }
 
-    swprintf_s(module_name, max_length, L"%s", ISC_DPL_MODULE_NAME[module_index]);
+    swprintf_s(module_name, max_length, L"%s", kISC_DPL_MODULE_NAME[module_index]);
 
     return DPC_E_OK;
 }
@@ -316,8 +335,8 @@ int IscDataProcessingControl::GetParameter(const int module_index, IscDataProcMo
     
     switch (module_index) {
     case 0:
-        if (isc_block_matching_ != nullptr) {
-            isc_block_matching_->GetParameter(isc_data_proc_module_parameter);
+        if (isc_stereo_matching_ != nullptr) {
+            isc_stereo_matching_->GetParameter(isc_data_proc_module_parameter);
         }
         break;
 
@@ -326,9 +345,15 @@ int IscDataProcessingControl::GetParameter(const int module_index, IscDataProcMo
             isc_frame_decoder_->GetParameter(isc_data_proc_module_parameter);
         }
         break;
+
+    case 2:
+        if (isc_disparity_filter_ != nullptr) {
+            isc_disparity_filter_->GetParameter(isc_data_proc_module_parameter);
+        }
+        break;
     }
 
-	return DPC_E_OK;
+    return DPC_E_OK;
 }
 
 /**
@@ -343,8 +368,8 @@ int IscDataProcessingControl::SetParameter(const int module_index, IscDataProcMo
 {
     switch (module_index) {
     case 0:
-        if (isc_block_matching_ != nullptr) {
-            isc_block_matching_->SetParameter(isc_data_proc_module_parameter, is_update_file);
+        if (isc_stereo_matching_ != nullptr) {
+            isc_stereo_matching_->SetParameter(isc_data_proc_module_parameter, is_update_file);
         }
         break;
 
@@ -353,9 +378,15 @@ int IscDataProcessingControl::SetParameter(const int module_index, IscDataProcMo
             isc_frame_decoder_->SetParameter(isc_data_proc_module_parameter, is_update_file);
         }
         break;
+
+    case 2:
+        if (isc_disparity_filter_ != nullptr) {
+            isc_disparity_filter_->SetParameter(isc_data_proc_module_parameter, is_update_file);
+        }
+        break;
     }
 
-	return DPC_E_OK;
+    return DPC_E_OK;
 }
 
 /**
@@ -371,8 +402,8 @@ int IscDataProcessingControl::GetParameterFileName(const int module_index, wchar
 {
     switch (module_index) {
     case 0:
-        if (isc_block_matching_ != nullptr) {
-            isc_block_matching_->GetParameterFileName(file_name, max_length);
+        if (isc_stereo_matching_ != nullptr) {
+            isc_stereo_matching_->GetParameterFileName(file_name, max_length);
         }
         break;
 
@@ -381,9 +412,15 @@ int IscDataProcessingControl::GetParameterFileName(const int module_index, wchar
             isc_frame_decoder_->GetParameterFileName(file_name, max_length);
         }
         break;
+
+    case 2:
+        if (isc_disparity_filter_ != nullptr) {
+            isc_disparity_filter_->GetParameterFileName(file_name, max_length);
+        }
+        break;
     }
 
-	return DPC_E_OK;
+    return DPC_E_OK;
 }
 
 /**
@@ -399,8 +436,8 @@ int IscDataProcessingControl::ReloadParameterFromFile(const int module_index, co
 {
     switch (module_index) {
     case 0:
-        if (isc_block_matching_ != nullptr) {
-            isc_block_matching_->ReloadParameterFromFile(file_name, is_valid);
+        if (isc_stereo_matching_ != nullptr) {
+            isc_stereo_matching_->ReloadParameterFromFile(file_name, is_valid);
         }
         break;
 
@@ -409,9 +446,99 @@ int IscDataProcessingControl::ReloadParameterFromFile(const int module_index, co
             isc_frame_decoder_->ReloadParameterFromFile(file_name, is_valid);
         }
         break;
+
+    case 2:
+        if (isc_disparity_filter_ != nullptr) {
+            isc_disparity_filter_->ReloadParameterFromFile(file_name, is_valid);
+        }
+        break;
     }
     
-	return DPC_E_OK;
+    return DPC_E_OK;
+}
+
+/**
+ * モジュールの処理結果バッファーを初期化します
+ *
+ * @param[in] isc_data_proc_result_data 処理結果バッファー
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDataProcessingControl::InitializeIscBlockDisparityData(IscBlockDisparityData* isc_stereo_disparity_data)
+{
+
+    size_t frame_size = isc_data_proc_module_configuration_.max_image_height * isc_data_proc_module_configuration_.max_image_width;
+
+    isc_stereo_disparity_data->image_width = 0;
+    isc_stereo_disparity_data->image_width = 0;
+
+    isc_stereo_disparity_data->prgtimg = 0;
+    isc_stereo_disparity_data->blkhgt = 0;
+    isc_stereo_disparity_data->blkwdt = 0;
+
+    isc_stereo_disparity_data->mtchgt = 0;
+    isc_stereo_disparity_data->mtcwdt = 0;
+
+    isc_stereo_disparity_data->dspofsx = 0;
+    isc_stereo_disparity_data->dspofsy = 0;
+
+    isc_stereo_disparity_data->depth = 0;
+    isc_stereo_disparity_data->shdwdt = 0;
+
+    isc_stereo_disparity_data->pblkval = new int[frame_size];
+    isc_stereo_disparity_data->pblkcrst = new int[frame_size];
+
+    isc_stereo_disparity_data->pdspimg = new unsigned char[frame_size];
+    isc_stereo_disparity_data->ppxldsp = new float[frame_size];
+    isc_stereo_disparity_data->pblkdsp = new float[frame_size];
+
+    isc_stereo_disparity_data->pbldimg = new unsigned char[frame_size];
+
+    return DPC_E_OK;
+}
+
+/**
+ * モジュールの処理結果バッファーを解放します
+ *
+ * @param[in] isc_data_proc_result_data 処理結果バッファー
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDataProcessingControl::ReleaeIscIscBlockDisparityData(IscBlockDisparityData* isc_stereo_disparity_data)
+{
+
+    isc_stereo_disparity_data->image_width = 0;
+    isc_stereo_disparity_data->image_width = 0;
+
+    isc_stereo_disparity_data->prgtimg = 0;
+    isc_stereo_disparity_data->blkhgt = 0;
+    isc_stereo_disparity_data->blkwdt = 0;
+
+    isc_stereo_disparity_data->mtchgt = 0;
+    isc_stereo_disparity_data->mtcwdt = 0;
+
+    isc_stereo_disparity_data->dspofsx = 0;
+    isc_stereo_disparity_data->dspofsy = 0;
+
+    isc_stereo_disparity_data->depth = 0;
+    isc_stereo_disparity_data->shdwdt = 0;
+
+    delete[] isc_stereo_disparity_data->pblkval;
+    isc_stereo_disparity_data->pblkval = nullptr;
+    delete[] isc_stereo_disparity_data->pblkcrst;
+    isc_stereo_disparity_data->pblkcrst = nullptr;
+
+    delete[] isc_stereo_disparity_data->pdspimg;
+    isc_stereo_disparity_data->pdspimg = nullptr;
+    delete[] isc_stereo_disparity_data->ppxldsp;
+    isc_stereo_disparity_data->ppxldsp = nullptr;
+    delete[] isc_stereo_disparity_data->pblkdsp;
+    isc_stereo_disparity_data->pblkdsp = nullptr;
+
+    delete[] isc_stereo_disparity_data->pbldimg;
+    isc_stereo_disparity_data->pbldimg = nullptr;
+
+    return DPC_E_OK;
 }
 
 /**
@@ -441,10 +568,6 @@ int IscDataProcessingControl::InitializeIscDataProcResultData(IscDataProcResultD
     int width = isc_data_proc_module_configuration_.max_image_width;
     int height = isc_data_proc_module_configuration_.max_image_height;
 
-    isc_image_info->frameNo = -1;
-    isc_image_info->gain = -1;
-    isc_image_info->exposure = -1;
-
     isc_image_info->grab = IscGrabMode::kParallax;
     isc_image_info->color_grab_mode = IscGrabColorMode::kColorOFF;
     isc_image_info->shutter_mode = IscShutterMode::kManualShutter;
@@ -453,52 +576,66 @@ int IscDataProcessingControl::InitializeIscDataProcResultData(IscDataProcResultD
     isc_image_info->camera_specific_parameter.base_length = 0;
     isc_image_info->camera_specific_parameter.dz = 0;
 
-    isc_image_info->camera_status.error_code = 0;
-    isc_image_info->camera_status.data_receive_tact_time = 0;
+    for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].frameNo = -1;
+        isc_image_info->frame_data[i].gain = -1;
+        isc_image_info->frame_data[i].exposure = -1;
 
-    isc_image_info->p1.width = 0;
-    isc_image_info->p1.height = 0;
-    isc_image_info->p1.channel_count = 0;
-    isc_image_info->p1.image = new unsigned char[width * height];
+        isc_image_info->frame_data[i].camera_status.error_code = 0;
+        isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-    isc_image_info->p2.width = 0;
-    isc_image_info->p2.height = 0;
-    isc_image_info->p2.channel_count = 0;
-    isc_image_info->p2.image = new unsigned char[width * height];
+        isc_image_info->frame_data[i].p1.width = 0;
+        isc_image_info->frame_data[i].p1.height = 0;
+        isc_image_info->frame_data[i].p1.channel_count = 0;
+        isc_image_info->frame_data[i].p1.image = new unsigned char[width * height];
 
-    isc_image_info->color.width = 0;
-    isc_image_info->color.height = 0;
-    isc_image_info->color.channel_count = 0;
-    isc_image_info->color.image = new unsigned char[width * height * 3];
+        isc_image_info->frame_data[i].p2.width = 0;
+        isc_image_info->frame_data[i].p2.height = 0;
+        isc_image_info->frame_data[i].p2.channel_count = 0;
+        isc_image_info->frame_data[i].p2.image = new unsigned char[width * height];
 
-    isc_image_info->depth.width = 0;
-    isc_image_info->depth.height = 0;
-    isc_image_info->depth.image = new float[width * height];
+        isc_image_info->frame_data[i].color.width = 0;
+        isc_image_info->frame_data[i].color.height = 0;
+        isc_image_info->frame_data[i].color.channel_count = 0;
+        isc_image_info->frame_data[i].color.image = new unsigned char[width * height * 3];
 
-    isc_image_info->raw.width = 0;
-    isc_image_info->raw.height = 0;
-    isc_image_info->raw.channel_count = 0;
-    isc_image_info->raw.image = new unsigned char[width * height * 2];
+        isc_image_info->frame_data[i].depth.width = 0;
+        isc_image_info->frame_data[i].depth.height = 0;
+        isc_image_info->frame_data[i].depth.image = new float[width * height];
 
-    isc_image_info->bayer_base.width = 0;
-    isc_image_info->bayer_base.height = 0;
-    isc_image_info->bayer_base.channel_count = 0;
-    isc_image_info->bayer_base.image = nullptr;
+        isc_image_info->frame_data[i].raw.width = 0;
+        isc_image_info->frame_data[i].raw.height = 0;
+        isc_image_info->frame_data[i].raw.channel_count = 0;
+        isc_image_info->frame_data[i].raw.image = new unsigned char[width * height * 2];
 
-    isc_image_info->bayer_compare.width = 0;
-    isc_image_info->bayer_compare.height = 0;
-    isc_image_info->bayer_compare.channel_count = 0;
-    isc_image_info->bayer_compare.image = nullptr;
+        isc_image_info->frame_data[i].raw_color.width = 0;
+        isc_image_info->frame_data[i].raw_color.height = 0;
+        isc_image_info->frame_data[i].raw_color.channel_count = 0;
+        isc_image_info->frame_data[i].raw_color.image = new unsigned char[width * height * 2];
 
-    size_t image_size = width * height;
-    memset(isc_image_info->p1.image, 0, image_size);
-    memset(isc_image_info->p2.image, 0, image_size);
+        isc_image_info->frame_data[i].bayer_base.width = 0;
+        isc_image_info->frame_data[i].bayer_base.height = 0;
+        isc_image_info->frame_data[i].bayer_base.channel_count = 0;
+        isc_image_info->frame_data[i].bayer_base.image = nullptr;
 
-    image_size = width * height * sizeof(float);
-    memset(isc_image_info->depth.image, 0, image_size);
+        isc_image_info->frame_data[i].bayer_compare.width = 0;
+        isc_image_info->frame_data[i].bayer_compare.height = 0;
+        isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
+        isc_image_info->frame_data[i].bayer_compare.image = nullptr;
 
-    image_size = width * height * 2;
-    memset(isc_image_info->raw.image, 0, image_size);
+        size_t image_size = width * height;
+        memset(isc_image_info->frame_data[i].p1.image, 0, image_size);
+        memset(isc_image_info->frame_data[i].p2.image, 0, image_size);
+
+        image_size = width * height * sizeof(float);
+        memset(isc_image_info->frame_data[i].depth.image, 0, image_size);
+
+        image_size = width * height * 2;
+        memset(isc_image_info->frame_data[i].raw.image, 0, image_size);
+
+        image_size = width * height * 2;
+        memset(isc_image_info->frame_data[i].raw_color.image, 0, image_size);
+    }
 
     return DPC_E_OK;
 }
@@ -528,10 +665,6 @@ int IscDataProcessingControl::ReleaeIscDataProcResultData(IscDataProcResultData*
 
     IscImageInfo* isc_image_info = &isc_data_proc_result_data->isc_image_info;
 
-    isc_image_info->frameNo = -1;
-    isc_image_info->gain = -1;
-    isc_image_info->exposure = -1;
-
     isc_image_info->grab = IscGrabMode::kParallax;
     isc_image_info->color_grab_mode = IscGrabColorMode::kColorOFF;
     isc_image_info->shutter_mode = IscShutterMode::kManualShutter;
@@ -540,48 +673,60 @@ int IscDataProcessingControl::ReleaeIscDataProcResultData(IscDataProcResultData*
     isc_image_info->camera_specific_parameter.base_length = 0;
     isc_image_info->camera_specific_parameter.dz = 0;
 
-    isc_image_info->camera_status.error_code = 0;
-    isc_image_info->camera_status.data_receive_tact_time = 0;
+    for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].frameNo = -1;
+        isc_image_info->frame_data[i].gain = -1;
+        isc_image_info->frame_data[i].exposure = -1;
 
-    isc_image_info->p1.width = 0;
-    isc_image_info->p1.height = 0;
-    isc_image_info->p1.channel_count = 0;
-    delete[] isc_image_info->p1.image;
-    isc_image_info->p1.image = nullptr;
+        isc_image_info->frame_data[i].camera_status.error_code = 0;
+        isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-    isc_image_info->p2.width = 0;
-    isc_image_info->p2.height = 0;
-    isc_image_info->p2.channel_count = 0;
-    delete[] isc_image_info->p2.image;
-    isc_image_info->p2.image = nullptr;
+        isc_image_info->frame_data[i].p1.width = 0;
+        isc_image_info->frame_data[i].p1.height = 0;
+        isc_image_info->frame_data[i].p1.channel_count = 0;
+        delete[] isc_image_info->frame_data[i].p1.image;
+        isc_image_info->frame_data[i].p1.image = nullptr;
 
-    isc_image_info->color.width = 0;
-    isc_image_info->color.height = 0;
-    isc_image_info->color.channel_count = 0;
-    delete[] isc_image_info->color.image;
-    isc_image_info->color.image = nullptr;
+        isc_image_info->frame_data[i].p2.width = 0;
+        isc_image_info->frame_data[i].p2.height = 0;
+        isc_image_info->frame_data[i].p2.channel_count = 0;
+        delete[] isc_image_info->frame_data[i].p2.image;
+        isc_image_info->frame_data[i].p2.image = nullptr;
 
-    isc_image_info->depth.width = 0;
-    isc_image_info->depth.height = 0;
-    delete[] isc_image_info->depth.image;
-    isc_image_info->depth.image = nullptr;
+        isc_image_info->frame_data[i].color.width = 0;
+        isc_image_info->frame_data[i].color.height = 0;
+        isc_image_info->frame_data[i].color.channel_count = 0;
+        delete[] isc_image_info->frame_data[i].color.image;
+        isc_image_info->frame_data[i].color.image = nullptr;
 
-    isc_image_info->raw.width = 0;
-    isc_image_info->raw.height = 0;
-    isc_image_info->raw.channel_count = 0;
-    delete[] isc_image_info->raw.image;
-    isc_image_info->raw.image = nullptr;
+        isc_image_info->frame_data[i].depth.width = 0;
+        isc_image_info->frame_data[i].depth.height = 0;
+        delete[] isc_image_info->frame_data[i].depth.image;
+        isc_image_info->frame_data[i].depth.image = nullptr;
 
-    isc_image_info->bayer_base.width = 0;
-    isc_image_info->bayer_base.height = 0;
-    isc_image_info->bayer_base.channel_count = 0;
-    isc_image_info->bayer_base.image = nullptr;
+        isc_image_info->frame_data[i].raw.width = 0;
+        isc_image_info->frame_data[i].raw.height = 0;
+        isc_image_info->frame_data[i].raw.channel_count = 0;
+        delete[] isc_image_info->frame_data[i].raw.image;
+        isc_image_info->frame_data[i].raw.image = nullptr;
 
-    isc_image_info->bayer_compare.width = 0;
-    isc_image_info->bayer_compare.height = 0;
-    isc_image_info->bayer_compare.channel_count = 0;
-    isc_image_info->bayer_compare.image = nullptr; 
-    
+        isc_image_info->frame_data[i].raw_color.width = 0;
+        isc_image_info->frame_data[i].raw_color.height = 0;
+        isc_image_info->frame_data[i].raw_color.channel_count = 0;
+        delete[] isc_image_info->frame_data[i].raw_color.image;
+        isc_image_info->frame_data[i].raw_color.image = nullptr;
+
+        isc_image_info->frame_data[i].bayer_base.width = 0;
+        isc_image_info->frame_data[i].bayer_base.height = 0;
+        isc_image_info->frame_data[i].bayer_base.channel_count = 0;
+        isc_image_info->frame_data[i].bayer_base.image = nullptr;
+
+        isc_image_info->frame_data[i].bayer_compare.width = 0;
+        isc_image_info->frame_data[i].bayer_compare.height = 0;
+        isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
+        isc_image_info->frame_data[i].bayer_compare.image = nullptr;
+    }
+
     return DPC_E_OK;
 }
 
@@ -608,10 +753,6 @@ int IscDataProcessingControl::ClearIscDataProcResultData(IscDataProcResultData* 
 
     IscImageInfo* isc_image_info = &isc_data_proc_result_data->isc_image_info;
 
-    isc_image_info->frameNo = -1;
-    isc_image_info->gain = -1;
-    isc_image_info->exposure = -1;
-
     isc_image_info->grab = IscGrabMode::kParallax;
     isc_image_info->color_grab_mode = IscGrabColorMode::kColorOFF;
     isc_image_info->shutter_mode = IscShutterMode::kManualShutter;
@@ -620,35 +761,45 @@ int IscDataProcessingControl::ClearIscDataProcResultData(IscDataProcResultData* 
     isc_image_info->camera_specific_parameter.base_length = 0;
     isc_image_info->camera_specific_parameter.dz = 0;
 
-    isc_image_info->camera_status.error_code = 0;
-    isc_image_info->camera_status.data_receive_tact_time = 0;
-    
-    isc_image_info->p1.width = 0;
-    isc_image_info->p1.height = 0;
-    isc_image_info->p1.channel_count = 0;
+    for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].frameNo = -1;
+        isc_image_info->frame_data[i].gain = -1;
+        isc_image_info->frame_data[i].exposure = -1;
 
-    isc_image_info->p2.width = 0;
-    isc_image_info->p2.height = 0;
-    isc_image_info->p2.channel_count = 0;
+        isc_image_info->frame_data[i].camera_status.error_code = 0;
+        isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
-    isc_image_info->color.width = 0;
-    isc_image_info->color.height = 0;
-    isc_image_info->color.channel_count = 0;
+        isc_image_info->frame_data[i].p1.width = 0;
+        isc_image_info->frame_data[i].p1.height = 0;
+        isc_image_info->frame_data[i].p1.channel_count = 0;
 
-    isc_image_info->depth.width = 0;
-    isc_image_info->depth.height = 0;
+        isc_image_info->frame_data[i].p2.width = 0;
+        isc_image_info->frame_data[i].p2.height = 0;
+        isc_image_info->frame_data[i].p2.channel_count = 0;
 
-    isc_image_info->raw.width = 0;
-    isc_image_info->raw.height = 0;
-    isc_image_info->raw.channel_count = 0;
+        isc_image_info->frame_data[i].color.width = 0;
+        isc_image_info->frame_data[i].color.height = 0;
+        isc_image_info->frame_data[i].color.channel_count = 0;
 
-    isc_image_info->bayer_base.width = 0;
-    isc_image_info->bayer_base.height = 0;
-    isc_image_info->bayer_base.channel_count = 0;
+        isc_image_info->frame_data[i].depth.width = 0;
+        isc_image_info->frame_data[i].depth.height = 0;
 
-    isc_image_info->bayer_compare.width = 0;
-    isc_image_info->bayer_compare.height = 0;
-    isc_image_info->bayer_compare.channel_count = 0;
+        isc_image_info->frame_data[i].raw.width = 0;
+        isc_image_info->frame_data[i].raw.height = 0;
+        isc_image_info->frame_data[i].raw.channel_count = 0;
+
+        isc_image_info->frame_data[i].raw_color.width = 0;
+        isc_image_info->frame_data[i].raw_color.height = 0;
+        isc_image_info->frame_data[i].raw_color.channel_count = 0;
+
+        isc_image_info->frame_data[i].bayer_base.width = 0;
+        isc_image_info->frame_data[i].bayer_base.height = 0;
+        isc_image_info->frame_data[i].bayer_base.channel_count = 0;
+
+        isc_image_info->frame_data[i].bayer_compare.width = 0;
+        isc_image_info->frame_data[i].bayer_compare.height = 0;
+        isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
+    }
 
     return DPC_E_OK;
 }
@@ -683,10 +834,6 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
         // copy image data
         IscImageInfo* src_isc_image_info = &dataproc_result_buffer_data->isc_dataproc_resultdata.isc_image_info;
 
-        isc_data_proc_result_data->isc_image_info.frameNo = src_isc_image_info->frameNo;
-        isc_data_proc_result_data->isc_image_info.gain = src_isc_image_info->gain;
-        isc_data_proc_result_data->isc_image_info.exposure = src_isc_image_info->exposure;
-
         isc_data_proc_result_data->isc_image_info.grab = src_isc_image_info->grab;
         isc_data_proc_result_data->isc_image_info.color_grab_mode = src_isc_image_info->color_grab_mode;
         isc_data_proc_result_data->isc_image_info.shutter_mode = src_isc_image_info->shutter_mode;
@@ -696,46 +843,60 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
         isc_data_proc_result_data->isc_image_info.camera_specific_parameter.base_length = src_isc_image_info->camera_specific_parameter.base_length;
         isc_data_proc_result_data->isc_image_info.camera_specific_parameter.dz = src_isc_image_info->camera_specific_parameter.dz;
 
-        isc_data_proc_result_data->isc_image_info.camera_status.error_code = src_isc_image_info->camera_status.error_code;
-        isc_data_proc_result_data->isc_image_info.camera_status.data_receive_tact_time = src_isc_image_info->camera_status.data_receive_tact_time;
+        for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+            isc_data_proc_result_data->isc_image_info.frame_data[i].frameNo = src_isc_image_info->frame_data[i].frameNo;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].gain = src_isc_image_info->frame_data[i].gain;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].exposure = src_isc_image_info->frame_data[i].exposure;
 
-        isc_data_proc_result_data->isc_image_info.p1.width = src_isc_image_info->p1.width;
-        isc_data_proc_result_data->isc_image_info.p1.height = src_isc_image_info->p1.height;
-        isc_data_proc_result_data->isc_image_info.p1.channel_count = src_isc_image_info->p1.channel_count;
-        size_t cp_size = src_isc_image_info->p1.width * src_isc_image_info->p1.height * src_isc_image_info->p1.channel_count;
-        if (cp_size > 0) {
-            memcpy(isc_data_proc_result_data->isc_image_info.p1.image, src_isc_image_info->p1.image, cp_size);
-        }
+            isc_data_proc_result_data->isc_image_info.frame_data[i].camera_status.error_code = src_isc_image_info->frame_data[i].camera_status.error_code;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time = src_isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
 
-        isc_data_proc_result_data->isc_image_info.p2.width = src_isc_image_info->p2.width;
-        isc_data_proc_result_data->isc_image_info.p2.height = src_isc_image_info->p2.height;
-        isc_data_proc_result_data->isc_image_info.p2.channel_count = src_isc_image_info->p2.channel_count;
-        cp_size = src_isc_image_info->p2.width * src_isc_image_info->p2.height * src_isc_image_info->p2.channel_count;
-        if (cp_size > 0) {
-            memcpy(isc_data_proc_result_data->isc_image_info.p2.image, src_isc_image_info->p2.image, cp_size);
-        }
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p1.width = src_isc_image_info->frame_data[i].p1.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p1.height = src_isc_image_info->frame_data[i].p1.height;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p1.channel_count = src_isc_image_info->frame_data[i].p1.channel_count;
+            size_t cp_size = src_isc_image_info->frame_data[i].p1.width * src_isc_image_info->frame_data[i].p1.height * src_isc_image_info->frame_data[i].p1.channel_count;
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].p1.image, src_isc_image_info->frame_data[i].p1.image, cp_size);
+            }
 
-        isc_data_proc_result_data->isc_image_info.color.width = src_isc_image_info->color.width;
-        isc_data_proc_result_data->isc_image_info.color.height = src_isc_image_info->color.height;
-        isc_data_proc_result_data->isc_image_info.color.channel_count = src_isc_image_info->color.channel_count;
-        cp_size = src_isc_image_info->color.width * src_isc_image_info->color.height * src_isc_image_info->color.channel_count;
-        if (cp_size > 0) {
-            memcpy(isc_data_proc_result_data->isc_image_info.color.image, src_isc_image_info->color.image, cp_size);
-        }
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p2.width = src_isc_image_info->frame_data[i].p2.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p2.height = src_isc_image_info->frame_data[i].p2.height;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].p2.channel_count = src_isc_image_info->frame_data[i].p2.channel_count;
+            cp_size = src_isc_image_info->frame_data[i].p2.width * src_isc_image_info->frame_data[i].p2.height * src_isc_image_info->frame_data[i].p2.channel_count;
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].p2.image, src_isc_image_info->frame_data[i].p2.image, cp_size);
+            }
 
-        isc_data_proc_result_data->isc_image_info.depth.width = src_isc_image_info->depth.width;
-        isc_data_proc_result_data->isc_image_info.depth.height = src_isc_image_info->depth.height;
-        cp_size = src_isc_image_info->depth.width * src_isc_image_info->depth.height * sizeof(float);
-        if (cp_size > 0) {
-            memcpy(isc_data_proc_result_data->isc_image_info.depth.image, src_isc_image_info->depth.image, cp_size);
-        }
+            isc_data_proc_result_data->isc_image_info.frame_data[i].color.width = src_isc_image_info->frame_data[i].color.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].color.height = src_isc_image_info->frame_data[i].color.height;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].color.channel_count = src_isc_image_info->frame_data[i].color.channel_count;
+            cp_size = src_isc_image_info->frame_data[i].color.width * src_isc_image_info->frame_data[i].color.height * src_isc_image_info->frame_data[i].color.channel_count;
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].color.image, src_isc_image_info->frame_data[i].color.image, cp_size);
+            }
 
-        isc_data_proc_result_data->isc_image_info.raw.width = src_isc_image_info->raw.width;
-        isc_data_proc_result_data->isc_image_info.raw.height = src_isc_image_info->raw.height;
-        isc_data_proc_result_data->isc_image_info.raw.channel_count = src_isc_image_info->raw.channel_count;
-        cp_size = src_isc_image_info->raw.width * src_isc_image_info->raw.height * src_isc_image_info->raw.channel_count;
-        if (cp_size > 0) {
-            memcpy(isc_data_proc_result_data->isc_image_info.raw.image, src_isc_image_info->raw.image, cp_size);
+            isc_data_proc_result_data->isc_image_info.frame_data[i].depth.width = src_isc_image_info->frame_data[i].depth.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].depth.height = src_isc_image_info->frame_data[i].depth.height;
+            cp_size = src_isc_image_info->frame_data[i].depth.width * src_isc_image_info->frame_data[i].depth.height * sizeof(float);
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].depth.image, src_isc_image_info->frame_data[i].depth.image, cp_size);
+            }
+
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw.width = src_isc_image_info->frame_data[i].raw.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw.height = src_isc_image_info->frame_data[i].raw.height;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw.channel_count = src_isc_image_info->frame_data[i].raw.channel_count;
+            cp_size = src_isc_image_info->frame_data[i].raw.width * src_isc_image_info->frame_data[i].raw.height * src_isc_image_info->frame_data[i].raw.channel_count;
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].raw.image, src_isc_image_info->frame_data[i].raw.image, cp_size);
+            }
+
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.width = src_isc_image_info->frame_data[i].raw_color.width;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.height = src_isc_image_info->frame_data[i].raw_color.height;
+            isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.channel_count = src_isc_image_info->frame_data[i].raw_color.channel_count;
+            cp_size = src_isc_image_info->frame_data[i].raw_color.width * src_isc_image_info->frame_data[i].raw_color.height * src_isc_image_info->frame_data[i].raw_color.channel_count;
+            if (cp_size > 0) {
+                memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.image, src_isc_image_info->frame_data[i].raw_color.image, cp_size);
+            }
         }
     }
 
@@ -847,6 +1008,7 @@ int IscDataProcessingControl::DataProc()
                     if (dp_ret == DPC_E_OK) {
                         image_status = 1;
                     }
+
                 }
                 isc_dataproc_resultdata_ring_buffer_->DonePutBuffer(put_index, image_status);
             }
@@ -924,10 +1086,6 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
 
     if (put_index >= 0 && buffer_data != nullptr) {
 
-        buffer_data->isc_image_info.frameNo = isc_image_info->frameNo;
-        buffer_data->isc_image_info.gain = isc_image_info->gain;
-        buffer_data->isc_image_info.exposure = isc_image_info->exposure;
-
         buffer_data->isc_image_info.grab = isc_image_info->grab;
         buffer_data->isc_image_info.color_grab_mode = isc_image_info->color_grab_mode;
         buffer_data->isc_image_info.shutter_mode = isc_image_info->shutter_mode;
@@ -936,46 +1094,60 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
         buffer_data->isc_image_info.camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
         buffer_data->isc_image_info.camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
 
-        buffer_data->isc_image_info.camera_status.error_code = isc_image_info->camera_status.error_code;
-        buffer_data->isc_image_info.camera_status.data_receive_tact_time = isc_image_info->camera_status.data_receive_tact_time;
+        for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+            buffer_data->isc_image_info.frame_data[i].frameNo = isc_image_info->frame_data[i].frameNo;
+            buffer_data->isc_image_info.frame_data[i].gain = isc_image_info->frame_data[i].gain;
+            buffer_data->isc_image_info.frame_data[i].exposure = isc_image_info->frame_data[i].exposure;
 
-        buffer_data->isc_image_info.p1.width = isc_image_info->p1.width;
-        buffer_data->isc_image_info.p1.height = isc_image_info->p1.height;
-        buffer_data->isc_image_info.p1.channel_count = isc_image_info->p1.channel_count;
-        size_t cp_size = isc_image_info->p1.width * isc_image_info->p1.height * isc_image_info->p1.channel_count;
-        if (cp_size > 0) {
-            memcpy(buffer_data->isc_image_info.p1.image, isc_image_info->p1.image, cp_size);
-        }
+            buffer_data->isc_image_info.frame_data[i].camera_status.error_code = isc_image_info->frame_data[i].camera_status.error_code;
+            buffer_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time = isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
 
-        buffer_data->isc_image_info.p2.width = isc_image_info->p2.width;
-        buffer_data->isc_image_info.p2.height = isc_image_info->p2.height;
-        buffer_data->isc_image_info.p2.channel_count = isc_image_info->p2.channel_count;
-        cp_size = isc_image_info->p2.width * isc_image_info->p2.height * isc_image_info->p2.channel_count;
-        if (cp_size > 0) {
-            memcpy(buffer_data->isc_image_info.p2.image, isc_image_info->p2.image, cp_size);
-        }
+            buffer_data->isc_image_info.frame_data[i].p1.width = isc_image_info->frame_data[i].p1.width;
+            buffer_data->isc_image_info.frame_data[i].p1.height = isc_image_info->frame_data[i].p1.height;
+            buffer_data->isc_image_info.frame_data[i].p1.channel_count = isc_image_info->frame_data[i].p1.channel_count;
+            size_t cp_size = isc_image_info->frame_data[i].p1.width * isc_image_info->frame_data[i].p1.height * isc_image_info->frame_data[i].p1.channel_count;
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].p1.image, isc_image_info->frame_data[i].p1.image, cp_size);
+            }
 
-        buffer_data->isc_image_info.color.width = isc_image_info->color.width;
-        buffer_data->isc_image_info.color.height = isc_image_info->color.height;
-        buffer_data->isc_image_info.color.channel_count = isc_image_info->color.channel_count;
-        cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count;
-        if (cp_size > 0) {
-            memcpy(buffer_data->isc_image_info.color.image, isc_image_info->color.image, cp_size);
-        }
+            buffer_data->isc_image_info.frame_data[i].p2.width = isc_image_info->frame_data[i].p2.width;
+            buffer_data->isc_image_info.frame_data[i].p2.height = isc_image_info->frame_data[i].p2.height;
+            buffer_data->isc_image_info.frame_data[i].p2.channel_count = isc_image_info->frame_data[i].p2.channel_count;
+            cp_size = isc_image_info->frame_data[i].p2.width * isc_image_info->frame_data[i].p2.height * isc_image_info->frame_data[i].p2.channel_count;
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].p2.image, isc_image_info->frame_data[i].p2.image, cp_size);
+            }
 
-        buffer_data->isc_image_info.depth.width = isc_image_info->depth.width;
-        buffer_data->isc_image_info.depth.height = isc_image_info->depth.height;
-        cp_size = isc_image_info->depth.width * isc_image_info->depth.height * sizeof(float);
-        if (cp_size > 0) {
-            memcpy(buffer_data->isc_image_info.depth.image, isc_image_info->depth.image, cp_size);
-        }
+            buffer_data->isc_image_info.frame_data[i].color.width = isc_image_info->frame_data[i].color.width;
+            buffer_data->isc_image_info.frame_data[i].color.height = isc_image_info->frame_data[i].color.height;
+            buffer_data->isc_image_info.frame_data[i].color.channel_count = isc_image_info->frame_data[i].color.channel_count;
+            cp_size = isc_image_info->frame_data[i].color.width * isc_image_info->frame_data[i].color.height * isc_image_info->frame_data[i].color.channel_count;
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].color.image, isc_image_info->frame_data[i].color.image, cp_size);
+            }
 
-        buffer_data->isc_image_info.raw.width = isc_image_info->raw.width;
-        buffer_data->isc_image_info.raw.height = isc_image_info->raw.height;
-        buffer_data->isc_image_info.raw.channel_count = isc_image_info->raw.channel_count;
-        cp_size = isc_image_info->raw.width * isc_image_info->raw.height * isc_image_info->raw.channel_count;
-        if (cp_size > 0) {
-            memcpy(buffer_data->isc_image_info.raw.image, isc_image_info->raw.image, cp_size);
+            buffer_data->isc_image_info.frame_data[i].depth.width = isc_image_info->frame_data[i].depth.width;
+            buffer_data->isc_image_info.frame_data[i].depth.height = isc_image_info->frame_data[i].depth.height;
+            cp_size = isc_image_info->frame_data[i].depth.width * isc_image_info->frame_data[i].depth.height * sizeof(float);
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].depth.image, isc_image_info->frame_data[i].depth.image, cp_size);
+            }
+
+            buffer_data->isc_image_info.frame_data[i].raw.width = isc_image_info->frame_data[i].raw.width;
+            buffer_data->isc_image_info.frame_data[i].raw.height = isc_image_info->frame_data[i].raw.height;
+            buffer_data->isc_image_info.frame_data[i].raw.channel_count = isc_image_info->frame_data[i].raw.channel_count;
+            cp_size = isc_image_info->frame_data[i].raw.width * isc_image_info->frame_data[i].raw.height * isc_image_info->frame_data[i].raw.channel_count;
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].raw.image, isc_image_info->frame_data[i].raw.image, cp_size);
+            }
+
+            buffer_data->isc_image_info.frame_data[i].raw_color.width = isc_image_info->frame_data[i].raw_color.width;
+            buffer_data->isc_image_info.frame_data[i].raw_color.height = isc_image_info->frame_data[i].raw_color.height;
+            buffer_data->isc_image_info.frame_data[i].raw_color.channel_count = isc_image_info->frame_data[i].raw_color.channel_count;
+            cp_size = isc_image_info->frame_data[i].raw_color.width * isc_image_info->frame_data[i].raw_color.height * isc_image_info->frame_data[i].raw_color.channel_count;
+            if (cp_size > 0) {
+                memcpy(buffer_data->isc_image_info.frame_data[i].raw_color.image, isc_image_info->frame_data[i].raw_color.image, cp_size);
+            }
         }
 
         image_status = 1;
@@ -998,7 +1170,7 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
 }
 
 /**
- * 実際にデータ処理モジュールを順番に呼び出します
+ * データ処理モジュールを呼び出します
  *
  * @param[in] isc_image_info 入力データ
  * @param[out] isc_data_proc_result_data 処理結果データ
@@ -1011,91 +1183,380 @@ int IscDataProcessingControl::RunDataProcModules(IscImageInfo* isc_image_info, I
     // clear
     ClearIscDataProcResultData(isc_data_proc_result_data);
 
-    if (isc_dataproc_start_mode_.enabled_block_matching) {
-        if (isc_block_matching_ != nullptr) {
-            if (isc_dataproc_start_mode_.enabled_frame_decoder) {
-                // block matching -> frame decoder
+    if( (isc_stereo_matching_ == nullptr)   ||
+        (isc_frame_decoder_ == nullptr)     ||
+        (isc_disparity_filter_ == nullptr) ) {
 
-                // (1) block matching
-                measure_time_->Start();
+        return DPC_E_OK;
+    }
 
-                int module_index = isc_data_proc_result_data->number_of_modules_processed;
-                sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
-                    isc_data_proc_result_data->maximum_number_of_modulename,
-                    ("Block Matching\n"));
+    /*
+        --- check mode ---
 
-                int dp_ret = isc_block_matching_->GetBlockDisparity(isc_image_info, &isc_block_disparity_data_);
+        enabled_stereo_matching     input:after correct     double shutter:not support
+        enabled_frame_decoder       input:disparity         double shutter:support
+        enabled_disparity_filter    -                       -
+    
+        ---bouble shutter ---
+        
+        kDoubleShutter      Combine light and dark images
+        kDoubleShutter2     Displays light and dark images independently.     
 
-                isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
-                isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+    */
 
-                isc_data_proc_result_data->number_of_modules_processed++;
+    int dp_ret = DPC_E_OK;
 
-                // (2) frame decoder
-                measure_time_->Start();
-
-                module_index = isc_data_proc_result_data->number_of_modules_processed;
-                sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
-                    isc_data_proc_result_data->maximum_number_of_modulename,
-                    ("Frame Decoder\n"));
-
-                dp_ret = isc_frame_decoder_->GetDecodeAverageDisparityData(isc_image_info, &isc_block_disparity_data_, isc_data_proc_result_data);
-
-                isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
-                isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
-
-                isc_data_proc_result_data->number_of_modules_processed++;
-            }
-            else {
-                // block matching only
-                measure_time_->Start();
-
-                int module_index = isc_data_proc_result_data->number_of_modules_processed;
-                sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
-                    isc_data_proc_result_data->maximum_number_of_modulename,
-                    ("Block Matching\n"));
-
-                int dp_ret = isc_block_matching_->GetDisparity(isc_image_info, isc_data_proc_result_data);
-
-                isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
-                isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
-
-                isc_data_proc_result_data->number_of_modules_processed++;
-            }
-        }
+    if (isc_dataproc_start_mode_.enabled_stereo_matching) {
+        dp_ret = RunDataProcStereoMatching(isc_image_info, isc_data_proc_result_data);
 
         isc_data_proc_result_data->status.proc_tact_time = measure_time_->GetTaktTime();
     }
     else if (isc_dataproc_start_mode_.enabled_frame_decoder) {
-        // only frame decoder
-        if (isc_frame_decoder_ != nullptr) {
-            measure_time_->Start();
-
-            int module_index = isc_data_proc_result_data->number_of_modules_processed;
-            sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
-                isc_data_proc_result_data->maximum_number_of_modulename,
-                ("Frame Decoder\n"));
-
-            int dp_ret = isc_frame_decoder_->GetDecodeData(isc_image_info, isc_data_proc_result_data);
-
-            isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
-            isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
-
-            isc_data_proc_result_data->number_of_modules_processed++;
+        // double shutter mode or other mode
+        if (isc_image_info->shutter_mode == IscShutterMode::kDoubleShutter) {
+            dp_ret = RunDataProcFrameDecoderInDoubleShutter(isc_image_info, isc_data_proc_result_data);
+        }
+        else {
+            dp_ret = RunDataProcFrameDecoder(isc_image_info, isc_data_proc_result_data);
         }
 
         isc_data_proc_result_data->status.proc_tact_time = measure_time_->GetTaktTime();
     }
 
+    return dp_ret;
+}
+
+/**
+ * Stereo Matchingを呼び出します
+ *
+ * @param[in] isc_image_info 入力データ
+ * @param[out] isc_data_proc_result_data 処理結果データ
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDataProcessingControl::RunDataProcStereoMatching(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data)
+{
+    if (isc_dataproc_start_mode_.enabled_disparity_filter) {
+        // stereo matching -> disparity filter
+
+        // (1) block matching
+        measure_time_->Start();
+
+        int module_index = isc_data_proc_result_data->number_of_modules_processed;
+        sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+            isc_data_proc_result_data->maximum_number_of_modulename,
+            ("Stereo Matching\n"));
+
+        int dp_ret = isc_stereo_matching_->GetBlockDisparity(isc_image_info, &isc_block_disparity_data_);
+
+        isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+        isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+        isc_data_proc_result_data->number_of_modules_processed++;
+
+        // (2) disparity filter
+        measure_time_->Start();
+
+        module_index = isc_data_proc_result_data->number_of_modules_processed;
+        sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+            isc_data_proc_result_data->maximum_number_of_modulename,
+            ("Disparity Filter\n"));
+
+        dp_ret = isc_disparity_filter_->GetAverageDisparityData(isc_image_info, &isc_block_disparity_data_, isc_data_proc_result_data);
+
+        isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+        isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+        isc_data_proc_result_data->number_of_modules_processed++;
+    }
+    else {
+        // block matching only
+        measure_time_->Start();
+
+        int module_index = isc_data_proc_result_data->number_of_modules_processed;
+        sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+            isc_data_proc_result_data->maximum_number_of_modulename,
+            ("Stereo Matching\n"));
+
+        int dp_ret = isc_stereo_matching_->GetDisparity(isc_image_info, isc_data_proc_result_data);
+
+        isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+        isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+        isc_data_proc_result_data->number_of_modules_processed++;
+    }
+
     // copy additional data
-    if ((isc_dataproc_start_mode_.enabled_block_matching) || 
+    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+    dst_isc_image_info->grab = isc_image_info->grab;
+    dst_isc_image_info->color_grab_mode = isc_image_info->color_grab_mode;
+    dst_isc_image_info->shutter_mode = isc_image_info->shutter_mode;
+    dst_isc_image_info->camera_specific_parameter.d_inf = isc_image_info->camera_specific_parameter.d_inf;
+    dst_isc_image_info->camera_specific_parameter.bf = isc_image_info->camera_specific_parameter.bf;
+    dst_isc_image_info->camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
+    dst_isc_image_info->camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
+
+    const int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    dst_isc_image_info->frame_data[fd_index].frameNo = isc_image_info->frame_data[fd_index].frameNo;
+    dst_isc_image_info->frame_data[fd_index].gain = isc_image_info->frame_data[fd_index].gain;
+    dst_isc_image_info->frame_data[fd_index].exposure = isc_image_info->frame_data[fd_index].exposure;
+
+    dst_isc_image_info->frame_data[fd_index].camera_status.error_code = isc_image_info->frame_data[fd_index].camera_status.error_code;
+    dst_isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time;
+
+    dst_isc_image_info->frame_data[fd_index].p1.width = isc_image_info->frame_data[fd_index].p1.width;
+    dst_isc_image_info->frame_data[fd_index].p1.height = isc_image_info->frame_data[fd_index].p1.height;
+    dst_isc_image_info->frame_data[fd_index].p1.channel_count = isc_image_info->frame_data[fd_index].p1.channel_count;
+    size_t cp_size = isc_image_info->frame_data[fd_index].p1.width * isc_image_info->frame_data[fd_index].p1.height * isc_image_info->frame_data[fd_index].p1.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].p1.image, isc_image_info->frame_data[fd_index].p1.image, cp_size);
+    }
+
+    dst_isc_image_info->frame_data[fd_index].p2.width = isc_image_info->frame_data[fd_index].p2.width;
+    dst_isc_image_info->frame_data[fd_index].p2.height = isc_image_info->frame_data[fd_index].p2.height;
+    dst_isc_image_info->frame_data[fd_index].p2.channel_count = isc_image_info->frame_data[fd_index].p2.channel_count;
+    cp_size = isc_image_info->frame_data[fd_index].p2.width * isc_image_info->frame_data[fd_index].p2.height * isc_image_info->frame_data[fd_index].p2.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].p2.image, isc_image_info->frame_data[fd_index].p2.image, cp_size);
+    }
+
+    dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index].color.width;
+    dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index].color.height;
+    dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index].color.channel_count;
+    cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index].color.height * isc_image_info->frame_data[fd_index].color.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index].color.image, cp_size);
+    }
+
+    // Ended
+    isc_data_proc_result_data->status.error_code = DPC_E_OK;
+
+    return DPC_E_OK;
+}
+
+/**
+ * Frame Decoderを呼び出します
+ *
+ * @param[in] isc_image_info 入力データ
+ * @param[out] isc_data_proc_result_data 処理結果データ
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDataProcessingControl::RunDataProcFrameDecoder(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data)
+{
+
+    measure_time_->Start();
+
+    // manual, single
+    int module_index = isc_data_proc_result_data->number_of_modules_processed;
+    sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+        isc_data_proc_result_data->maximum_number_of_modulename,
+        ("Frame Decoder\n"));
+
+    int dp_ret = isc_frame_decoder_->GetDecodeData(isc_image_info, &isc_block_disparity_data_);
+
+    isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+    isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+    isc_data_proc_result_data->number_of_modules_processed++;
+
+    if (isc_dataproc_start_mode_.enabled_disparity_filter) {
+        // stereo matching -> disparity filter
+
+        measure_time_->Start();
+
+        int  module_index = isc_data_proc_result_data->number_of_modules_processed;
+        sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+            isc_data_proc_result_data->maximum_number_of_modulename,
+            ("Disparity Filter\n"));
+
+        int dp_ret = isc_disparity_filter_->GetAverageDisparityData(isc_image_info, &isc_block_disparity_data_, isc_data_proc_result_data);
+
+        isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+        isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+        isc_data_proc_result_data->number_of_modules_processed++;
+    }
+    else {
+        IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+        int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+        dst_isc_image_info->frame_data[fd_index].depth.width = isc_block_disparity_data_.image_width;
+        dst_isc_image_info->frame_data[fd_index].depth.height = isc_block_disparity_data_.image_height;
+
+        size_t cp_size = isc_block_disparity_data_.image_width * isc_block_disparity_data_.image_height * sizeof(float);
+        memcpy(dst_isc_image_info->frame_data[fd_index].depth.image, isc_block_disparity_data_.ppxldsp, cp_size);;
+    }
+
+    // copy additional data
+    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+    dst_isc_image_info->grab = isc_image_info->grab;
+    dst_isc_image_info->color_grab_mode = isc_image_info->color_grab_mode;
+    dst_isc_image_info->shutter_mode = isc_image_info->shutter_mode;
+    dst_isc_image_info->camera_specific_parameter.d_inf = isc_image_info->camera_specific_parameter.d_inf;
+    dst_isc_image_info->camera_specific_parameter.bf = isc_image_info->camera_specific_parameter.bf;
+    dst_isc_image_info->camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
+    dst_isc_image_info->camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
+
+    const int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    dst_isc_image_info->frame_data[fd_index].frameNo = isc_image_info->frame_data[fd_index].frameNo;
+    dst_isc_image_info->frame_data[fd_index].gain = isc_image_info->frame_data[fd_index].gain;
+    dst_isc_image_info->frame_data[fd_index].exposure = isc_image_info->frame_data[fd_index].exposure;
+
+    dst_isc_image_info->frame_data[fd_index].camera_status.error_code = isc_image_info->frame_data[fd_index].camera_status.error_code;
+    dst_isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time;
+
+    dst_isc_image_info->frame_data[fd_index].p1.width = isc_image_info->frame_data[fd_index].p1.width;
+    dst_isc_image_info->frame_data[fd_index].p1.height = isc_image_info->frame_data[fd_index].p1.height;
+    dst_isc_image_info->frame_data[fd_index].p1.channel_count = isc_image_info->frame_data[fd_index].p1.channel_count;
+    size_t cp_size = isc_image_info->frame_data[fd_index].p1.width * isc_image_info->frame_data[fd_index].p1.height * isc_image_info->frame_data[fd_index].p1.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].p1.image, isc_image_info->frame_data[fd_index].p1.image, cp_size);
+    }
+
+    dst_isc_image_info->frame_data[fd_index].p2.width = isc_image_info->frame_data[fd_index].p2.width;
+    dst_isc_image_info->frame_data[fd_index].p2.height = isc_image_info->frame_data[fd_index].p2.height;
+    dst_isc_image_info->frame_data[fd_index].p2.channel_count = isc_image_info->frame_data[fd_index].p2.channel_count;
+    cp_size = isc_image_info->frame_data[fd_index].p2.width * isc_image_info->frame_data[fd_index].p2.height * isc_image_info->frame_data[fd_index].p2.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].p2.image, isc_image_info->frame_data[fd_index].p2.image, cp_size);
+    }
+
+    dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index].color.width;
+    dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index].color.height;
+    dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index].color.channel_count;
+    cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index].color.height * isc_image_info->frame_data[fd_index].color.channel_count;
+    if (cp_size > 0) {
+        memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index].color.image, cp_size);
+    }
+
+    // Ended
+    isc_data_proc_result_data->status.error_code = DPC_E_OK;
+
+    return DPC_E_OK;
+}
+
+/**
+ * Frame DecoderをDouble Shutter モードで呼び出します
+ *
+ * @param[in] isc_image_info 入力データ
+ * @param[out] isc_data_proc_result_data 処理結果データ
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDataProcessingControl::RunDataProcFrameDecoderInDoubleShutter(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data)
+{
+    measure_time_->Start();
+
+    // double shutter mode or other mode
+    int module_index = isc_data_proc_result_data->number_of_modules_processed;
+    sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+        isc_data_proc_result_data->maximum_number_of_modulename,
+        ("Frame Decoder\n"));
+
+    int dp_ret = isc_frame_decoder_->GetDecodeDataDoubleShutter(isc_image_info, &isc_block_disparity_data_, &isc_data_proc_result_data->isc_image_info);
+
+    isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+    isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+    isc_data_proc_result_data->number_of_modules_processed++;
+
+    if (isc_dataproc_start_mode_.enabled_disparity_filter) {
+        // stereo matching -> disparity filter
+
+        measure_time_->Start();
+
+        int  module_index = isc_data_proc_result_data->number_of_modules_processed;
+        sprintf_s(isc_data_proc_result_data->module_status[module_index].module_names,
+            isc_data_proc_result_data->maximum_number_of_modulename,
+            ("Disparity Filter\n"));
+
+        int dp_ret = isc_disparity_filter_->GetAverageDisparityDataDoubleShutter(isc_image_info, &isc_block_disparity_data_, isc_data_proc_result_data);
+
+        // copy additional data
+        IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+        int fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+
+        dst_isc_image_info->frame_data[fd_index].p1.width = isc_block_disparity_data_.image_width;
+        dst_isc_image_info->frame_data[fd_index].p1.height = isc_block_disparity_data_.image_height;
+        dst_isc_image_info->frame_data[fd_index].p1.channel_count = 1;
+        size_t cp_size = dst_isc_image_info->frame_data[fd_index].p1.width * dst_isc_image_info->frame_data[fd_index].p1.height * dst_isc_image_info->frame_data[fd_index].p1.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].p1.image, isc_block_disparity_data_.pbldimg, cp_size);
+        }
+
+        // copy non merged data
+        int fd_index_src = kISCIMAGEINFO_FRAMEDATA_LATEST;
+        dst_isc_image_info->frame_data[fd_index].p2.width = isc_image_info->frame_data[fd_index_src].p2.width;
+        dst_isc_image_info->frame_data[fd_index].p2.height = isc_image_info->frame_data[fd_index_src].p2.height;
+        dst_isc_image_info->frame_data[fd_index].p2.channel_count = isc_image_info->frame_data[fd_index_src].p2.channel_count;
+        cp_size = isc_image_info->frame_data[fd_index].p2.width * isc_image_info->frame_data[fd_index_src].p2.height * isc_image_info->frame_data[fd_index_src].p2.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].p2.image, isc_image_info->frame_data[fd_index_src].p2.image, cp_size);
+        }
+
+        dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index_src].color.width;
+        dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index_src].color.height;
+        dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index_src].color.channel_count;
+        cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index_src].color.height * isc_image_info->frame_data[fd_index_src].color.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index_src].color.image, cp_size);
+        }
+
+        isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
+        isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
+
+        isc_data_proc_result_data->number_of_modules_processed++;
+    }
+    else {
+        IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+        int fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+
+        dst_isc_image_info->frame_data[fd_index].depth.width = isc_block_disparity_data_.image_width;
+        dst_isc_image_info->frame_data[fd_index].depth.height = isc_block_disparity_data_.image_height;
+
+        size_t cp_size = isc_block_disparity_data_.image_width * isc_block_disparity_data_.image_height * sizeof(float);
+        memcpy(dst_isc_image_info->frame_data[fd_index].depth.image, isc_block_disparity_data_.ppxldsp, cp_size);;
+
+        // copy additional data
+        dst_isc_image_info->frame_data[fd_index].p1.width = isc_block_disparity_data_.image_width;
+        dst_isc_image_info->frame_data[fd_index].p1.height = isc_block_disparity_data_.image_height;
+        dst_isc_image_info->frame_data[fd_index].p1.channel_count = 1;
+        cp_size = dst_isc_image_info->frame_data[fd_index].p1.width * dst_isc_image_info->frame_data[fd_index].p1.height * dst_isc_image_info->frame_data[fd_index].p1.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].p1.image, isc_block_disparity_data_.pbldimg, cp_size);
+        }
+
+        // copy non merged data
+        int fd_index_src = kISCIMAGEINFO_FRAMEDATA_LATEST;
+        dst_isc_image_info->frame_data[fd_index].p2.width = isc_image_info->frame_data[fd_index_src].p2.width;
+        dst_isc_image_info->frame_data[fd_index].p2.height = isc_image_info->frame_data[fd_index_src].p2.height;
+        dst_isc_image_info->frame_data[fd_index].p2.channel_count = isc_image_info->frame_data[fd_index_src].p2.channel_count;
+        cp_size = isc_image_info->frame_data[fd_index].p2.width * isc_image_info->frame_data[fd_index_src].p2.height * isc_image_info->frame_data[fd_index_src].p2.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].p2.image, isc_image_info->frame_data[fd_index_src].p2.image, cp_size);
+        }
+
+        dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index_src].color.width;
+        dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index_src].color.height;
+        dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index_src].color.channel_count;
+        cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index_src].color.height * isc_image_info->frame_data[fd_index_src].color.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index_src].color.image, cp_size);
+        }
+    }
+
+    // copy additional data
+    if ((isc_dataproc_start_mode_.enabled_stereo_matching) ||
         (isc_dataproc_start_mode_.enabled_frame_decoder)) {
 
         IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
-
-        dst_isc_image_info->frameNo = isc_image_info->frameNo;
-        dst_isc_image_info->gain = isc_image_info->gain;
-        dst_isc_image_info->exposure = isc_image_info->exposure;
 
         dst_isc_image_info->grab = isc_image_info->grab;
         dst_isc_image_info->color_grab_mode = isc_image_info->color_grab_mode;
@@ -1104,39 +1565,19 @@ int IscDataProcessingControl::RunDataProcModules(IscImageInfo* isc_image_info, I
         dst_isc_image_info->camera_specific_parameter.bf = isc_image_info->camera_specific_parameter.bf;
         dst_isc_image_info->camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
         dst_isc_image_info->camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
-        dst_isc_image_info->camera_status.error_code = isc_image_info->camera_status.error_code;
-        dst_isc_image_info->camera_status.data_receive_tact_time = isc_image_info->camera_status.data_receive_tact_time;
 
-        dst_isc_image_info->p1.width = isc_image_info->p1.width;
-        dst_isc_image_info->p1.height = isc_image_info->p1.height;
-        dst_isc_image_info->p1.channel_count = isc_image_info->p1.channel_count;
-        size_t cp_size = isc_image_info->p1.width * isc_image_info->p1.height * isc_image_info->p1.channel_count;
-        if (cp_size > 0) {
-            memcpy(dst_isc_image_info->p1.image, isc_image_info->p1.image, cp_size);
+        for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+            dst_isc_image_info->frame_data[i].frameNo = isc_image_info->frame_data[i].frameNo;
+            dst_isc_image_info->frame_data[i].gain = isc_image_info->frame_data[i].gain;
+            dst_isc_image_info->frame_data[i].exposure = isc_image_info->frame_data[i].exposure;
+
+            dst_isc_image_info->frame_data[i].camera_status.error_code = isc_image_info->frame_data[i].camera_status.error_code;
+            dst_isc_image_info->frame_data[i].camera_status.data_receive_tact_time = isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
         }
-
-        dst_isc_image_info->p2.width = isc_image_info->p2.width;
-        dst_isc_image_info->p2.height = isc_image_info->p2.height;
-        dst_isc_image_info->p2.channel_count = isc_image_info->p2.channel_count;
-        cp_size = isc_image_info->p2.width * isc_image_info->p2.height * isc_image_info->p2.channel_count;
-        if (cp_size > 0) {
-            memcpy(dst_isc_image_info->p2.image, isc_image_info->p2.image, cp_size);
-        }
-
-        dst_isc_image_info->color.width = isc_image_info->color.width;
-        dst_isc_image_info->color.height = isc_image_info->color.height;
-        dst_isc_image_info->color.channel_count = isc_image_info->color.channel_count;
-        cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count;
-        if (cp_size > 0) {
-            memcpy(dst_isc_image_info->color.image, isc_image_info->color.image, cp_size);
-        }
-
     }
 
     // Ended
     isc_data_proc_result_data->status.error_code = DPC_E_OK;
 
     return DPC_E_OK;
-
 }
-

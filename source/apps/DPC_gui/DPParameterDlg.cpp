@@ -19,8 +19,9 @@
 
 
 // DPParameterDlg ダイアログ
+constexpr int kMax_PARAMETER_ITEM_COUNT = 36;
 
-static int idc_id_list[32][3] = {
+static int idc_id_list[kMax_PARAMETER_ITEM_COUNT][3] = {
 	{IDC_STATIC2, IDC_EDIT1, IDC_STATIC28},
 	{IDC_STATIC3, IDC_EDIT2, IDC_STATIC29},
 	{IDC_STATIC4, IDC_EDIT3, IDC_STATIC30},
@@ -46,6 +47,18 @@ static int idc_id_list[32][3] = {
 	{IDC_STATIC24, IDC_EDIT23, IDC_STATIC50},
 	{IDC_STATIC25, IDC_EDIT24, IDC_STATIC51},
 	{IDC_STATIC26, IDC_EDIT25, IDC_STATIC52},
+	{IDC_STATIC53, IDC_EDIT26, IDC_STATIC64},
+	{IDC_STATIC54, IDC_EDIT27, IDC_STATIC65},
+	{IDC_STATIC55, IDC_EDIT28, IDC_STATIC66},
+	{IDC_STATIC56, IDC_EDIT29, IDC_STATIC67},
+	{IDC_STATIC57, IDC_EDIT30, IDC_STATIC68},
+	{IDC_STATIC58, IDC_EDIT31, IDC_STATIC69},
+	{IDC_STATIC59, IDC_EDIT32, IDC_STATIC70},
+	{IDC_STATIC60, IDC_EDIT33, IDC_STATIC71},
+	{IDC_STATIC61, IDC_EDIT34, IDC_STATIC72},
+	{IDC_STATIC62, IDC_EDIT35, IDC_STATIC73},
+	{IDC_STATIC63, IDC_EDIT36, IDC_STATIC74},
+
 };
 
 
@@ -106,6 +119,17 @@ BEGIN_MESSAGE_MAP(DPParameterDlg, CDialogEx)
 	ON_EN_KILLFOCUS(IDC_EDIT23, &DPParameterDlg::OnEnKillfocusEdit23)
 	ON_EN_KILLFOCUS(IDC_EDIT24, &DPParameterDlg::OnEnKillfocusEdit24)
 	ON_EN_KILLFOCUS(IDC_EDIT25, &DPParameterDlg::OnEnKillfocusEdit25)
+	ON_EN_KILLFOCUS(IDC_EDIT26, &DPParameterDlg::OnEnKillfocusEdit26)
+	ON_EN_KILLFOCUS(IDC_EDIT27, &DPParameterDlg::OnEnKillfocusEdit27)
+	ON_EN_KILLFOCUS(IDC_EDIT28, &DPParameterDlg::OnEnKillfocusEdit28)
+	ON_EN_KILLFOCUS(IDC_EDIT29, &DPParameterDlg::OnEnKillfocusEdit29)
+	ON_EN_KILLFOCUS(IDC_EDIT30, &DPParameterDlg::OnEnKillfocusEdit30)
+	ON_EN_KILLFOCUS(IDC_EDIT31, &DPParameterDlg::OnEnKillfocusEdit31)
+	ON_EN_KILLFOCUS(IDC_EDIT32, &DPParameterDlg::OnEnKillfocusEdit32)
+	ON_EN_KILLFOCUS(IDC_EDIT33, &DPParameterDlg::OnEnKillfocusEdit33)
+	ON_EN_KILLFOCUS(IDC_EDIT34, &DPParameterDlg::OnEnKillfocusEdit34)
+	ON_EN_KILLFOCUS(IDC_EDIT35, &DPParameterDlg::OnEnKillfocusEdit35)
+	ON_EN_KILLFOCUS(IDC_EDIT36, &DPParameterDlg::OnEnKillfocusEdit36)
 END_MESSAGE_MAP()
 
 
@@ -131,7 +155,7 @@ void DPParameterDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 	(GetDlgItem(IDC_STATIC27))->SetWindowText(_T("---"));
 
-	for (int i = 0; i < 25; i++) {
+	for (int i = 0; i < kMax_PARAMETER_ITEM_COUNT; i++) {
 
 		_stprintf_s(wstring, _T("---"));
 		(GetDlgItem(idc_id_list[i][0]))->SetWindowText(wstring);
@@ -1004,6 +1028,347 @@ void DPParameterDlg::OnEnKillfocusEdit25()
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
 	int index = 24;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit26()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 25;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit27()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 26;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit28()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 27;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit29()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 28;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit30()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 29;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit31()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 30;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit32()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 31;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit33()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 32;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit34()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 33;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit35()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 34;
+
+	CString str;
+	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);
+
+	if (data_proc_module_parameter_.parameter_set[index].value_type == 0) {
+		data_proc_module_parameter_.parameter_set[index].value_int = _ttoi(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 1) {
+		data_proc_module_parameter_.parameter_set[index].value_float = (float)_ttof(str);
+	}
+	else if (data_proc_module_parameter_.parameter_set[index].value_type == 2) {
+		data_proc_module_parameter_.parameter_set[index].value_double = _ttof(str);
+	}
+
+	int ret = isc_dpl_->SetDataProcModuleParameter(module_index_, &data_proc_module_parameter_, false);
+	if (ret == DPC_E_OK) {
+	}
+	else {
+		TCHAR msg[64] = {};
+		_stprintf_s(msg, _T("[ERROR]isc_dpl_ SetDataProcModuleParameter() failure code=0X%08X"), ret);
+		MessageBox(msg, _T("DPParameterDlg"), MB_ICONERROR);
+	}
+
+}
+
+
+void DPParameterDlg::OnEnKillfocusEdit36()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	int index = 35;
 
 	CString str;
 	((CEdit*)GetDlgItem(idc_id_list[index][1]))->GetWindowText(str);

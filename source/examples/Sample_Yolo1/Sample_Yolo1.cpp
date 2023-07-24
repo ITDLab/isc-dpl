@@ -145,6 +145,23 @@ int main(int argc, char* argv[]) try
 
 	PrintUsage();
 
+	BOOL file_exists = PathFileExistsA(argv[2]);
+	if (file_exists == FALSE) {
+		std::cout << "[ERROR]File does not exist " << argv[2] << std::endl;
+		return 0;
+	}
+	file_exists = PathFileExistsA(argv[3]);
+	if (file_exists == FALSE) {
+		std::cout << "[ERROR]File does not exist " << argv[3] << std::endl;
+		return 0;
+	}
+	file_exists = PathFileExistsA(argv[4]);
+	if (file_exists == FALSE) {
+		std::cout << "[ERROR]File does not exist " << argv[4] << std::endl;
+		return 0;
+	}
+
+
 	// open yolo
 	char* voc_file = argv[2];
 	char* cfg_file = argv[3];
@@ -152,6 +169,10 @@ int main(int argc, char* argv[]) try
 
 	Detector* detector_ = new Detector(std::string(cfg_file), std::string(weights_file), 0, 1);
 	std::vector<std::string> object_names = ReadNamesFile(voc_file);
+
+	if (object_names.empty()) {
+		return 0;
+	}
 
 	// open modules
 	ImageState image_state = {};
@@ -409,7 +430,7 @@ void Get3DPostion(const float b, const float bf, const float dinf, const float a
 				if (*src - dinf > 0) {
 					sum_of_depth += *src;
 					float value = (bf) / (*src - dinf);
-					*dst = (float)((int)(value * 100.0)) / 100.0;	// unit is cm
+					*dst = (float)((int)(value * 100.0F)) / 100.0F;	// unit is cm
 					sum_of_distance += *dst;
 					count++;
 				}
@@ -501,9 +522,9 @@ void Get3DPostion(const float b, const float bf, const float dinf, const float a
 		image_center.y = float(mat_depth.size().height / 2.0);
 
 		if (rect_disparity > 0) {
-			current_result.x_3d = ((rect_center.x - image_center.x) * b) / rect_disparity;
-			current_result.y_3d = ((image_center.y - rect_center.y) * b) / rect_disparity;
-			current_result.z_3d = mode_distance;
+			current_result.x_3d = (float)(((rect_center.x - image_center.x) * b) / rect_disparity);
+			current_result.y_3d = (float)(((image_center.y - rect_center.y) * b) / rect_disparity);
+			current_result.z_3d = (float)mode_distance;
 		}
 
 		index++;
@@ -613,12 +634,14 @@ void ShowResultToConsole(std::vector<bbox_t> result_list, std::vector<std::strin
 int ImageHandler(const int display_scale, const int display_mode, ImageState* image_state, Detector* detector_, std::vector<std::string>& obj_names)
 {
 
+	const int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	
 	if (image_state->enabled_yolo == 0) {
 		// images from camera
 		bool camera_status = image_state->dpl_control->GetCameraData(&image_state->isc_image_Info);
 
-		if ((image_state->isc_image_Info.p1.width == 0) ||
-			(image_state->isc_image_Info.p1.height == 0)) {
+		if ((image_state->isc_image_Info.frame_data[fd_index].p1.width == 0) ||
+			(image_state->isc_image_Info.frame_data[fd_index].p1.height == 0)) {
 
 			camera_status = false;
 		}
@@ -627,8 +650,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		if (camera_status) {
 			bool is_color_exists = false;
 			if (image_state->color_mode == 1) {
-				if ((image_state->isc_image_Info.color.width != 0) &&
-					(image_state->isc_image_Info.color.height != 0)) {
+				if ((image_state->isc_image_Info.frame_data[fd_index].color.width != 0) &&
+					(image_state->isc_image_Info.frame_data[fd_index].color.height != 0)) {
 
 					is_color_exists = true;
 				}
@@ -636,7 +659,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 			if (is_color_exists) {
 				// color image
-				cv::Mat mat_base_image(image_state->isc_image_Info.color.height, image_state->isc_image_Info.color.width, CV_8UC3, image_state->isc_image_Info.color.image);
+				cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_index].color.height, image_state->isc_image_Info.frame_data[fd_index].color.width, CV_8UC3, image_state->isc_image_Info.frame_data[fd_index].color.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;
@@ -648,7 +671,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 			}
 			else {
 				// base image
-				cv::Mat mat_base_image(image_state->isc_image_Info.p1.height, image_state->isc_image_Info.p1.width, CV_8U, image_state->isc_image_Info.p1.image);
+				cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_index].p1.height, image_state->isc_image_Info.frame_data[fd_index].p1.width, CV_8U, image_state->isc_image_Info.frame_data[fd_index].p1.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;
@@ -667,8 +690,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		// data processing result
 		bool data_proc_status = image_state->dpl_control->GetDataProcessingData(&image_state->isc_data_proc_result_data);
 
-		if ((image_state->isc_data_proc_result_data.isc_image_info.depth.width == 0) ||
-			(image_state->isc_data_proc_result_data.isc_image_info.depth.height == 0)) {
+		if ((image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width == 0) ||
+			(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height == 0)) {
 
 			data_proc_status = false;
 		}
@@ -676,9 +699,9 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		cv::Mat mat_depth_image_scale_flip;
 		if (data_proc_status) {
 			// depth
-			const int width = image_state->isc_data_proc_result_data.isc_image_info.depth.width;
-			const int height = image_state->isc_data_proc_result_data.isc_image_info.depth.height;
-			float* depth = image_state->isc_data_proc_result_data.isc_image_info.depth.image;
+			const int width = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+			const int height = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
+			float* depth = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image;
 
 			image_state->dpl_control->ConvertDisparityToImage(image_state->b, image_state->angle, image_state->bf, image_state->dinf,
 				width, height, depth, image_state->bgra_image);
@@ -700,8 +723,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 	else {
 		bool data_proc_status = image_state->dpl_control->GetDataProcessingData(&image_state->isc_data_proc_result_data);
 
-		if ((image_state->isc_data_proc_result_data.isc_image_info.depth.width == 0) ||
-			(image_state->isc_data_proc_result_data.isc_image_info.depth.height == 0)) {
+		if ((image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width == 0) ||
+			(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height == 0)) {
 
 			data_proc_status = false;
 		}
@@ -709,8 +732,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		cv::Mat mat_data_proc_image_scale_flip;
 		bool is_color_exists = false;
 		if (image_state->color_mode == 1) {
-			if ((image_state->isc_data_proc_result_data.isc_image_info.color.width != 0) &&
-				(image_state->isc_data_proc_result_data.isc_image_info.color.height != 0)) {
+			if ((image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.width != 0) &&
+				(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height != 0)) {
 
 				is_color_exists = true;
 			}
@@ -719,10 +742,10 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		if (data_proc_status) {
 			if (is_color_exists) {
 				// color image
-				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.color.height,
-										image_state->isc_data_proc_result_data.isc_image_info.color.width,
+				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height,
+										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.width,
 										CV_8UC3,
-										image_state->isc_data_proc_result_data.isc_image_info.color.image);
+										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;
@@ -733,10 +756,10 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 			}
 			else {
 				// base image
-				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.p1.height,
-										image_state->isc_data_proc_result_data.isc_image_info.p1.width,
+				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height,
+										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width,
 										CV_8U,
-										image_state->isc_data_proc_result_data.isc_image_info.p1.image);
+										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;
@@ -765,9 +788,9 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 				ShowResultToConsole(result_vec, obj_names);
 
 				// get 3D position form depth
-				const int depth_width = image_state->isc_data_proc_result_data.isc_image_info.depth.width;
-				const int depth_height = image_state->isc_data_proc_result_data.isc_image_info.depth.height;
-				float* depth = image_state->isc_data_proc_result_data.isc_image_info.depth.image;
+				const int depth_width = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+				const int depth_height = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
+				float* depth = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image;
 
 				cv::Mat mat_depth(depth_height, depth_width, CV_32F, depth);
 				cv::Mat mat_depth_flip;

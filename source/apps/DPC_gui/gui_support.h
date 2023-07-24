@@ -105,8 +105,9 @@ struct IscFeatureRequest {
 	bool is_compare_image_correct;
 	bool is_color_image;
 	bool is_color_image_correct;
-	bool is_dpl_block_matching;
+	bool is_dpl_stereo_matching;
 	bool is_dpl_frame_decoder;
+	bool is_dpl_disparity_filter;
 };
 
 bool ClearIscControl(IscControl* isc_control);

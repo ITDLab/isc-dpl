@@ -63,4 +63,15 @@ public:
 	afx_msg void OnEnKillfocusEdit23();
 	afx_msg void OnEnKillfocusEdit24();
 	afx_msg void OnEnKillfocusEdit25();
+	afx_msg void OnEnKillfocusEdit26();
+	afx_msg void OnEnKillfocusEdit27();
+	afx_msg void OnEnKillfocusEdit28();
+	afx_msg void OnEnKillfocusEdit29();
+	afx_msg void OnEnKillfocusEdit30();
+	afx_msg void OnEnKillfocusEdit31();
+	afx_msg void OnEnKillfocusEdit32();
+	afx_msg void OnEnKillfocusEdit33();
+	afx_msg void OnEnKillfocusEdit34();
+	afx_msg void OnEnKillfocusEdit35();
+	afx_msg void OnEnKillfocusEdit36();
 };

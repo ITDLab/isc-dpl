@@ -341,9 +341,10 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 	// images from camera
 	bool camera_status = image_state->dpl_control->GetCameraData(&image_state->isc_image_Info);
+	const int fd_inex = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
-	if ((image_state->isc_image_Info.p1.width == 0) ||
-		(image_state->isc_image_Info.p1.height == 0)) {
+	if ((image_state->isc_image_Info.frame_data[fd_inex].p1.width == 0) ||
+		(image_state->isc_image_Info.frame_data[fd_inex].p1.height == 0)) {
 
 		camera_status = false;
 	}
@@ -352,8 +353,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 	if (camera_status) {
 		bool is_color_exists = false;
 		if (image_state->color_mode == 1) {
-			if ((image_state->isc_image_Info.color.width != 0) &&
-				(image_state->isc_image_Info.color.height != 0)) {
+			if ((image_state->isc_image_Info.frame_data[fd_inex].color.width != 0) &&
+				(image_state->isc_image_Info.frame_data[fd_inex].color.height != 0)) {
 
 				is_color_exists = true;
 			}
@@ -361,7 +362,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 		if (is_color_exists) {
 			// color image
-			cv::Mat mat_base_image(image_state->isc_image_Info.color.height, image_state->isc_image_Info.color.width, CV_8UC3, image_state->isc_image_Info.color.image);
+			cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_inex].color.height, image_state->isc_image_Info.frame_data[fd_inex].color.width, CV_8UC3, image_state->isc_image_Info.frame_data[fd_inex].color.image);
 
 			double ratio = 1.0 / (double)display_scale;
 			cv::Mat mat_base_image_scale;
@@ -373,7 +374,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		}
 		else {
 			// base image
-			cv::Mat mat_base_image(image_state->isc_image_Info.p1.height, image_state->isc_image_Info.p1.width, CV_8U, image_state->isc_image_Info.p1.image);
+			cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_inex].p1.height, image_state->isc_image_Info.frame_data[fd_inex].p1.width, CV_8U, image_state->isc_image_Info.frame_data[fd_inex].p1.image);
 
 			double ratio = 1.0 / (double)display_scale;
 			cv::Mat mat_base_image_scale;
@@ -392,8 +393,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 	// data processing result
 	bool data_proc_status = image_state->dpl_control->GetDataProcessingData(&image_state->isc_data_proc_result_data);
 
-	if ((image_state->isc_data_proc_result_data.isc_image_info.depth.width == 0) ||
-		(image_state->isc_data_proc_result_data.isc_image_info.depth.height == 0)) {
+	if ((image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.width == 0) ||
+		(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.height == 0)) {
 
 		data_proc_status = false;
 	}
@@ -401,9 +402,9 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 	cv::Mat mat_depth_image_scale_flip;
 	if (data_proc_status) {
 		// depth
-		const int width = image_state->isc_data_proc_result_data.isc_image_info.depth.width;
-		const int height = image_state->isc_data_proc_result_data.isc_image_info.depth.height;
-		float* depth = image_state->isc_data_proc_result_data.isc_image_info.depth.image;
+		const int width = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.width;
+		const int height = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.height;
+		float* depth = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.image;
 
 		image_state->dpl_control->ConvertDisparityToImage(image_state->b, image_state->angle, image_state->bf, image_state->dinf,
 			width, height, depth, image_state->bgra_image);
@@ -437,8 +438,8 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 			cv::Mat mat_data_proc_image_scale_flip;
 			bool is_color_exists = false;
 			if (image_state->color_mode == 1) {
-				if ((image_state->isc_data_proc_result_data.isc_image_info.color.width != 0) &&
-					(image_state->isc_data_proc_result_data.isc_image_info.color.height != 0)) {
+				if ((image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].color.width != 0) &&
+					(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].color.height != 0)) {
 
 					is_color_exists = true;
 				}
@@ -446,10 +447,10 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 			if (is_color_exists) {
 				// color image
-				cv::Mat mat_base_image(image_state->isc_data_proc_result_data.isc_image_info.color.height,
-					image_state->isc_data_proc_result_data.isc_image_info.color.width,
+				cv::Mat mat_base_image(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].color.height,
+					image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].color.width,
 					CV_8UC3,
-					image_state->isc_data_proc_result_data.isc_image_info.color.image);
+					image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].color.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;
@@ -460,10 +461,10 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 			}
 			else {
 				// base image
-				cv::Mat mat_base_image(image_state->isc_data_proc_result_data.isc_image_info.p1.height,
-					image_state->isc_data_proc_result_data.isc_image_info.p1.width,
+				cv::Mat mat_base_image(image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].p1.height,
+					image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].p1.width,
 					CV_8U,
-					image_state->isc_data_proc_result_data.isc_image_info.p1.image);
+					image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].p1.image);
 
 				double ratio = 1.0 / (double)display_scale;
 				cv::Mat mat_base_image_scale;

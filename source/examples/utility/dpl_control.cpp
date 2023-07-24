@@ -208,8 +208,9 @@ bool DplControl::Start(StartMode& start_mode)
     isc_start_mode_.isc_grab_start_mode.isc_play_mode_parameter.interval = 30;
 	memset(isc_start_mode_.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, 0, sizeof(isc_start_mode_.isc_grab_start_mode.isc_play_mode_parameter.play_file_name));
 
-    isc_start_mode_.isc_dataproc_start_mode.enabled_block_matching = true;
+    isc_start_mode_.isc_dataproc_start_mode.enabled_stereo_matching = true;
     isc_start_mode_.isc_dataproc_start_mode.enabled_frame_decoder = true;
+    isc_start_mode_.isc_dataproc_start_mode.enabled_disparity_filter = true;
 
     DPL_RESULT dpl_result = isc_dpl_->Start(&isc_start_mode_);
     if (dpl_result == DPC_E_OK) {

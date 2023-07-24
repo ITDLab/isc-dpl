@@ -63,8 +63,9 @@ bool ClearIscControl(IscControl* isc_control)
 	isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = 30;
 	memset(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, 0, sizeof(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name));
 
-	isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = false;
+	isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = false;
 	isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = false;
+	isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = false;
 
 	memset(&isc_control->isc_image_info, 0, sizeof(isc_control->isc_image_info));
 	memset(&isc_control->isc_data_proc_result_data, 0, sizeof(isc_control->isc_data_proc_result_data));
@@ -97,8 +98,9 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 		isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = 30;
 		memset(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, 0, sizeof(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name));
 
-		isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = false;
+		isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = false;
 		isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = false;
+		isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = false;
 
 		// initialize buffer status
 		isc_control->is_isc_image_info_valid = false;
@@ -125,20 +127,23 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 		const bool is_compare_image_correct	= isc_feature_request->is_compare_image_correct;
 		const bool is_color_image			= isc_feature_request->is_color_image;
 		const bool is_color_image_correct	= isc_feature_request->is_color_image_correct;
-		const bool is_dpl_block_matching	= isc_feature_request->is_dpl_block_matching;
-		const bool is_dpl_frame_decoder	= isc_feature_request->is_dpl_frame_decoder;
+		const bool is_dpl_stereo_matching	= isc_feature_request->is_dpl_stereo_matching;
+		const bool is_dpl_frame_decoder		= isc_feature_request->is_dpl_frame_decoder;
+		const bool is_dpl_disparity_filter	= isc_feature_request->is_dpl_disparity_filter;
 
-		if (is_dpl_block_matching) {
+		if (is_dpl_stereo_matching) {
 			// 補正後画像モードを必要とします
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOn;
-			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = true;
-			if (is_dpl_frame_decoder) {
+			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = true;
+			if (is_dpl_disparity_filter) {
 				isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = true;
+				isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = true;
 			}
 			else {
 				isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = false;
+				isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = false;
 			}
 			if (is_color_image) {
 				isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorON;
@@ -150,12 +155,13 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 				}
 			}
 		}
-		else if (!is_dpl_block_matching && is_dpl_frame_decoder) {
+		else if (!is_dpl_stereo_matching && is_dpl_disparity_filter) {
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kParallax;
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOn;
-			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = false;
+			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = false;
 			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = true;
+			isc_control->isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = true;
 			if (is_color_image) {
 				isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorON;
 				if (is_color_image_correct) {
@@ -166,7 +172,7 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 				}
 			}
 		}
-		else if (!is_dpl_block_matching && !is_dpl_frame_decoder) {
+		else if (!is_dpl_stereo_matching && !is_dpl_disparity_filter) {
 			if (is_disparity) {
 				isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kParallax;
 				isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
@@ -330,8 +336,10 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 	const bool is_compare_image_correct = isc_feature_request->is_compare_image_correct;
 	const bool is_color_image = isc_feature_request->is_color_image;
 	const bool is_color_image_correct = isc_feature_request->is_color_image_correct;
-	const bool is_dpl_block_matching = isc_feature_request->is_dpl_block_matching;
+	const bool is_dpl_stereo_matching = isc_feature_request->is_dpl_stereo_matching;
 	const bool is_dpl_frame_decoder = isc_feature_request->is_dpl_frame_decoder;
+	const bool is_dpl_disparity_filter = isc_feature_request->is_dpl_disparity_filter;
+
 
 	const IscGrabMode isc_grab_mode = isc_control->isc_image_info.grab;
 
@@ -340,10 +348,10 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 
 	if (isc_control->draw_settings.diaplay_mode == DisplayModeDisplay::kSingle) {
 		if (isc_grab_mode == IscGrabMode::kCorrect) {
-			if (is_dpl_block_matching) {
+			if (is_dpl_stereo_matching) {
 				mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 			}
-			else if (is_dpl_block_matching && is_dpl_frame_decoder) {
+			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
 				mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 			}
 			else if (is_base_image) {
@@ -354,10 +362,10 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
-			if (is_dpl_block_matching) {
+			if (is_dpl_stereo_matching) {
 				mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 			}
-			else if (!is_dpl_block_matching && is_dpl_frame_decoder) {
+			else if (!is_dpl_stereo_matching && is_dpl_disparity_filter) {
 				mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 			}
 			else if (is_disparity) {
@@ -384,7 +392,7 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 	}
 	else if (isc_control->draw_settings.diaplay_mode == DisplayModeDisplay::kDual) {
 		if (isc_grab_mode == IscGrabMode::kCorrect) {
-			if (is_dpl_block_matching) {
+			if (is_dpl_stereo_matching) {
 				if (is_base_image) {
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
 				}
@@ -392,7 +400,7 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthColor;
 				}
 			}
-			else if (is_dpl_block_matching && is_dpl_frame_decoder) {
+			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
 				if (is_base_image) {
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
 				}
@@ -402,7 +410,7 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
-			if (is_dpl_frame_decoder) {
+			if (is_dpl_disparity_filter) {
 				if (is_color_image) {
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthColor;
 				}
@@ -430,19 +438,19 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 	}
 	else if (isc_control->draw_settings.diaplay_mode == DisplayModeDisplay::kOverlapped) {
 		if (isc_grab_mode == IscGrabMode::kCorrect) {
-			if (is_dpl_block_matching) {
+			if (is_dpl_stereo_matching) {
 				if (is_base_image) {
 					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
 				}
 			}
-			else if (is_dpl_block_matching && is_dpl_frame_decoder) {
+			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
 				if (is_base_image) {
 					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
 				}
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
-			if (is_dpl_frame_decoder) {
+			if (is_dpl_stereo_matching) {
 				if (is_base_image) {
 					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
 				}
@@ -495,15 +503,18 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 	size_t cp_size = 0;
 	*is_dpresult_mode = false;
 
+	IscShutterMode shutter_mode = isc_control->isc_image_info.shutter_mode;
+	int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
 	switch (mode) {
 	case DpcDrawLib::ImageDrawMode::kUnknown:
 		// mode error, display a temporary image
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kUnknown;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
 		memset(image_data_set[0]->image_data_list[0].image_base.buffer, 64, cp_size);
 		break;
@@ -513,11 +524,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kBase;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kCompare:
@@ -525,11 +536,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kCompare;
 
-		image_data_set[0]->image_data_list[0].image_compare.width = isc_control->isc_image_info.p2.width;
-		image_data_set[0]->image_data_list[0].image_compare.height = isc_control->isc_image_info.p2.height;
-		image_data_set[0]->image_data_list[0].image_compare.channel_count = isc_control->isc_image_info.p2.channel_count;
+		image_data_set[0]->image_data_list[0].image_compare.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
+		image_data_set[0]->image_data_list[0].image_compare.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
+		image_data_set[0]->image_data_list[0].image_compare.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_compare.width * image_data_set[0]->image_data_list[0].image_compare.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_compare.buffer, isc_control->isc_image_info.p2.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_compare.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDepth:
@@ -537,10 +548,10 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepth;
 
-		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.depth.height;
+		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kColor:
@@ -548,11 +559,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kColor;
 
-		image_data_set[0]->image_data_list[0].image_color.width = isc_control->isc_image_info.color.width;
-		image_data_set[0]->image_data_list[0].image_color.height = isc_control->isc_image_info.color.height;
-		image_data_set[0]->image_data_list[0].image_color.channel_count = isc_control->isc_image_info.color.channel_count;
+		image_data_set[0]->image_data_list[0].image_color.width = isc_control->isc_image_info.frame_data[fd_index].color.width;
+		image_data_set[0]->image_data_list[0].image_color.height = isc_control->isc_image_info.frame_data[fd_index].color.height;
+		image_data_set[0]->image_data_list[0].image_color.channel_count = isc_control->isc_image_info.frame_data[fd_index].color.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_color.width * image_data_set[0]->image_data_list[0].image_color.height * image_data_set[0]->image_data_list[0].image_color.channel_count;
-		memcpy(image_data_set[0]->image_data_list[0].image_color.buffer, isc_control->isc_image_info.color.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_color.buffer, isc_control->isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kBaseCompare:
@@ -560,17 +571,17 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kBaseCompare;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_compare.width = isc_control->isc_image_info.p2.width;
-		image_data_set[0]->image_data_list[1].image_compare.height = isc_control->isc_image_info.p2.height;
-		image_data_set[0]->image_data_list[1].image_compare.channel_count = isc_control->isc_image_info.p2.channel_count;
+		image_data_set[0]->image_data_list[1].image_compare.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
+		image_data_set[0]->image_data_list[1].image_compare.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
+		image_data_set[0]->image_data_list[1].image_compare.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_compare.width * image_data_set[0]->image_data_list[1].image_compare.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_compare.buffer, isc_control->isc_image_info.p2.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_compare.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDepthBase:
@@ -578,16 +589,16 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthBase;
 
-		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.depth.height;
+		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDepthColor:
@@ -595,16 +606,16 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthColor;
 
-		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.depth.height;
+		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_image_info.color.width;
-		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_image_info.color.height;
-		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_image_info.color.channel_count;
+		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_image_info.frame_data[fd_index].color.width;
+		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_image_info.frame_data[fd_index].color.height;
+		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_image_info.frame_data[fd_index].color.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_color.width * image_data_set[0]->image_data_list[1].image_color.height * image_data_set[0]->image_data_list[1].image_color.channel_count;
-		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_image_info.color.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kOverlapedDepthBase:
@@ -612,29 +623,33 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthBase;
 
-		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.depth.height;
+		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplImage:
 		// data processing result image
+
 		*is_dpresult_mode = true;
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplImage;
 
-		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_image_info.p1.channel_count;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_dpl.width * image_data_set[0]->image_data_list[0].image_dpl.height * image_data_set[0]->image_data_list[0].image_dpl.channel_count;
-		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplImageBase:
@@ -643,36 +658,44 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplImageBase;
 
-		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_image_info.p1.channel_count;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_dpl.width * image_data_set[0]->image_data_list[0].image_dpl.height * image_data_set[0]->image_data_list[0].image_dpl.channel_count;
-		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplImageColor:
 		// data processing result image,color image
+
 		*is_dpresult_mode = true;
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplImageColor;
 
-		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_image_info.p1.channel_count;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].image_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_dpl.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[0].image_dpl.width * image_data_set[0]->image_data_list[0].image_dpl.height * image_data_set[0]->image_data_list[0].image_dpl.channel_count;
-		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_image_info.color.width;
-		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_image_info.color.height;
-		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_image_info.color.channel_count;
+		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.width;
+		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height;
+		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_color.width * image_data_set[0]->image_data_list[1].image_color.height * image_data_set[0]->image_data_list[1].image_color.channel_count;
-		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_image_info.color.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplDepth:
@@ -681,10 +704,13 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 
-		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.depth.height;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
 		break;
 
@@ -694,16 +720,19 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
 
-		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.depth.height;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplDepthColor:
@@ -712,16 +741,19 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepthColor;
 
-		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.depth.height;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_image_info.color.width;
-		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_image_info.color.height;
-		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_image_info.color.channel_count;
+		image_data_set[0]->image_data_list[1].image_color.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.width;
+		image_data_set[0]->image_data_list[1].image_color.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height;
+		image_data_set[0]->image_data_list[1].image_color.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_color.width * image_data_set[0]->image_data_list[1].image_color.height * image_data_set[0]->image_data_list[1].image_color.channel_count;
-		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_image_info.color.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplDepthDepth:
@@ -730,15 +762,19 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepthDepth;
 
-		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.depth.height;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].depth.width = isc_control->isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[1].depth.height = isc_control->isc_image_info.depth.height;
+		fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+		image_data_set[0]->image_data_list[1].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[1].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[1].depth.width * image_data_set[0]->image_data_list[1].depth.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[1].depth.buffer, isc_control->isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase:
@@ -747,16 +783,19 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
 
-		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.depth.width;
-		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.depth.height;
+		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+		image_data_set[0]->image_data_list[0].depth_dpl.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.width;
+		image_data_set[0]->image_data_list[0].depth_dpl.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
-		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.depth.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.p1.channel_count;
+		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
 		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.p1.image, cp_size);
+		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	}

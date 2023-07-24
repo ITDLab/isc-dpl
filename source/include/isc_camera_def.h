@@ -219,6 +219,11 @@ struct IscCameraStatus {
     double data_receive_tact_time;          /**< cycle of data received from SDK */
 };
 
+constexpr int kISCIMAGEINFO_FRAMEDATA_MAX_COUNT = 3;    /**< max FrameData count */
+constexpr int kISCIMAGEINFO_FRAMEDATA_LATEST = 0;       /**< latest FrameData */
+constexpr int kISCIMAGEINFO_FRAMEDATA_PREVIOUS = 1;     /**< previous FrameData */
+constexpr int kISCIMAGEINFO_FRAMEDATA_MERGED = 2;       /**< merge for double shutter FrameData */
+
 /** @struct  IscImageInfo
  *  @brief This is the structure to get image
  */
@@ -227,7 +232,7 @@ struct IscImageInfo {
     struct ImageType {
         int width;              /**< width */
         int height;             /**< height */
-        int channel_count;       /**< number of channels */
+        int channel_count;      /**< number of channels */
         unsigned char* image;   /**< data */
     };
     
@@ -238,23 +243,31 @@ struct IscImageInfo {
         float* image;           /**< data */
     };
 
-    int frameNo;                            /**< フレームの番号 */
-    int gain;                               /**< フレームのGain値 */
-    int exposure;                           /**< フレームのExposure値 */
+    /*! A Frame struct */
+    struct FrameData {
+        IscCameraStatus camera_status;      /**< カメラの状態 */
+
+        int frameNo;                        /**< フレームの番号 */
+        int gain;                           /**< フレームのGain値 */
+        int exposure;                       /**< フレームのExposure値 */
+
+        ImageType p1;                       /**< 基準側画像 */
+        ImageType p2;                       /**< 補正後比較画像/補正前比較画像 */
+        ImageType color;                    /**< カラー基準画像/カラー比較画像 */
+        DepthType depth;                    /**< 視差 */
+        ImageType raw;                      /**< Camera RAW (展開以前のカメラデータ） */
+        ImageType raw_color;                /**< Camera RAW Color(展開以前のカメラデータ） */
+        ImageType bayer_base;               /**< Bayer */
+        ImageType bayer_compare;            /**< Bayer */
+    };
+
+    IscCameraSpecificParameter camera_specific_parameter;   /**< カメラ固有のパラメータ */
+
     IscGrabMode grab;                       /**< 取り込みモード */
     IscGrabColorMode color_grab_mode;       /**< カラーモード */
     IscShutterMode shutter_mode;            /**< 露光調整モード */
-    IscCameraSpecificParameter camera_specific_parameter;   /**< カメラ固有のパラメータ */
-    IscCameraStatus camera_status;          /**< カメラの状態 */
 
-    ImageType p1;                           /**< 基準側画像 */
-    ImageType p2;                           /**< 補正後比較画像/補正前比較画像 */
-    ImageType color;                        /**< カラー基準画像/カラー比較画像 */
-    DepthType depth;                        /**< 視差 */
-    ImageType raw;                          /**< Camera RAW (展開以前のカメラデータ） */
-    ImageType bayer_base;                   /**< Bayer */
-    ImageType bayer_compare;                /**< Bayer */
-
+    FrameData frame_data[kISCIMAGEINFO_FRAMEDATA_MAX_COUNT];    /**< Frameデータ単位 0:Latest 1:Previous 2:Merged for Double-Shutter */
 };
 
 // RAW data file save format
@@ -308,7 +321,7 @@ constexpr int ISC_ROW_FILE_HEADER_VERSION = 200;    /**< Header Version 2.0.0 */
 struct IscRawFileHeader {
     char	mark[32];       /**< MARK */
     int		version;        /**< Header version */
-    int		hedaer_size;    /**< Header size */
+    int		header_size;    /**< Header size */
     int     camera_model;   /**< model  0:VM 1:XC 2:4K 3:4KA 4:4KJ 99:unknown */
     int     max_width;      /**< maximum width */
     int     max_height;     /**< maximum height */
@@ -349,7 +362,7 @@ constexpr int ISC_ROW_DATA_HEADER_VERSION = 200;     /**< Header Version 2.0.0 *
  */
 struct IscRawDataHeader {
     int		version;        /**< Header version */
-    int		hedaer_size;    /**< Header size */
+    int		header_size;    /**< Header size */
     int		data_size;      /**< Data size */
     int     compressed;     /**< Data is compressed 0:none 1:compressed */
     int		frame_index;    /**< Frame index */

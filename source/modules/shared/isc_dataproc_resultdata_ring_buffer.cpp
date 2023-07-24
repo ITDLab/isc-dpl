@@ -41,7 +41,7 @@ IscDataprocResultdataRingBuffer::IscDataprocResultdataRingBuffer():
 	last_mode_(false), allow_overwrite_(false), buffer_count_(0), width_(0), height_(0), channel_count_(0), buffer_data_(nullptr),
 	write_inex_(0), read_index_(0), put_index_(0), geted_inedx_(0),
 	buff_p1_(nullptr), buff_p2_(nullptr), buff_color_(nullptr),
-	buff_depth_(nullptr), buff_raw_(nullptr), buff_bayer_base_(nullptr), buff_bayer_compare_(nullptr),
+	buff_depth_(nullptr), buff_raw_(nullptr), buff_raw_color_(nullptr), buff_bayer_base_(nullptr), buff_bayer_compare_(nullptr),
 	flag_critical_()
 {
 }
@@ -81,23 +81,26 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 
 	buffer_data_ = new BufferData[buffer_count_];
 
-	size_t one_frame_size = width_ * height_;
+	const size_t one_frame_size = width_ * height_;
+	const int max_fd_count = kISCIMAGEINFO_FRAMEDATA_MAX_COUNT;
 
-	buff_p1_ = new unsigned char[buffer_count_ * one_frame_size];
-	buff_p2_ = new unsigned char[buffer_count_ * one_frame_size];
-	buff_color_ = new unsigned char[buffer_count_ * one_frame_size * 3];
-	buff_depth_ = new float[buffer_count_ * one_frame_size];
-	buff_raw_ = new unsigned char[buffer_count_ * one_frame_size * 2];
-	buff_bayer_base_ = new unsigned char[buffer_count_ * one_frame_size];
-	buff_bayer_compare_ = new unsigned char[buffer_count_ * one_frame_size];
+	buff_p1_			= new unsigned char[buffer_count_ * one_frame_size * max_fd_count];
+	buff_p2_			= new unsigned char[buffer_count_ * one_frame_size * max_fd_count];
+	buff_color_			= new unsigned char[buffer_count_ * one_frame_size * 3 * max_fd_count];
+	buff_depth_			= new float[buffer_count_ * one_frame_size * max_fd_count];
+	buff_raw_			= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
+	buff_raw_color_		= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
+	buff_bayer_base_	= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
+	buff_bayer_compare_	= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
 
-	memset(buff_p1_, 0, buffer_count_ * one_frame_size);
-	memset(buff_p2_, 0, buffer_count_ * one_frame_size);
-	memset(buff_color_, 0, buffer_count_ * one_frame_size * 3);
-	memset(buff_depth_, 0, buffer_count_ * one_frame_size * sizeof(float));
-	memset(buff_raw_, 0, buffer_count_ * one_frame_size * 2);
-	memset(buff_bayer_base_, 0, buffer_count_ * one_frame_size);
-	memset(buff_bayer_compare_, 0, buffer_count_ * one_frame_size);
+	memset(buff_p1_,			0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_p2_,			0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_color_,			0, buffer_count_ * one_frame_size * 3 * max_fd_count);
+	memset(buff_depth_,			0, buffer_count_ * one_frame_size * sizeof(float) * max_fd_count);
+	memset(buff_raw_,			0, buffer_count_ * one_frame_size * 2 * max_fd_count);
+	memset(buff_raw_color_,		0, buffer_count_ * one_frame_size * 2 * max_fd_count);
+	memset(buff_bayer_base_,	0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_bayer_compare_,	0, buffer_count_ * one_frame_size * max_fd_count);
 
 	for (int i = 0; i < buffer_count_; i++) {
 		buffer_data_[i].inedx = i;
@@ -117,9 +120,6 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 			buffer_data_[i].isc_dataproc_resultdata.module_status[j].processing_time = 0;
 		}
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frameNo = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.gain = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.exposure = 0;
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.grab = IscGrabMode::kParallax;
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.color_grab_mode = IscGrabColorMode::kColorOFF;
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.shutter_mode = IscShutterMode::kManualShutter;
@@ -128,42 +128,61 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_specific_parameter.base_length = 0;
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_specific_parameter.dz = 0;
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_status.error_code = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_status.data_receive_tact_time = 0;
+		for (int j = 0; j < max_fd_count; j++) {
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].frameNo = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].gain = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].exposure = 0;
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p1.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p1.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p1.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p1.image = buff_p1_ + (one_frame_size * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].camera_status.error_code = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].camera_status.data_receive_tact_time = 0;
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p2.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p2.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p2.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.p2.image = buff_p2_ + (one_frame_size * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p1.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p1.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p1.channel_count = 0;
+			size_t unit = one_frame_size;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p1.image = buff_p1_ + (unit * ((i * max_fd_count) + j));
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.color.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.color.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.color.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.color.image = buff_color_ + (one_frame_size * 3 * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p2.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p2.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p2.channel_count = 0;
+			unit = one_frame_size;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].p2.image = buff_p2_ + (unit * ((i * max_fd_count) + j));
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.depth.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.depth.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.depth.image = buff_depth_ + (one_frame_size * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].color.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].color.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].color.channel_count = 0;
+			unit = one_frame_size * 3;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].color.image = buff_color_ + (unit * ((i * max_fd_count) + j));
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.raw.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.raw.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.raw.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.raw.image = buff_raw_ + (one_frame_size * 2 * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].depth.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].depth.height = 0;
+			unit = one_frame_size;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].depth.image = buff_depth_ + (unit * ((i * max_fd_count) + j));
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_base.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_base.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_base.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_base.image = buff_bayer_base_ + (one_frame_size * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw.channel_count = 0;
+			unit = one_frame_size * 2;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw.image = buff_raw_ + (unit * ((i * max_fd_count) + j));
 
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_compare.width = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_compare.height = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_compare.channel_count = 0;
-		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.bayer_compare.image = buff_bayer_compare_ + (one_frame_size * i);
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw_color.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw_color.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw_color.channel_count = 0;
+			unit = one_frame_size * 2;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw_color.image = buff_raw_color_ + (unit * ((i * max_fd_count) + j));
+
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.channel_count = 0;
+			unit = one_frame_size * 2;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.image = buff_bayer_base_ + (unit * ((i * max_fd_count) + j));
+
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.width = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.height = 0;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.channel_count = 0;
+			unit = one_frame_size * 2;
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.image = buff_bayer_compare_ + (unit * ((i * max_fd_count) + j));
+		}
 	}
 
 	return 0;
@@ -179,14 +198,17 @@ int IscDataprocResultdataRingBuffer::Clear()
 {
 	write_inex_ = 0; read_index_ = 0; put_index_ = 0;  geted_inedx_ = 0;
 
-	size_t one_frame_size = width_ * height_;
-	memset(buff_p1_, 0, buffer_count_ * one_frame_size);
-	memset(buff_p2_, 0, buffer_count_ * one_frame_size);
-	memset(buff_color_, 0, buffer_count_ * one_frame_size * 3);
-	memset(buff_depth_, 0, buffer_count_ * one_frame_size * sizeof(float));
-	memset(buff_raw_, 0, buffer_count_ * one_frame_size * 2);
-	memset(buff_bayer_base_, 0, buffer_count_ * one_frame_size);
-	memset(buff_bayer_compare_, 0, buffer_count_ * one_frame_size);
+	const size_t one_frame_size = width_ * height_;
+	const int max_fd_count = kISCIMAGEINFO_FRAMEDATA_MAX_COUNT;
+
+	memset(buff_p1_,			0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_p2_,			0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_color_,			0, buffer_count_ * one_frame_size * 3 * max_fd_count);
+	memset(buff_depth_,			0, buffer_count_ * one_frame_size * sizeof(float) * max_fd_count);
+	memset(buff_raw_,			0, buffer_count_ * one_frame_size * 2 * max_fd_count);
+	memset(buff_raw_color_,		0, buffer_count_ * one_frame_size * 2 * max_fd_count);
+	memset(buff_bayer_base_,	0, buffer_count_ * one_frame_size * max_fd_count);
+	memset(buff_bayer_compare_,	0, buffer_count_ * one_frame_size * max_fd_count);
 
 	return 0;
 }
@@ -204,6 +226,7 @@ int IscDataprocResultdataRingBuffer::Terminate()
 	delete[] buff_color_;
 	delete[] buff_depth_;
 	delete[] buff_raw_;
+	delete[] buff_raw_color_;
 	delete[] buff_bayer_base_;
 	delete[] buff_bayer_compare_;
 
@@ -212,6 +235,7 @@ int IscDataprocResultdataRingBuffer::Terminate()
 	buff_color_ = nullptr;
 	buff_depth_ = nullptr;
 	buff_raw_ = nullptr;
+	buff_raw_color_ = nullptr;
 	buff_bayer_base_ = nullptr;
 	buff_bayer_compare_ = nullptr;
 

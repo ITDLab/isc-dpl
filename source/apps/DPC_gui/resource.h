@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ Ç≈ê∂ê¨Ç≥ÇÍÇΩÉCÉìÉNÉãÅ[Éh ÉtÉ@ÉCÉãÅB
-// DPCgui.rc Ç≈égóp
+// Microsoft Visual C++ „ÅßÁîüÊàê„Åï„Çå„Åü„Ç§„É≥„ÇØ„É´„Éº„Éâ „Éï„Ç°„Ç§„É´„ÄÇ
+// DPCgui.rc „Åß‰ΩøÁî®
 //
 #define IDM_ABOUTBOX                    0x0010
 #define IDD_ABOUTBOX                    100
@@ -141,6 +141,40 @@
 #define IDC_STATIC50                    1138
 #define IDC_STATIC51                    1139
 #define IDC_STATIC52                    1140
+#define IDC_EDIT26                      1141
+#define IDC_EDIT27                      1142
+#define IDC_EDIT28                      1143
+#define IDC_EDIT29                      1144
+#define IDC_EDIT30                      1145
+#define IDC_EDIT31                      1146
+#define IDC_EDIT32                      1147
+#define IDC_EDIT33                      1148
+#define IDC_EDIT34                      1149
+#define IDC_EDIT35                      1150
+#define IDC_EDIT36                      1151
+#define IDC_STATIC53                    1152
+#define IDC_STATIC54                    1153
+#define IDC_STATIC55                    1154
+#define IDC_STATIC56                    1155
+#define IDC_STATIC57                    1156
+#define IDC_STATIC58                    1157
+#define IDC_STATIC59                    1158
+#define IDC_STATIC60                    1159
+#define IDC_STATIC61                    1160
+#define IDC_STATIC62                    1161
+#define IDC_STATIC63                    1162
+#define IDC_STATIC64                    1163
+#define IDC_STATIC65                    1164
+#define IDC_STATIC66                    1165
+#define IDC_STATIC67                    1166
+#define IDC_STATIC68                    1167
+#define IDC_STATIC69                    1168
+#define IDC_STATIC70                    1169
+#define IDC_STATIC71                    1170
+#define IDC_STATIC72                    1171
+#define IDC_STATIC73                    1172
+#define IDC_STATIC74                    1173
+#define IDC_STATIC_MODULE_NAME_3        1174
 
 // Next default values for new objects
 // 
@@ -148,7 +182,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1141
+#define _APS_NEXT_CONTROL_VALUE         1175
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

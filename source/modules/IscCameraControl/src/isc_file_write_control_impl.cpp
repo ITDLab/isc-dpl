@@ -336,7 +336,7 @@ int IscFileWriteControlImpl::Start(const IscCameraSpecificParameter* camera_spec
 	}
 
 	file_write_information_.raw_file_hedaer.version = ISC_ROW_FILE_HEADER_VERSION;
-	file_write_information_.raw_file_hedaer.hedaer_size = sizeof(IscRawFileHeader);
+	file_write_information_.raw_file_hedaer.header_size = sizeof(IscRawFileHeader);
 	file_write_information_.raw_file_hedaer.max_width = camera_width_;
 	file_write_information_.raw_file_hedaer.max_height = camera_height_;
 	file_write_information_.raw_file_hedaer.d_inf = camera_specific_parameter->d_inf;
@@ -448,11 +448,9 @@ int IscFileWriteControlImpl::Add(IscImageInfo* isc_image_info)
 	int put_index = isc_image_info_ring_buffer_->GetPutBuffer(&buffer_data, time);
 	int image_status = 0;
 
-	if (put_index >= 0 && buffer_data != nullptr) {
+	int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
-		buffer_data->isc_image_info.frameNo = isc_image_info->frameNo;
-		buffer_data->isc_image_info.gain = isc_image_info->gain;
-		buffer_data->isc_image_info.exposure = isc_image_info->exposure;
+	if (put_index >= 0 && buffer_data != nullptr) {
 
 		buffer_data->isc_image_info.grab = isc_image_info->grab;
 		buffer_data->isc_image_info.color_grab_mode = isc_image_info->color_grab_mode;
@@ -462,30 +460,42 @@ int IscFileWriteControlImpl::Add(IscImageInfo* isc_image_info)
 		buffer_data->isc_image_info.camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
 		buffer_data->isc_image_info.camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
 
-		buffer_data->isc_image_info.camera_status.error_code = isc_image_info->camera_status.error_code;
-		buffer_data->isc_image_info.camera_status.data_receive_tact_time = isc_image_info->camera_status.data_receive_tact_time;
+		buffer_data->isc_image_info.frame_data[frame_data_index].frameNo = isc_image_info->frame_data[frame_data_index].frameNo;
+		buffer_data->isc_image_info.frame_data[frame_data_index].gain = isc_image_info->frame_data[frame_data_index].gain;
+		buffer_data->isc_image_info.frame_data[frame_data_index].exposure = isc_image_info->frame_data[frame_data_index].exposure;
 
-		buffer_data->isc_image_info.p1.width = 0;
-		buffer_data->isc_image_info.p1.height = 0;
-		buffer_data->isc_image_info.p1.channel_count = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code = isc_image_info->frame_data[frame_data_index].camera_status.error_code;
+		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time;
 
-		buffer_data->isc_image_info.p2.width = 0;
-		buffer_data->isc_image_info.p2.height = 0;
-		buffer_data->isc_image_info.p2.channel_count = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p1.width = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p1.height = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p1.channel_count = 0;
 
-		buffer_data->isc_image_info.color.width = 0;
-		buffer_data->isc_image_info.color.height = 0;
-		buffer_data->isc_image_info.color.channel_count = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p2.width = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p2.height = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].p2.channel_count = 0;
 
-		buffer_data->isc_image_info.depth.width = 0;
-		buffer_data->isc_image_info.depth.height = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].color.width = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].color.height = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].color.channel_count = 0;
 
-		buffer_data->isc_image_info.raw.width = isc_image_info->raw.width;
-		buffer_data->isc_image_info.raw.height = isc_image_info->raw.height;
-		buffer_data->isc_image_info.raw.channel_count = isc_image_info->raw.channel_count;
-		size_t cp_size = isc_image_info->raw.width * isc_image_info->raw.height * isc_image_info->raw.channel_count;
+		buffer_data->isc_image_info.frame_data[frame_data_index].depth.width = 0;
+		buffer_data->isc_image_info.frame_data[frame_data_index].depth.height = 0;
+
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw.width = isc_image_info->frame_data[frame_data_index].raw.width;
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw.height = isc_image_info->frame_data[frame_data_index].raw.height;
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw.channel_count = isc_image_info->frame_data[frame_data_index].raw.channel_count;
+		size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * isc_image_info->frame_data[frame_data_index].raw.channel_count;
 		if (cp_size > 0) {
-			memcpy(buffer_data->isc_image_info.raw.image, isc_image_info->raw.image, cp_size);
+			memcpy(buffer_data->isc_image_info.frame_data[frame_data_index].raw.image, isc_image_info->frame_data[frame_data_index].raw.image, cp_size);
+		}
+
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.width = isc_image_info->frame_data[frame_data_index].raw_color.width;
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.height = isc_image_info->frame_data[frame_data_index].raw_color.height;
+		buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.channel_count = isc_image_info->frame_data[frame_data_index].raw_color.channel_count;
+		cp_size = isc_image_info->frame_data[frame_data_index].raw_color.width * isc_image_info->frame_data[frame_data_index].raw_color.height * isc_image_info->frame_data[frame_data_index].raw_color.channel_count;
+		if (cp_size > 0) {
+			memcpy(buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.image, isc_image_info->frame_data[frame_data_index].raw_color.image, cp_size);
 		}
 
 		image_status = 1;
@@ -1177,7 +1187,7 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 
 	IscRawDataHeader isc_raw_data_header = {};
 	isc_raw_data_header.version = ISC_ROW_DATA_HEADER_VERSION;
-	isc_raw_data_header.hedaer_size = sizeof(IscRawDataHeader);
+	isc_raw_data_header.header_size = sizeof(IscRawDataHeader);
 
 	__int64 number_of_write_to_file = 0;
 	__int64 number_of_byteswritten = 0;
@@ -1268,57 +1278,122 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 
 			if (get_index >= 0) {
 				// there is an image
-				int data_size = image_info_buffer_data->isc_image_info.raw.width * image_info_buffer_data->isc_image_info.raw.height * image_info_buffer_data->isc_image_info.raw.channel_count;
-				isc_raw_data_header.data_size = data_size;
-				isc_raw_data_header.compressed = 0;
-				isc_raw_data_header.frame_index = (image_info_buffer_data->isc_image_info.frameNo == -1)? isc_file_write_Control->file_write_information_.frame_index: image_info_buffer_data->isc_image_info.frameNo;
-				isc_raw_data_header.type = (image_info_buffer_data->isc_image_info.color_grab_mode == IscGrabColorMode::kColorON)? 2:1;
-				isc_raw_data_header.status = 0;
-				isc_raw_data_header.error_code = image_info_buffer_data->isc_image_info.camera_status.error_code;
-				isc_raw_data_header.exposure = image_info_buffer_data->isc_image_info.exposure;
-				isc_raw_data_header.gain = image_info_buffer_data->isc_image_info.gain;
 
-				number_of_write_to_file = isc_raw_data_header.hedaer_size;
-				number_of_byteswritten = 0;
-				 
-				int write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
-												(LPCVOID*)&isc_raw_data_header,
+				// mono
+				const int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+				int data_size = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw.width * 
+								image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw.height * 
+								image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw.channel_count;
+				if (data_size > 0) {
+					isc_raw_data_header.data_size = data_size;
+					isc_raw_data_header.compressed = 0;
+					isc_raw_data_header.frame_index = (image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frameNo == -1) ? isc_file_write_Control->file_write_information_.frame_index :
+																																			image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frameNo;
+					isc_raw_data_header.type = 1;	// mono
+					isc_raw_data_header.status = 0;
+					isc_raw_data_header.error_code = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code;
+					isc_raw_data_header.exposure = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].exposure;
+					isc_raw_data_header.gain = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].gain;
+
+					number_of_write_to_file = isc_raw_data_header.header_size;
+					number_of_byteswritten = 0;
+
+					int write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
+													(LPCVOID*)&isc_raw_data_header,
+													number_of_write_to_file,
+													&number_of_byteswritten,
+													NULL);
+					if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
+						//wchar_t msg[1024] = {};
+						//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
+
+						swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+
+						isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
+						break;
+					}
+
+					number_of_write_to_file = data_size;
+					number_of_byteswritten = 0;
+
+					write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
+												(LPCVOID*)image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw.image,
 												number_of_write_to_file,
 												&number_of_byteswritten,
 												NULL);
-				if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
-					//wchar_t msg[1024] = {};
-					//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
-					//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
-					
-					swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
-					isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+					if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
+						//wchar_t msg[1024] = {};
+						//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
 
-					isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
-					break;
+						swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+
+						isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
+						break;
+					}
+					isc_file_write_Control->file_write_information_.frame_index++;
 				}
 
-				number_of_write_to_file = data_size;
-				number_of_byteswritten = 0;
+				// color
+				data_size = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.width *
+							image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.height *
+							image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.channel_count;
+				if (data_size > 0) {
+					isc_raw_data_header.data_size = data_size;
+					isc_raw_data_header.compressed = 0;
+					isc_raw_data_header.frame_index = (image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frameNo == -1) ? isc_file_write_Control->file_write_information_.frame_index :
+																																			image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frameNo;
+					isc_raw_data_header.type = 2;	// color
+					isc_raw_data_header.status = 0;
+					isc_raw_data_header.error_code = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code;
+					isc_raw_data_header.exposure = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].exposure;
+					isc_raw_data_header.gain = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].gain;
 
-				write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
-											(LPCVOID*)image_info_buffer_data->isc_image_info.raw.image,
-											number_of_write_to_file,
-											&number_of_byteswritten,
-											NULL);
-				if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
-					//wchar_t msg[1024] = {};
-					//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
-					//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
+					number_of_write_to_file = isc_raw_data_header.header_size;
+					number_of_byteswritten = 0;
 
-					swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
-					isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+					int write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
+													(LPCVOID*)&isc_raw_data_header,
+													number_of_write_to_file,
+													&number_of_byteswritten,
+													NULL);
+					if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
+						//wchar_t msg[1024] = {};
+						//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
 
-					isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
-					break;
+						swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+
+						isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
+						break;
+					}
+
+					number_of_write_to_file = data_size;
+					number_of_byteswritten = 0;
+
+					write_ret = WriteDataToFile(isc_file_write_Control->file_write_information_.handle_file,
+												(LPCVOID*)image_info_buffer_data->isc_image_info.frame_data[frame_data_index].raw_color.image,
+												number_of_write_to_file,
+												&number_of_byteswritten,
+												NULL);
+					if ((write_ret != DPC_E_OK) || (number_of_byteswritten == 0)) {
+						//wchar_t msg[1024] = {};
+						//swprintf_s(msg, L"[ERROR]Failed to write file code=0X%08X %s", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						//MessageBox(NULL, msg, L"IscFileWriteControlImpl::WriteDataProc()", MB_ICONERROR);
+
+						swprintf_s(logMag, L"Failed to write file code=0X%08X %s\n", write_ret, isc_file_write_Control->file_write_information_.write_file_name);
+						isc_log_->LogError(L"IscFileWriteControlImpl::WriteDataProc", logMag);
+
+						isc_file_write_Control->thread_control_.end_code = CAMCONTROL_E_WRITE_FAILED;
+						break;
+					}
+
+					isc_file_write_Control->file_write_information_.frame_index++;
 				}
-
-				isc_file_write_Control->file_write_information_.frame_index++;
 			}
 
 			// ended

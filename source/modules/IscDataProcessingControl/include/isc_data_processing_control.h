@@ -91,6 +91,16 @@ public:
 
 	// get data
 
+	/** @brief initialize IscStereoDisparityData. Allocate the required space.
+		@return 0, if successful.
+	*/
+	int InitializeIscBlockDisparityData(IscBlockDisparityData* isc_stereo_disparity_data);
+
+	/** @brief release the allocated space.
+		@return 0, if successful.
+	*/
+	int ReleaeIscIscBlockDisparityData(IscBlockDisparityData* isc_stereo_disparity_data);
+
 	/** @brief initialize IscDataProcResultData. Allocate the required space.
 		@return 0, if successful.
 	*/
@@ -128,7 +138,8 @@ private:
 
 	// modules
 	IscFramedecoderInterface* isc_frame_decoder_;
-	IscBlockMatchingInterface* isc_block_matching_;
+	IscStereoMatchingInterface* isc_stereo_matching_;
+	IscDisparityFilterInterface* isc_disparity_filter_;
 
 	// Thread Control
 	struct ThreadControl {
@@ -152,5 +163,8 @@ private:
 	int ClearIscDataProcResultData(IscDataProcResultData* isc_data_proc_result_data);
 
 	int RunDataProcModules(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data);
+	int RunDataProcStereoMatching(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data);
+	int RunDataProcFrameDecoder(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data);
+	int RunDataProcFrameDecoderInDoubleShutter(IscImageInfo* isc_image_info, IscDataProcResultData* isc_data_proc_result_data);
 
 };

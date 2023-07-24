@@ -35,7 +35,7 @@ public:
 	/** @brief Initializes the CaptureSession and prepares it to start streaming data. Must be called at least once before streaming is started.
 		@return 0, if successful.
 	*/
-	int Initialize(const IscDplConfiguration* ipc_dpl_configuratio);
+	int Initialize(const IscDplConfiguration* ipc_dpl_configuration);
 
 	/** @brief ... Shut down the runtime system. Don't call any method after calling Terminate().
 		@return 0, if successful.
@@ -378,7 +378,7 @@ private:
 
 	LARGE_INTEGER freq_for_performance_counter;
 
-	IscDplConfiguration ipc_dpl_configuratio_;
+	IscDplConfiguration ipc_dpl_configuration_;
 
 	IscCameraControl* isc_camera_control_;
 	IscDataProcessingControl* isc_data_processing_control_;

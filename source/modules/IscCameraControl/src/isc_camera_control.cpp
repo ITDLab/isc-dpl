@@ -458,7 +458,7 @@ int IscCameraControl::ImageHandler(IscImageInfoRingBuffer::BufferData* buffer_da
 	}
 
 	// set takt time
-	buffer_data->isc_image_info.camera_status.data_receive_tact_time = measure_tackt_time_->GetTaktTime();
+	buffer_data->isc_image_info.frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].camera_status.data_receive_tact_time = measure_tackt_time_->GetTaktTime();
 
 	return 0;
 }
@@ -1685,9 +1685,6 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 		return CAMCONTROL_E_NO_IMAGE;
 	}
 
-	isc_image_info->frameNo = buffer_data->isc_image_info.frameNo;
-	isc_image_info->gain = buffer_data->isc_image_info.gain;
-	isc_image_info->exposure = buffer_data->isc_image_info.exposure;
 	isc_image_info->grab = buffer_data->isc_image_info.grab;
 	isc_image_info->color_grab_mode = buffer_data->isc_image_info.color_grab_mode;
 	isc_image_info->shutter_mode = buffer_data->isc_image_info.shutter_mode;
@@ -1696,119 +1693,155 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 	isc_image_info->camera_specific_parameter.base_length = buffer_data->isc_image_info.camera_specific_parameter.base_length;
 	isc_image_info->camera_specific_parameter.dz = buffer_data->isc_image_info.camera_specific_parameter.dz;
 
-	isc_image_info->camera_status.error_code = buffer_data->isc_image_info.camera_status.error_code;
-	isc_image_info->camera_status.data_receive_tact_time = buffer_data->isc_image_info.camera_status.data_receive_tact_time;
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].frameNo = buffer_data->isc_image_info.frame_data[i].frameNo;
+		isc_image_info->frame_data[i].gain = buffer_data->isc_image_info.frame_data[i].gain;
+		isc_image_info->frame_data[i].exposure = buffer_data->isc_image_info.frame_data[i].exposure;
 
-	isc_image_info->p1.width = 0;
-	isc_image_info->p1.height = 0;
-	isc_image_info->p1.channel_count = 0;
+		isc_image_info->frame_data[i].camera_status.error_code = buffer_data->isc_image_info.frame_data[i].camera_status.error_code;
+		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = buffer_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time;
 
-	isc_image_info->p2.width = 0;
-	isc_image_info->p2.height = 0;
-	isc_image_info->p2.channel_count = 0;
+		isc_image_info->frame_data[i].p1.width = 0;
+		isc_image_info->frame_data[i].p1.height = 0;
+		isc_image_info->frame_data[i].p1.channel_count = 0;
 
-	isc_image_info->color.width = 0;
-	isc_image_info->color.height = 0;
-	isc_image_info->color.channel_count = 0;
+		isc_image_info->frame_data[i].p2.width = 0;
+		isc_image_info->frame_data[i].p2.height = 0;
+		isc_image_info->frame_data[i].p2.channel_count = 0;
 
-	isc_image_info->depth.width = 0;
-	isc_image_info->depth.height = 0;
+		isc_image_info->frame_data[i].color.width = 0;
+		isc_image_info->frame_data[i].color.height = 0;
+		isc_image_info->frame_data[i].color.channel_count = 0;
 
-	isc_image_info->raw.width = 0;
-	isc_image_info->raw.height = 0;
-	isc_image_info->raw.channel_count = 0;
+		isc_image_info->frame_data[i].depth.width = 0;
+		isc_image_info->frame_data[i].depth.height = 0;
 
-	isc_image_info->bayer_base.width = 0;
-	isc_image_info->bayer_base.height = 0;
-	isc_image_info->bayer_base.channel_count = 0;
+		isc_image_info->frame_data[i].raw.width = 0;
+		isc_image_info->frame_data[i].raw.height = 0;
+		isc_image_info->frame_data[i].raw.channel_count = 0;
 
-	isc_image_info->bayer_compare.width = 0;
-	isc_image_info->bayer_compare.height = 0;
-	isc_image_info->bayer_compare.channel_count = 0;
+		isc_image_info->frame_data[i].bayer_base.width = 0;
+		isc_image_info->frame_data[i].bayer_base.height = 0;
+		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
 
-	// p1
-	isc_image_info->p1.width = buffer_data->isc_image_info.p1.width;
-	isc_image_info->p1.height = buffer_data->isc_image_info.p1.height;
-	isc_image_info->p1.channel_count = buffer_data->isc_image_info.p1.channel_count;
+		isc_image_info->frame_data[i].bayer_compare.width = 0;
+		isc_image_info->frame_data[i].bayer_compare.height = 0;
+		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
 
-	size_t copy_size = buffer_data->isc_image_info.p1.width * buffer_data->isc_image_info.p1.height * buffer_data->isc_image_info.p1.channel_count;
-	memcpy(isc_image_info->p1.image, buffer_data->isc_image_info.p1.image, copy_size);
+		// p1
+		isc_image_info->frame_data[i].p1.width = buffer_data->isc_image_info.frame_data[i].p1.width;
+		isc_image_info->frame_data[i].p1.height = buffer_data->isc_image_info.frame_data[i].p1.height;
+		isc_image_info->frame_data[i].p1.channel_count = buffer_data->isc_image_info.frame_data[i].p1.channel_count;
 
-	// p2
-	if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kCorrect ||
-		isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBeforeCorrect) {
-
-		isc_image_info->p2.width = buffer_data->isc_image_info.p2.width;
-		isc_image_info->p2.height = buffer_data->isc_image_info.p2.height;
-		isc_image_info->p2.channel_count = buffer_data->isc_image_info.p2.channel_count;
-
-		copy_size = buffer_data->isc_image_info.p2.width * buffer_data->isc_image_info.p2.height * buffer_data->isc_image_info.p2.channel_count;
-		memcpy(isc_image_info->p2.image, buffer_data->isc_image_info.p2.image, copy_size);
-	}
-
-	// color
-	if (isc_run_status_.isc_grab_start_mode.isc_grab_color_mode == IscGrabColorMode::kColorON) {
-		if (buffer_data->isc_image_info.color.width != 0 && buffer_data->isc_image_info.color.height != 0 &&
-			buffer_data->isc_image_info.color.channel_count == 3) {
-
-			isc_image_info->color.width = buffer_data->isc_image_info.color.width;
-			isc_image_info->color.height = buffer_data->isc_image_info.color.height;
-			isc_image_info->color.channel_count = buffer_data->isc_image_info.color.channel_count;
-
-			copy_size = buffer_data->isc_image_info.color.width * buffer_data->isc_image_info.color.height * buffer_data->isc_image_info.color.channel_count;
-			memcpy(isc_image_info->color.image, buffer_data->isc_image_info.color.image, copy_size);
+		size_t copy_size = buffer_data->isc_image_info.frame_data[i].p1.width * buffer_data->isc_image_info.frame_data[i].p1.height * buffer_data->isc_image_info.frame_data[i].p1.channel_count;
+		if (copy_size > 0) {
+			memcpy(isc_image_info->frame_data[i].p1.image, buffer_data->isc_image_info.frame_data[i].p1.image, copy_size);
 		}
-	}
 
-	// depth
-	if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kParallax) {
-		if (buffer_data->isc_image_info.depth.width != 0 && buffer_data->isc_image_info.depth.height != 0) {
+		// p2
+		if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kCorrect ||
+			isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBeforeCorrect) {
 
-			isc_image_info->depth.width = buffer_data->isc_image_info.depth.width;
-			isc_image_info->depth.height = buffer_data->isc_image_info.depth.height;
+			isc_image_info->frame_data[i].p2.width = buffer_data->isc_image_info.frame_data[i].p2.width;
+			isc_image_info->frame_data[i].p2.height = buffer_data->isc_image_info.frame_data[i].p2.height;
+			isc_image_info->frame_data[i].p2.channel_count = buffer_data->isc_image_info.frame_data[i].p2.channel_count;
 
-			copy_size = buffer_data->isc_image_info.depth.width * buffer_data->isc_image_info.depth.height * sizeof(float);
-			memcpy(isc_image_info->depth.image, buffer_data->isc_image_info.depth.image, copy_size);
-		}
-	}
-
-	//raw
-	if (isc_run_status_.isc_grab_start_mode.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
-		if (buffer_data->isc_image_info.raw.width != 0 && buffer_data->isc_image_info.raw.height != 0) {
-
-			isc_image_info->raw.width = buffer_data->isc_image_info.raw.width;
-			isc_image_info->raw.height = buffer_data->isc_image_info.raw.height;
-			isc_image_info->raw.channel_count = buffer_data->isc_image_info.raw.channel_count;
-
-			copy_size = buffer_data->isc_image_info.raw.width * buffer_data->isc_image_info.raw.height;
-			memcpy(isc_image_info->raw.image, buffer_data->isc_image_info.raw.image, copy_size);
-		}
-	}
-
-	// bayer
-	if (isc_run_status_.isc_grab_start_mode.isc_get_color_mode == IscGetModeColor::kBayer) {
-		if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerBase) {
-			// bayer_base
-			if (buffer_data->isc_image_info.bayer_base.width != 0 && buffer_data->isc_image_info.bayer_base.height != 0) {
-
-				isc_image_info->bayer_base.width = buffer_data->isc_image_info.bayer_base.width;
-				isc_image_info->bayer_base.height = buffer_data->isc_image_info.bayer_base.height;
-				isc_image_info->bayer_base.channel_count = buffer_data->isc_image_info.bayer_base.channel_count;
-
-				copy_size = buffer_data->isc_image_info.bayer_base.width * buffer_data->isc_image_info.bayer_base.height;
-				memcpy(isc_image_info->bayer_base.image, buffer_data->isc_image_info.bayer_base.image, copy_size);
+			copy_size = buffer_data->isc_image_info.frame_data[i].p2.width * buffer_data->isc_image_info.frame_data[i].p2.height * buffer_data->isc_image_info.frame_data[i].p2.channel_count;
+			if (copy_size > 0) {
+				memcpy(isc_image_info->frame_data[i].p2.image, buffer_data->isc_image_info.frame_data[i].p2.image, copy_size);
 			}
 		}
-		else if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerCompare) {
-			// bayer_compare
-			if (buffer_data->isc_image_info.bayer_compare.width != 0 && buffer_data->isc_image_info.bayer_compare.height != 0) {
 
-				isc_image_info->bayer_compare.width = buffer_data->isc_image_info.bayer_compare.width;
-				isc_image_info->bayer_compare.height = buffer_data->isc_image_info.bayer_compare.height;
-				isc_image_info->bayer_compare.channel_count = buffer_data->isc_image_info.bayer_compare.channel_count;
+		// color
+		if (isc_run_status_.isc_grab_start_mode.isc_grab_color_mode == IscGrabColorMode::kColorON) {
+			if (buffer_data->isc_image_info.frame_data[i].color.width != 0 && buffer_data->isc_image_info.frame_data[i].color.height != 0 &&
+				buffer_data->isc_image_info.frame_data[i].color.channel_count == 3) {
 
-				copy_size = buffer_data->isc_image_info.bayer_compare.width * buffer_data->isc_image_info.bayer_compare.height;
-				memcpy(isc_image_info->bayer_compare.image, buffer_data->isc_image_info.bayer_compare.image, copy_size);
+				isc_image_info->frame_data[i].color.width = buffer_data->isc_image_info.frame_data[i].color.width;
+				isc_image_info->frame_data[i].color.height = buffer_data->isc_image_info.frame_data[i].color.height;
+				isc_image_info->frame_data[i].color.channel_count = buffer_data->isc_image_info.frame_data[i].color.channel_count;
+
+				copy_size = buffer_data->isc_image_info.frame_data[i].color.width * buffer_data->isc_image_info.frame_data[i].color.height * buffer_data->isc_image_info.frame_data[i].color.channel_count;
+				if (copy_size > 0) {
+					memcpy(isc_image_info->frame_data[i].color.image, buffer_data->isc_image_info.frame_data[i].color.image, copy_size);
+				}
+			}
+		}
+
+		// depth
+		if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kParallax) {
+			if (buffer_data->isc_image_info.frame_data[i].depth.width != 0 && buffer_data->isc_image_info.frame_data[i].depth.height != 0) {
+
+				isc_image_info->frame_data[i].depth.width = buffer_data->isc_image_info.frame_data[i].depth.width;
+				isc_image_info->frame_data[i].depth.height = buffer_data->isc_image_info.frame_data[i].depth.height;
+
+				copy_size = buffer_data->isc_image_info.frame_data[i].depth.width * buffer_data->isc_image_info.frame_data[i].depth.height * sizeof(float);
+				if (copy_size > 0) {
+					memcpy(isc_image_info->frame_data[i].depth.image, buffer_data->isc_image_info.frame_data[i].depth.image, copy_size);
+				}
+			}
+		}
+
+		//raw
+		if (isc_run_status_.isc_grab_start_mode.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
+			if (buffer_data->isc_image_info.frame_data[i].raw.width != 0 && buffer_data->isc_image_info.frame_data[i].raw.height != 0) {
+
+				isc_image_info->frame_data[i].raw.width = buffer_data->isc_image_info.frame_data[i].raw.width;
+				isc_image_info->frame_data[i].raw.height = buffer_data->isc_image_info.frame_data[i].raw.height;
+				isc_image_info->frame_data[i].raw.channel_count = buffer_data->isc_image_info.frame_data[i].raw.channel_count;
+
+				copy_size = buffer_data->isc_image_info.frame_data[i].raw.width * buffer_data->isc_image_info.frame_data[i].raw.height;
+				if (copy_size > 0) {
+					memcpy(isc_image_info->frame_data[i].raw.image, buffer_data->isc_image_info.frame_data[i].raw.image, copy_size);
+				}
+			}
+		}
+
+		//raw color
+		if ((isc_run_status_.isc_grab_start_mode.isc_get_raw_mode == IscGetModeRaw::kRawOn) &&
+			(isc_run_status_.isc_grab_start_mode.isc_grab_color_mode == IscGrabColorMode::kColorON)) {
+			if (buffer_data->isc_image_info.frame_data[i].raw_color.width != 0 && buffer_data->isc_image_info.frame_data[i].raw_color.height != 0) {
+
+				isc_image_info->frame_data[i].raw_color.width = buffer_data->isc_image_info.frame_data[i].raw_color.width;
+				isc_image_info->frame_data[i].raw_color.height = buffer_data->isc_image_info.frame_data[i].raw_color.height;
+				isc_image_info->frame_data[i].raw_color.channel_count = buffer_data->isc_image_info.frame_data[i].raw_color.channel_count;
+
+				copy_size = buffer_data->isc_image_info.frame_data[i].raw_color.width * buffer_data->isc_image_info.frame_data[i].raw_color.height;
+				if (copy_size > 0) {
+					memcpy(isc_image_info->frame_data[i].raw_color.image, buffer_data->isc_image_info.frame_data[i].raw_color.image, copy_size);
+				}
+			}
+		}
+
+		// bayer
+		if (isc_run_status_.isc_grab_start_mode.isc_get_color_mode == IscGetModeColor::kBayer) {
+			if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerBase) {
+				// bayer_base
+				if (buffer_data->isc_image_info.frame_data[i].bayer_base.width != 0 && buffer_data->isc_image_info.frame_data[i].bayer_base.height != 0) {
+
+					isc_image_info->frame_data[i].bayer_base.width = buffer_data->isc_image_info.frame_data[i].bayer_base.width;
+					isc_image_info->frame_data[i].bayer_base.height = buffer_data->isc_image_info.frame_data[i].bayer_base.height;
+					isc_image_info->frame_data[i].bayer_base.channel_count = buffer_data->isc_image_info.frame_data[i].bayer_base.channel_count;
+
+					copy_size = buffer_data->isc_image_info.frame_data[i].bayer_base.width * buffer_data->isc_image_info.frame_data[i].bayer_base.height;
+					if (copy_size > 0) {
+						memcpy(isc_image_info->frame_data[i].bayer_base.image, buffer_data->isc_image_info.frame_data[i].bayer_base.image, copy_size);
+					}
+				}
+			}
+			else if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerCompare) {
+				// bayer_compare
+				if (buffer_data->isc_image_info.frame_data[i].bayer_compare.width != 0 && buffer_data->isc_image_info.frame_data[i].bayer_compare.height != 0) {
+
+					isc_image_info->frame_data[i].bayer_compare.width = buffer_data->isc_image_info.frame_data[i].bayer_compare.width;
+					isc_image_info->frame_data[i].bayer_compare.height = buffer_data->isc_image_info.frame_data[i].bayer_compare.height;
+					isc_image_info->frame_data[i].bayer_compare.channel_count = buffer_data->isc_image_info.frame_data[i].bayer_compare.channel_count;
+
+					copy_size = buffer_data->isc_image_info.frame_data[i].bayer_compare.width * buffer_data->isc_image_info.frame_data[i].bayer_compare.height;
+					if (copy_size > 0) {
+						memcpy(isc_image_info->frame_data[i].bayer_compare.image, buffer_data->isc_image_info.frame_data[i].bayer_compare.image, copy_size);
+					}
+				}
 			}
 		}
 	}

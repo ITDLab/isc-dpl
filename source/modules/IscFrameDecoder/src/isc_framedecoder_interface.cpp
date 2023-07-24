@@ -63,38 +63,13 @@ IscFramedecoderInterface::IscFramedecoderInterface():
     frame_decoder_parameters_(),
     work_buffers_()
 {
-    // default
-    frame_decoder_parameters_.system_parameter.enabled_opencl_for_avedisp = 0;
-
     // defult for XC
+    frame_decoder_parameters_.decode_parameter.crstthr = 40;
+    frame_decoder_parameters_.decode_parameter.crsthrm = 0;
+
     frame_decoder_parameters_.disparity_limitation_parameter.limit = 0;
     frame_decoder_parameters_.disparity_limitation_parameter.lower = 0;
     frame_decoder_parameters_.disparity_limitation_parameter.upper = 255;
-
-    frame_decoder_parameters_.averaging_parameter.enb = 1;
-    frame_decoder_parameters_.averaging_parameter.blkshgt = 3;
-    frame_decoder_parameters_.averaging_parameter.blkswdt = 3;
-    frame_decoder_parameters_.averaging_parameter.intg = 1;
-    frame_decoder_parameters_.averaging_parameter.range = 2;
-    frame_decoder_parameters_.averaging_parameter.dsprt = 20;  // VM:40
-    frame_decoder_parameters_.averaging_parameter.vldrt = 20;  // VM:40
-    frame_decoder_parameters_.averaging_parameter.reprt = 40;
- 
-    frame_decoder_parameters_.averaging_block_weight_parameter.cntwgt = 1;
-    frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt = 1;
-    frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt = 1;
-
-    frame_decoder_parameters_.complement_parameter.enb = 1;
-    frame_decoder_parameters_.complement_parameter.lowlmt = 5;
-    frame_decoder_parameters_.complement_parameter.slplmt = 0.1;
-    frame_decoder_parameters_.complement_parameter.insrt = 1;
-    frame_decoder_parameters_.complement_parameter.rndrt = 0.2;
-    frame_decoder_parameters_.complement_parameter.btmrt = 0.1;
-    frame_decoder_parameters_.complement_parameter.crstlmt = 40;   // VM:45
-    frame_decoder_parameters_.complement_parameter.hlfil = 1;
-    frame_decoder_parameters_.complement_parameter.hlsz = 8;
-
-    frame_decoder_parameters_.decode_parameter.crstthr = 40;
 
 }
 
@@ -171,7 +146,7 @@ int IscFramedecoderInterface::Initialize(IscDataProcModuleConfiguration* isc_dat
     size_t image_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
     size_t depth_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 8; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
@@ -182,22 +157,15 @@ int IscFramedecoderInterface::Initialize(IscDataProcModuleConfiguration* isc_dat
         work_buffers_.buff_depth[i].height = 0;
         work_buffers_.buff_depth[i].image = new float[depth_size];
         memset(work_buffers_.buff_depth[i].image, 0, depth_size * sizeof(float));
+
+        work_buffers_.buff_int_image[i].width = 0;
+        work_buffers_.buff_int_image[i].height = 0;
+        work_buffers_.buff_int_image[i].image = new int[image_size];
+        memset(work_buffers_.buff_int_image[i].image, 0, image_size * sizeof(int));
     }
     
     // initialize Framedecoder
     ISCFrameDecoder::initialize(isc_data_proc_module_configuration_.max_image_height, isc_data_proc_module_configuration_.max_image_width);
-    ISCFrameDecoder::createAveragingThread();
-
-    // Check if OpenCL is available. Enable it if it is available.
-    if (frame_decoder_parameters_.system_parameter.enabled_opencl_for_avedisp && cv::ocl::haveOpenCL()) {
-        // it can use openCL
-        //cv::String build_info_str =  cv::getBuildInformation();
-        //OutputDebugStringA(build_info_str.c_str());
-        ISCFrameDecoder::setUseOpenCLForAveragingDisparity(1);
-    }
-    else {
-        ISCFrameDecoder::setUseOpenCLForAveragingDisparity(0);
-    }
 
     return DPC_E_OK;
 }
@@ -220,10 +188,12 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     wchar_t returned_string[1024] = {};
 
-    // SystemParameter
-    GetPrivateProfileString(L"SYSTEM", L"enabled_opencl_for_avedisp", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    int temp_value = _wtoi(returned_string);
-    frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp = temp_value == 1 ? true : false;
+    // Decode
+    GetPrivateProfileString(L"DECODE", L"crstthr", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->decode_parameter.crstthr = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"DECODE", L"crsthrm", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->decode_parameter.crsthrm = _wtoi(returned_string);
 
     // DisparityLimitationParameter
     GetPrivateProfileString(L"DISPARITY_LIMITATION", L"limit", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
@@ -235,72 +205,6 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     GetPrivateProfileString(L"DISPARITY_LIMITATION", L"upper", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->disparity_limitation_parameter.upper = _wtoi(returned_string);
 
-    // AveragingParameter
-    GetPrivateProfileString(L"AVERAGE", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.enb = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"blkshgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.blkshgt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"blkswdt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.blkswdt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"intg", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.intg = _wtof(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"range", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.range = _wtof(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"dsprt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.dsprt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"vldrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.vldrt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE", L"reprt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_parameter.reprt = _wtoi(returned_string);
-
-    // AveragingBlockWeightParameter
-    GetPrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"cntwgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_block_weight_parameter.cntwgt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"nrwgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_block_weight_parameter.nrwgt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"rndwgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->averaging_block_weight_parameter.rndwgt = _wtoi(returned_string);
-
-    // ComplementParameter
-    GetPrivateProfileString(L"COMPLEMENT", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.enb = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"lowlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.lowlmt = _wtof(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"slplmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.slplmt = _wtof(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"insrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.insrt = _wtof(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"rndrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.rndrt = _wtof(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"btmrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.btmrt = _wtof(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"crstlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.crstlmt = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"hlfil", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.hlfil = _wtoi(returned_string);
-
-    GetPrivateProfileString(L"COMPLEMENT", L"hlsz", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.hlsz = _wtof(returned_string);
-
-    // Decode
-    GetPrivateProfileString(L"DECODE", L"crstthr", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->decode_parameter.crstthr = _wtoi(returned_string);
 
     return DPC_E_OK;
 }
@@ -317,9 +221,12 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     wchar_t string[1024] = {};
 
-    // SystemParameter
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp);
-    WritePrivateProfileString(L"SYSTEM", L"enabled_opencl_for_avedisp", string, file_name);
+    // Decode
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.crstthr);
+    WritePrivateProfileString(L"DECODE", L"crstthr", string, file_name);
+
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.crsthrm);
+    WritePrivateProfileString(L"DECODE", L"crsthrm", string, file_name);
 
     // DisparityLimitationParameter
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->disparity_limitation_parameter.limit);
@@ -330,73 +237,6 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->disparity_limitation_parameter.upper);
     WritePrivateProfileString(L"DISPARITY_LIMITATION", L"upper", string, file_name);
-
-    // AveragingParameter
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.enb);
-    WritePrivateProfileString(L"AVERAGE", L"enb", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.blkshgt);
-    WritePrivateProfileString(L"AVERAGE", L"blkshgt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.blkswdt);
-    WritePrivateProfileString(L"AVERAGE", L"blkswdt", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->averaging_parameter.intg);
-    WritePrivateProfileString(L"AVERAGE", L"intg", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->averaging_parameter.range);
-    WritePrivateProfileString(L"AVERAGE", L"range", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.dsprt);
-    WritePrivateProfileString(L"AVERAGE", L"dsprt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.vldrt);
-    WritePrivateProfileString(L"AVERAGE", L"vldrt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_parameter.reprt);
-    WritePrivateProfileString(L"AVERAGE", L"reprt", string, file_name);
-
-    // AveragingBlockWeightParameter
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_block_weight_parameter.cntwgt);
-    WritePrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"cntwgt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_block_weight_parameter.nrwgt);
-    WritePrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"nrwgt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_block_weight_parameter.rndwgt);
-    WritePrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"rndwgt", string, file_name);
-
-    // ComplementParameter
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.enb);
-    WritePrivateProfileString(L"COMPLEMENT", L"enb", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.lowlmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"lowlmt", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.slplmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"slplmt", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.insrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"insrt", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.rndrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"rndrt", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.btmrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"btmrt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.crstlmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"crstlmt", string, file_name);
-
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.hlfil);
-    WritePrivateProfileString(L"COMPLEMENT", L"hlfil", string, file_name);
-
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.hlsz);
-    WritePrivateProfileString(L"COMPLEMENT", L"hlsz", string, file_name);
-
-    // Decode
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.crstthr);
-    WritePrivateProfileString(L"DECODE", L"crstthr", string, file_name);
 
     return DPC_E_OK;
 }
@@ -411,38 +251,14 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
  int IscFramedecoderInterface::SetParameterToFrameDecoderModule(const FrameDecoderParameters* frame_decoder_parameters)
 {
 
-    ISCFrameDecoder::setUseOpenCLForAveragingDisparity(frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp);
+     ISCFrameDecoder::setFrameDecoderParameter(
+         frame_decoder_parameters->decode_parameter.crstthr,
+         frame_decoder_parameters->decode_parameter.crsthrm);
 
     ISCFrameDecoder::setDisparityLimitation(
         frame_decoder_parameters->disparity_limitation_parameter.limit,
         frame_decoder_parameters->disparity_limitation_parameter.lower,
         frame_decoder_parameters->disparity_limitation_parameter.upper);
-
-     ISCFrameDecoder::setAveragingParameter(
-        frame_decoder_parameters->averaging_parameter.enb,
-        frame_decoder_parameters->averaging_parameter.blkshgt,
-        frame_decoder_parameters->averaging_parameter.blkswdt,
-        frame_decoder_parameters->averaging_parameter.intg,
-        frame_decoder_parameters->averaging_parameter.range,
-        frame_decoder_parameters->averaging_parameter.dsprt,
-        frame_decoder_parameters->averaging_parameter.vldrt,
-        frame_decoder_parameters->averaging_parameter.reprt);
-
-     ISCFrameDecoder::setAveragingBlockWeight(
-         frame_decoder_parameters->averaging_block_weight_parameter.cntwgt,
-         frame_decoder_parameters->averaging_block_weight_parameter.nrwgt,
-         frame_decoder_parameters->averaging_block_weight_parameter.rndwgt);
-
-     ISCFrameDecoder::setComplementParameter(
-         frame_decoder_parameters->complement_parameter.enb,
-         frame_decoder_parameters->complement_parameter.lowlmt,
-         frame_decoder_parameters->complement_parameter.slplmt,
-         frame_decoder_parameters->complement_parameter.insrt,
-         frame_decoder_parameters->complement_parameter.rndrt,
-         frame_decoder_parameters->complement_parameter.btmrt,
-         frame_decoder_parameters->complement_parameter.crstlmt,
-         frame_decoder_parameters->complement_parameter.hlfil,
-         frame_decoder_parameters->complement_parameter.hlsz);
 
     return DPC_E_OK;
 }
@@ -456,10 +272,10 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
  int IscFramedecoderInterface::Terminate()
 {
 	
-    ISCFrameDecoder::deleteAveragingThread();
+    ISCFrameDecoder::finalize();
     
     // release work
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 8; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
@@ -470,6 +286,11 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
         work_buffers_.buff_depth[i].height = 0;
         delete[] work_buffers_.buff_depth[i].image;
         work_buffers_.buff_depth[i].image = nullptr;
+
+        work_buffers_.buff_int_image[i].width = 0;
+        work_buffers_.buff_int_image[i].height = 0;
+        delete[] work_buffers_.buff_int_image[i].image;
+        work_buffers_.buff_int_image[i].image = nullptr;
     }
 
     return DPC_E_OK;
@@ -584,39 +405,14 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     int index = 0;
 
+    // DecodeParameter
+    MakeParameterSet(frame_decoder_parameters_.decode_parameter.crstthr, L"crstthr", L"Decode", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.decode_parameter.crsthrm, L"crsthrm", L"Decode", L"センサー輝度高解像度モード 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+
     // DisparityLimitationParameter
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.limit, L"limit", L"DisparityLimitation", L"視差値の制限　0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.lower, L"lower", L"DisparityLimitation", L"視差値の下限", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.upper, L"upper", L"DisparityLimitation", L"視差値の上限", &isc_data_proc_module_parameter->parameter_set[index++]);
-
-    // AveragingParameter
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.enb,     L"enb",      L"Averaging", L"平均化処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.blkshgt, L"blkshgt",  L"Averaging", L"平均化ブロック高さ（片側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.blkswdt, L"blkswdt",  L"Averaging", L"平均化ブロック幅（片側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.intg,    L"intg",     L"Averaging", L"平均化移動積分幅（片側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.range,   L"range",    L"Averaging", L"平均化分布範囲最大幅（片側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.dsprt,   L"dsprt",    L"Averaging", L"平均化視差含有率", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.vldrt,   L"vldrt",    L"Averaging", L"平均化有効比率", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_parameter.reprt,   L"reprt",    L"Averaging", L"平均化置換有効比率", &isc_data_proc_module_parameter->parameter_set[index++]);
-
-    // AveragingBlockWeightParameter
-    MakeParameterSet(frame_decoder_parameters_.averaging_block_weight_parameter.cntwgt, L"cntwgt",   L"AveragingBlockWeight", L"ブロックの重み（中央）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt,  L"nrwgt",    L"AveragingBlockWeight", L"ブロックの重み（近傍）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt, L"rndwgt",   L"AveragingBlockWeight", L"ブロックの重み（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
-
-    // ComplementParameter
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.enb,        L"enb",      L"Complement", L"補完処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.lowlmt,     L"lowlmt",   L"Complement", L"視補完最小視差値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.slplmt,     L"slplmt",   L"Complement", L"補完幅の最大視差勾配", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.insrt,      L"insrt",    L"Complement", L"補完画素幅の視差値倍率（内側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.rndrt,      L"rndrt",    L"Complement", L"補完画素幅の視差値倍率（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.btmrt,      L"btmrt",    L"Complement", L"補完画素幅の視差値倍率（下端）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.crstlmt,    L"crstlmt",  L"Complement", L"補完ブロックのコントラスト上限値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlfil,      L"hlfil",    L"Complement", L"穴埋め処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlsz,       L"hlsz",     L"Complement", L"穴埋め幅", &isc_data_proc_module_parameter->parameter_set[index++]);
-
-    // DecodeParameter
-    MakeParameterSet(frame_decoder_parameters_.decode_parameter.crstthr, L"crstthr", L"Decode", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     isc_data_proc_module_parameter->parameter_count = index;
 
@@ -693,39 +489,14 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     int index = 0;
 
+    // DecodeParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crstthr);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crsthrm);
+
     // DisparityLimitationParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.disparity_limitation_parameter.limit);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.disparity_limitation_parameter.lower);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.disparity_limitation_parameter.upper);
-
-    // AveragingParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.enb);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.blkshgt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.blkswdt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.intg);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.range);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.dsprt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.vldrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_parameter.reprt);
-
-    // AveragingBlockWeightParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_block_weight_parameter.cntwgt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt);
-
-    // ComplementParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.enb);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.lowlmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.slplmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.insrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.rndrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.btmrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.crstlmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlfil);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlsz);
-
-    // DecodeParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crstthr);
 
     parameter_update_request_ = true;
 
@@ -792,14 +563,16 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
  * @retval 0 成功
  * @retval other 失敗
  */
- int IscFramedecoderInterface::GetDecodeData(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data)
+ int IscFramedecoderInterface::GetDecodeData(IscImageInfo* isc_image_Info, IscBlockDisparityData* isc_block_disparity_data)
 {
 
     if (isc_image_Info->grab != IscGrabMode::kParallax) {
         return DPCPROCESS_E_INVALID_MODE;
     }
    
-    if ((isc_image_Info->raw.width == 0) || (isc_image_Info->raw.height == 0)) {
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_Info->frame_data[fd_index].raw.width == 0) || (isc_image_Info->frame_data[fd_index].raw.height == 0)) {
         return DPC_E_OK;
     }
 
@@ -807,13 +580,11 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
         int ret = SetParameterToFrameDecoderModule(&frame_decoder_parameters_);
         parameter_update_request_ = false;
     }
-
-    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
-   
+  
     // (1)
-    int width = isc_image_Info->raw.width / 2;
-    int height = isc_image_Info->raw.height;
-    unsigned char* raw_image = isc_image_Info->raw.image;
+    int width = isc_image_Info->frame_data[fd_index].raw.width / 2;
+    int height = isc_image_Info->frame_data[fd_index].raw.height;
+    unsigned char* raw_image = isc_image_Info->frame_data[fd_index].raw.image;
 
     work_buffers_.buff_image[0].width = width;
     work_buffers_.buff_image[0].height = height;
@@ -828,60 +599,86 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     work_buffers_.buff_image[2].width = width;
     work_buffers_.buff_image[2].height = height;
     work_buffers_.buff_image[2].channel_count = 1;
-    unsigned char* pdspenc = work_buffers_.buff_image[2].image;
 
     ISCFrameDecoder::decodeFrameData(
         height,     // 画像の高さ
         width,      // 画像の幅
         raw_image,  // フレームデータ
         prgtimg,    // 右（基準）画像データ 右下原点
-        plftimg,    // 左（比較）画像データ 右下原点
-        pdspenc);   // 視差エンコードデータ
+        plftimg);   // 左（比較）画像データまたは視差エンコードデータ 右下原点
+
 
     // (2)
-    int decode_width = isc_image_Info->raw.width / 2;
-    int decode_height = isc_image_Info->raw.height;
+    int decode_width = isc_image_Info->frame_data[fd_index].raw.width / 2;
+    int decode_height = isc_image_Info->frame_data[fd_index].raw.height;
 
     work_buffers_.buff_image[3].width = decode_width;
     work_buffers_.buff_image[3].height = decode_height;
     work_buffers_.buff_image[3].channel_count = 1;
     unsigned char* pdspimg = work_buffers_.buff_image[3].image;
-    
-    dst_isc_image_info->depth.width = decode_width;
-    dst_isc_image_info->depth.height = decode_height;
-    float* ppxldsp = dst_isc_image_info->depth.image;
 
-    work_buffers_.buff_depth[0].width = decode_width;
-    work_buffers_.buff_depth[0].height = decode_height;
-    float* pblkdsp = work_buffers_.buff_depth[0].image;
+    int* pblkhgt = &isc_block_disparity_data->blkhgt;
+    int* pblkwdt = &isc_block_disparity_data->blkwdt;
+    int* pmtchgt = &isc_block_disparity_data->mtchgt;
+    int* pmtcwdt = &isc_block_disparity_data->mtcwdt;
+    int* pblkofsx = &isc_block_disparity_data->dspofsx;
+    int* pblkofsy = &isc_block_disparity_data->dspofsy;
+    int* pdepth = &isc_block_disparity_data->depth;
+    int* pshdwdt = &isc_block_disparity_data->shdwdt;
 
-    int crstthr = frame_decoder_parameters_.decode_parameter.crstthr;
+    float* ppxldsp = isc_block_disparity_data->ppxldsp;
+    float* pblkdsp = isc_block_disparity_data->pblkdsp;
+    int* pblkval = isc_block_disparity_data->pblkval;
+    int* pblkcrst = isc_block_disparity_data->pblkcrst;
 
-    ISCFrameDecoder::decodeDisparityData(
+    ISCFrameDecoder::getDisparityData(
         decode_height,  // 画像の高さ
         decode_width,   // 画像の幅
         prgtimg,        // 右（基準）画像データ 右下原点
-        crstthr,        // コントラスト閾値
-        pdspenc,        // 視差エンコードデータ
+        plftimg,        // 視差エンコードデータ
+        pblkhgt,        // 視差ブロック高さ
+        pblkwdt,        // 視差ブロック幅
+        pmtchgt,        // マッチングブロック高さ
+        pmtcwdt,        // マッチングブロック幅
+        pblkofsx,       // 視差ブロック横オフセット
+        pblkofsy,       // 視差ブロック縦オフセット
+        pdepth,         // マッチング探索幅
+        pshdwdt,        // 画像遮蔽幅
         pdspimg,        // 視差画像 右下原点
         ppxldsp,        // 視差データ 右下原点
-        pblkdsp);       // ブロック視差データ 右下基点
+        pblkdsp,        // ブロック視差データ 右下基点 
+        pblkval,        // 視差ブロック視差値(1000倍サブピクセル精度整数)
+        pblkcrst);      // ブロックコントラスト
 
-	return DPC_E_OK;
+    isc_block_disparity_data->image_width = isc_image_Info->frame_data[fd_index].p1.width;
+    isc_block_disparity_data->image_height = isc_image_Info->frame_data[fd_index].p1.height;
+
+    return DPC_E_OK;
 }
 
-/**
- * 視差を平均化します.
- *
- * @param[in] isc_image_Info 入力画像・データ
- * @param[out] isc_data_proc_result_data　処理結果データ
- * @retval 0 成功
- * @retval other 失敗
- */
-int IscFramedecoderInterface::GetDecodeAverageDisparityData(IscImageInfo* isc_image_Info, IscBlockDisparityData* isc_block_disparity_data, IscDataProcResultData* isc_data_proc_result_data)
+ /**
+  * Double Shutterモード使用時に、視差データをデコードして視差画像と視差情報に戻し、平均化、補完処理を行いします.
+  *
+  * @param[in] isc_image_Info 入力画像・データ
+  * @param[out] isc_data_proc_result_data　処理結果データ
+  * @retval 0 成功
+  * @retval other 失敗
+  */
+int IscFramedecoderInterface::GetDecodeDataDoubleShutter(IscImageInfo* isc_image_info_in, IscBlockDisparityData* isc_block_disparity_data, IscImageInfo* isc_image_info_out)
 {
 
-    if ((isc_block_disparity_data->image_width == 0) || (isc_block_disparity_data->image_height == 0)) {
+    if (isc_image_info_in->grab != IscGrabMode::kParallax) {
+        return DPCPROCESS_E_INVALID_MODE;
+    }
+
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_info_in->frame_data[fd_index].raw.width == 0) || (isc_image_info_in->frame_data[fd_index].raw.height == 0)) {
+        return DPC_E_OK;
+    }
+
+    fd_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+    if ((isc_image_info_in->frame_data[fd_index].raw.width == 0) || (isc_image_info_in->frame_data[fd_index].raw.height == 0)) {
         return DPC_E_OK;
     }
 
@@ -890,55 +687,112 @@ int IscFramedecoderInterface::GetDecodeAverageDisparityData(IscImageInfo* isc_im
         parameter_update_request_ = false;
     }
 
-    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+    // (1)
+    fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+    int width_latest = isc_image_info_in->frame_data[fd_index].raw.width / 2;
+    int height_latest = isc_image_info_in->frame_data[fd_index].raw.height;
+    unsigned char* raw_image_latest = isc_image_info_in->frame_data[fd_index].raw.image;
 
-    int image_width = isc_block_disparity_data->image_width;
-    int image_height = isc_block_disparity_data->image_height;
+    isc_image_info_out->frame_data[fd_index].p1.width = width_latest;
+    isc_image_info_out->frame_data[fd_index].p1.height = height_latest;
+    isc_image_info_out->frame_data[fd_index].p1.channel_count = 1;
+    unsigned char* prgtimg_latest = isc_image_info_out->frame_data[fd_index].p1.image;
 
-    int imghgt = image_height;
-    int imgwdt = image_width;
-    int blkhgt = isc_block_disparity_data->pblkhgt;
-    int blkwdt = isc_block_disparity_data->pblkwdt;
-    int mtchgt = isc_block_disparity_data->pmtchgt;
-    int mtcwdt = isc_block_disparity_data->pmtcwdt;
-    int dspofsx = isc_block_disparity_data->pblkofsx;
-    int dspofsy = isc_block_disparity_data->pblkofsy;
-    int depth = isc_block_disparity_data->pdepth;
-    int pshdwdt = isc_block_disparity_data->pshdwdt;
+    isc_image_info_out->frame_data[fd_index].p2.width = width_latest;
+    isc_image_info_out->frame_data[fd_index].p2.height = height_latest;
+    isc_image_info_out->frame_data[fd_index].p2.channel_count = 1;
+    unsigned char* plftimg_latest = isc_image_info_out->frame_data[fd_index].p2.image;
 
+    ISCFrameDecoder::decodeFrameData(
+        height_latest,     // 画像の高さ
+        width_latest,      // 画像の幅
+        raw_image_latest,  // フレームデータ
+        prgtimg_latest,    // 右（基準）画像データ 右下原点
+        plftimg_latest);   // 左（比較）画像データまたは視差エンコードデータ 右下原点
+
+    // (2)
+    fd_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+
+    int width_previous = isc_image_info_in->frame_data[fd_index].raw.width / 2;
+    int height_previous = isc_image_info_in->frame_data[fd_index].raw.height;
+    unsigned char* raw_image_previous = isc_image_info_in->frame_data[fd_index].raw.image;
+
+    isc_image_info_out->frame_data[fd_index].p1.width = width_previous;
+    isc_image_info_out->frame_data[fd_index].p1.height = height_previous;
+    isc_image_info_out->frame_data[fd_index].p1.channel_count = 1;
+    unsigned char* prgtimg_previous = isc_image_info_out->frame_data[fd_index].p1.image;
+
+    isc_image_info_out->frame_data[fd_index].p2.width = width_previous;
+    isc_image_info_out->frame_data[fd_index].p2.height = height_previous;
+    isc_image_info_out->frame_data[fd_index].p2.channel_count = 1;
+    unsigned char* plftimg_previous = isc_image_info_out->frame_data[fd_index].p2.image;
+
+    ISCFrameDecoder::decodeFrameData(
+        height_previous,    // 画像の高さ
+        width_previous,     // 画像の幅
+        raw_image_previous, // フレームデータ
+        prgtimg_previous,   // 右（基準）画像データ 右下原点
+        plftimg_previous);  // 左（比較）画像データまたは視差エンコードデータ 右下原点
+
+    // (3)
+    int decode_width = width_latest;
+    int decode_height = height_latest;
+
+    double gain_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].gain;
+    double exposure_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].exposure;
+
+    double gain_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].gain;
+    double exposure_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].exposure;
+
+    work_buffers_.buff_image[5].width = decode_width;
+    work_buffers_.buff_image[5].height = decode_height;
+    work_buffers_.buff_image[5].channel_count = 1;
+    unsigned char* pdspimg = work_buffers_.buff_image[5].image;
+
+    int* pblkhgt = &isc_block_disparity_data->blkhgt;
+    int* pblkwdt = &isc_block_disparity_data->blkwdt;
+    int* pmtchgt = &isc_block_disparity_data->mtchgt;
+    int* pmtcwdt = &isc_block_disparity_data->mtcwdt;
+    int* pblkofsx = &isc_block_disparity_data->dspofsx;
+    int* pblkofsy = &isc_block_disparity_data->dspofsy;
+    int* pdepth = &isc_block_disparity_data->depth;
+    int* pshdwdt = &isc_block_disparity_data->shdwdt;
+
+    float* ppxldsp = isc_block_disparity_data->ppxldsp;
+    float* pblkdsp = isc_block_disparity_data->pblkdsp;
     int* pblkval = isc_block_disparity_data->pblkval;
     int* pblkcrst = isc_block_disparity_data->pblkcrst;
+    unsigned char* pbldimg = isc_block_disparity_data->pbldimg;
 
+    ISCFrameDecoder::getDoubleDisparityData(
+        decode_height,      // 画像の高さ
+        decode_width,       // 画像の幅
+        prgtimg_latest,     // 現フレーム画像データ
+        plftimg_latest,     // 現フレーム視差エンコードデータ
+        exposure_latest,    // 現フレームシャッター露光値
+        gain_latest,        // 現フレームシャッターゲイン値
+        prgtimg_previous,   // 前フレーム画像データ
+        plftimg_previous,   // 前フレーム視差エンコードデータ
+        exposure_previous,  // 前フレームシャッター露光値
+        gain_previous,      // 前フレームシャッターゲイン値
+        pblkhgt,            // 視差ブロック高さ
+        pblkwdt,            // 視差ブロック幅
+        pmtchgt,            // マッチングブロック高さ
+        pmtcwdt,            // マッチングブロック幅
+        pblkofsx,           // 視差ブロック横オフセット
+        pblkofsy,           // 視差ブロック縦オフセット 
+        pdepth,             // マッチング探索幅 
+        pshdwdt,            // 画像遮蔽幅
+        pbldimg,            // 合成画像 右下基点
+        pdspimg,            // 視差画像 右下基点 
+        ppxldsp,            // 視差情報 右下基点 
+        pblkdsp,            // ブロック視差情報 右下基点
+        pblkval,            // ブロック視差値(1000倍サブピクセル精度の整数)
+        pblkcrst);          // ブロックコントラスト
 
-    work_buffers_.buff_image[0].width = image_width;
-    work_buffers_.buff_image[0].height = image_height;
-    work_buffers_.buff_image[0].channel_count = 1;
-    unsigned char* pdspimg = work_buffers_.buff_image[0].image;
-
-    dst_isc_image_info->depth.width = image_width;
-    dst_isc_image_info->depth.height = image_height;
-    float* ppxldsp = dst_isc_image_info->depth.image;
-
-    work_buffers_.buff_depth[0].width = image_width;
-    work_buffers_.buff_depth[0].height = image_height;
-    float* pblkdsp = work_buffers_.buff_depth[0].image;
-
-    ISCFrameDecoder::averageDisparityData(
-        imghgt,     // 画像の高さ
-        imgwdt,     // 画像の幅 
-        blkhgt,     // 視差ブロックの高さ
-        blkwdt,     // 視差ブロックの幅
-        mtchgt,     // マッチングブロックの高さ 
-        mtcwdt,     // マッチングブロックの幅 
-        dspofsx,    // 視差ブロック横オフセット
-        dspofsy,    // 視差ブロック縦オフセット
-        depth,      // マッチング探索幅
-        pshdwdt,    // 画像遮蔽幅
-        pblkval,    // 視差ブロック視差値(1000倍サブピクセル精度整数)    
-        pblkcrst,   // ブロックコントラスト 
-        pdspimg,    // 視差画像 右下原点
-        ppxldsp,    // 視差データ 右下原点 
-        pblkdsp);   // ブロック視差データ 右下原点 
+    isc_block_disparity_data->image_width = decode_width;
+    isc_block_disparity_data->image_height = decode_height;
 
     return DPC_E_OK;
 }
+

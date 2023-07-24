@@ -109,6 +109,7 @@ BEGIN_MESSAGE_MAP(AdvancedSettingDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON3, &AdvancedSettingDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON4, &AdvancedSettingDlg::OnBnClickedButton4)
 	ON_BN_CLICKED(IDC_BUTTON5, &AdvancedSettingDlg::OnBnClickedButton5)
+	ON_BN_CLICKED(IDC_BUTTON6, &AdvancedSettingDlg::OnBnClickedButton6)
 END_MESSAGE_MAP()
 
 
@@ -359,6 +360,7 @@ void AdvancedSettingDlg::SetDpcParameterFileName(const int module_index, const T
 	switch (module_index) {
 	case 0:	GetDlgItem(IDC_STATIC_MODULE_NAME_1)->SetWindowText(module_name); break;
 	case 1:	GetDlgItem(IDC_STATIC_MODULE_NAME_2)->SetWindowText(module_name); break;
+	case 2:	GetDlgItem(IDC_STATIC_MODULE_NAME_3)->SetWindowText(module_name); break;
 	}
 	
 	_stprintf_s(dpc_parameter_file_name_[module_index], _T("%s"), fileName);
@@ -406,9 +408,6 @@ bool AdvancedSettingDlg::InvokeDpcParameterEditor(const int module_index, const 
 }
 
 
-
-
-
 void AdvancedSettingDlg::OnBnClickedButton5()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
@@ -421,5 +420,17 @@ void AdvancedSettingDlg::OnBnClickedButton5()
 
 	delete opensourecinfo_dlg_;
 	opensourecinfo_dlg_ = nullptr;
+
+}
+
+
+void AdvancedSettingDlg::OnBnClickedButton6()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+	
+	// Data processing library parameter settings
+	int module_index = 2;
+	InvokeDpcParameterEditor(module_index, dpc_parameter_file_name_[module_index]);
+
 
 }

@@ -40,4 +40,5 @@ public:
 	ns_isc_dpl::IscDpl* isc_dpl_;
 
 	afx_msg void OnBnClickedButton5();
+	afx_msg void OnBnClickedButton6();
 };

@@ -288,6 +288,15 @@ public:
 	*/
 	int DeviceSetOption(const IscCameraParameter option_name, const IscShutterMode value);
 
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	int DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	int DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size);
 
 	// grab control
 

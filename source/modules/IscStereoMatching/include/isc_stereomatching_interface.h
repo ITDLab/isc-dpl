@@ -106,7 +106,7 @@ private:
 		int blkofsx;	/**< 視差ブロック横オフセット */
 		int blkofsy;	/**< 視差ブロック縦オフセット */
 		int crstthr;	/**< コントラスト閾値 */
-		int crsthrm;	/**< センサー輝度高解像度モードステータス 0:オフ 1:オン(IN) */
+		int grdcrct;	/**< 階調補正モードステータス 0:オフ 1:オン */
 	};
 
 	struct BackMatchingParameter {
@@ -127,7 +127,6 @@ private:
 
 	struct WorkBuffers {
 		IscImageInfo::ImageType buff_image[4];
-		IscImageInfo::DepthType buff_depth[4];
 	};
 	WorkBuffers work_buffers_;
 

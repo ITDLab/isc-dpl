@@ -91,7 +91,7 @@ private:
 
 	struct DecodeParameter {
 		int crstthr;	/**< コントラスト閾値 */
-		int crsthrm;	/**< センサー輝度高解像度モードステータス 0:オフ 1:オン */
+		int grdcrct;	/**< 階調補正モードステータス 0:オフ 1:オン */
 	};
 
 	struct DisparityLimitationParameter {
@@ -116,8 +116,6 @@ private:
 
 	struct WorkBuffers {
 		IscImageInfo::ImageType buff_image[8];
-		IscImageInfo::DepthType buff_depth[8];
-		ImageIntType			buff_int_image[8];
 	};
 	WorkBuffers work_buffers_;
 

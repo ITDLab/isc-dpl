@@ -8,13 +8,13 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 データ処理ライブラリには、現在は２つのライブラリと１つのサポートライブラリが含まれています。  
 
  - Soft Stereo Matching  
-　ステレオマッチングを行います  
+    ステレオマッチングを行います  
 
  - Disparity Filter  
-　カメラ本体又はSoft Stereo Matching出力の視差に対して平均化、補間処理を行います  
+    カメラ本体又はSoft Stereo Matching出力の視差に対して平均化、補間処理を行います  
 
  - Frame Decoder  
-　カメラから取得するデータの展開などを行います
+    カメラから取得するデータの展開などを行います
 
 本サンプルプログラムを実際のステレオカメラと接続して使用することで、動作の検証が可能となります。  
 
@@ -34,7 +34,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 - Windows 10(x64)/11  
 - Visual Studio 2022 (require MFC)  
-- OpenCV 4.7.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの設定を調整してください)  
+- OpenCV 4.8.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの設定を調整してください)  
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x75)  
     - ISC100XC: FPGA(0x22)  
@@ -52,43 +52,45 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 
 - build  
     - Visual Studioを使用し、プロジェクトをbuildします  
-      ソリューションファイルは、build\windows\isc_dpl_all.sln　です  
+      ソリューションファイルは、build\windows\isc_dpl_all.sln です  
       実行するプロジェクトは、DPC_guiです  
     - OpenCVのバージョンが4.7.0以外の場合は、リンクしているバージョンを変更してください  
       以下のようにLinkを定義していますので、全て変更してください  
       ```
             #ifdef _DEBUG  
-            #pragma comment (lib,"opencv_world470d")  
+            #pragma comment (lib,"opencv_world480d")  
             #else  
-            #pragma comment (lib,"opencv_world470")  
+            #pragma comment (lib,"opencv_world480")  
             #endif  
       ```  
     
       設定の必要なファイルは、以下です  
       - source\apps\DPC_gui\DPC_guiDlg.cpp  
+      - source\modules\IscDplMainControl\src\isc_main_control_impl.cpp  
       - source\modules\IscCameraControl\src\isc_camera_control.cpp  
       - source\modules\IscDataProcessingControl\src\isc_data_processing_control.cpp  
-      - source\modules\IscDplMainControl\src\isc_main_control_impl.cpp  
       - source\modules\IscFrameDecoder\src\isc_framedecoder_interface.cpp  
-      - source\modules\VmSdkWrapper\src\vm_sdk_wrapper.cpp  
-      - source\modules\XcSdkWrapper\src\xc_sdk_wrapper.cpp  
       - source\modules\IscDisparityFilter\src\isc_disparityfilter_interface.cpp  
       - source\modules\IscStereoMatching\src\isc_stereomatching_interface.cpp  
+	  - source\modules\IscSelfCalibration\srcsc_selftcalibration_interface.cpp
+      - source\modules\VmSdkWrapper\src\vm_sdk_wrapper.cpp  
+      - source\modules\XcSdkWrapper\src\xc_sdk_wrapper.cpp  
+      - source\modules\K4aSdkWrapper\src\k4a_sdk_wrapper.cpp  
      
 - run  
-    - OpenCVのDLLを実行フォルダへコピーします（バージョンはBuildしたOpenCVによります）  
-        - Debug Build: opencv_world470d.dll  
-        - Release Build: opencv_world470.dll  
+    - OpenCVのDLLを実行フォルダへコピーします（ファイル名はバージョンによります）  
+        - Debug Build: opencv_world480d.dll  
+        - Release Build: opencv_world480.dll  
     - ISCステレオカメラ用のDLLを実行フォルダへコピーします  
       DLLは、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
       それぞれ必要なDLLの名称は以下です
         - ISC100VM: ISCLibvm.dll, ISCSDKLibvm200.dll  
         - ISC100XC: ISCLibxc.dll, ISCSDKLibxc.dll
     - ISC100XCを使用する場合は、USB 3.0 to FIFO Bridge Chip FT601(FTDI*)のApplication Library(FTD3XX.dll)を実行フォルダへコピーします  
-      FTD3XX.dll　は、ISC Stereo Camera入手時に同梱されるUSBに含まれています  
+      FTD3XX.dll は、ISC Stereo Cameraに同梱されるUSBに含まれています  
       または、[FTDI official site](https://ftdichip.com/drivers/d3xx-drivers/)より入手可能です  
     - 実行に必要なパラメータファイルを実行フォルダへコピーします  
-      source\apps\ParameterFiles　に含まれています
+      source\apps\ParameterFiles に含まれています
 
 ****
 ## Project structure
@@ -113,13 +115,14 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 |                       | IscDataProcessingControl  | IscDataProcessingControl.dll  | データ処理ライブラリの呼び出しを行います|  
 |                       | IscStereoMatching         | IscStereoMatching.dll         | ステレオマッチングを行います|  
 |                       | IscFrameDecoder           | IscFrameDecoder.dll           | カメラデータの展開を行います|  
-|                       | IscDisparityFilter        | IscDisparityFilter.dll        | 視差の平均化、補間処理を行います|  
+|                       | IscDataProcessingControl  | IscDataProcessingControl.dll  | データ処理ライブラリの呼び出しを行います|  
+|                       | IscSelfCalibration        | IscSelfCalibration.dll        | ソフトウェアによるステレオ平行化を行います|  
 | SDK                   |                           |                               | |  
 |                       |ISC SDK(VM/XC)             |                               | それぞれのカメラに対応したSDKです|  
 
 
 プロジェクトの全体構成を下図に示します  
-![Diagram](./res/data_processing_lib-Overall-Structure.drawio.png)
+<img src="./res/data_processing_lib-Overall-Structure.drawio.png" width="609px">
 
 ****
 ## Manuals
@@ -127,6 +130,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 [DPC_gui操作説明書](./docs/DPC_gui操作説明書.pdf)  
 [ISC_DPLモジュール説明書](./docs/ISC_DPLモジュール説明書.pdf)  
 [データ処理ライブラリ説明書](./docs/データ処理ライブラリ説明書.pdf)  
+[セルフキャリブレーションライブラリ説明書](./docs/セルフキャリブレーションライブラリ説明書.pdf)  
 [IscDpl API Manual](https://itdlab.github.io/isc-dpl-docs/index.html)  
 
 ****

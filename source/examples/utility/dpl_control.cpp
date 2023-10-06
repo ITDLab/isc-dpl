@@ -96,6 +96,18 @@ bool DplControl::Initialize(const wchar_t* module_path, const int camera_model)
 
         printf("[INFO]Camera Parameter:b(%.3f) bf(%.3f) dinf(%.3f)\n", camera_parameter_.b, camera_parameter_.bf,camera_parameter_.dinf);    
 
+        // set shutter mode single
+        isc_dpl_->DeviceSetOption(IscCameraParameter::kShutterMode, IscShutterMode::kSingleShutter);
+        printf("[INFO]Set Shutter Control Mode:Single\n");
+
+        // set auto calib off
+        isc_dpl_->DeviceSetOption(IscCameraParameter::kAdjustAuto, false);
+        printf("[INFO]Set Auto Adjust:Off\n");
+
+        // set selft calibration
+        //isc_dpl_->DeviceSetOption(IscCameraParameter::kSelfCalibration, true);
+        //printf("[INFO]Set Self-Calibration:on\n");
+
     }
 	else {
         printf("[ERROR]Failed to open library\n");
@@ -105,7 +117,7 @@ bool DplControl::Initialize(const wchar_t* module_path, const int camera_model)
     // display settings
     double min_distance = 0.5;
     double max_distance = 20.0;
-    double max_disparity = 128.0;
+    double max_disparity = 255.0;
     switch (isc_camera_model) {
     case IscCameraModel::kVM: max_disparity = 128.0; break;
     case IscCameraModel::kXC: max_disparity = 255.0; break;

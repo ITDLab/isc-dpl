@@ -43,9 +43,9 @@
 #pragma comment (lib, "shlwapi")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 namespace ns_xcsdk_wrapper
@@ -187,11 +187,11 @@ namespace ns_xcsdk_wrapper
 	typedef int (WINAPI* TGetImageEx)(unsigned char*, unsigned char*, int, int);
 	TGetImageEx getImageEx = NULL;
 
-	//	ISCSDKLIB_API int GetYUVImageEx(unsigned char* pBuffer, int nSkip, unsigned long nWaitTime = 100);
+	//int GetYUVImageEx(unsigned char* pBuffer, int nSkip, unsigned long nWaitTime = 100);
 	typedef int (WINAPI* TGetYUVImageEx)(unsigned char*, int, unsigned long);
 	TGetYUVImageEx getYUVImageEx = NULL;
 
-	//ISCSDKLIB_API int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
+	//int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
 	struct RawSrcData {
 		unsigned char* image;
 		int startGrabMode;		// 2:pallax+image 3:correct image 4:before correctimage
@@ -1453,7 +1453,7 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 
 	case IscCameraParameter::kPeculiarRemoval:
 		if (value) {
-			ret_value = SetStereoMatchingsPeculiarRemoval(3);
+			ret_value = SetStereoMatchingsPeculiarRemoval(1);
 			if (ret_value == ISC_OK) {
 				ret_value = DPC_E_OK;
 			}
@@ -1662,6 +1662,82 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const Is
 	return ret_value;
 }
 
+/**
+ * get the value of the parameter.
+ *
+ * @param[in] option_name target parameter.
+ * @param[int] write_value obtained value.
+ * @param[int] write_size obtained value.
+ * @param[out] read_value obtained value.
+ * @param[int] read_size obtained value.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size)
+{
+	int ret_value = CAMCONTROL_E_INVALID_REQUEST;
+
+	if (write_value == nullptr || read_value == nullptr) {
+		return ret_value;
+	}
+
+	if (write_size == 0 || read_size == 0) {
+		return ret_value;
+	}
+
+	switch (option_name) {
+	case IscCameraParameter::kGenericRead:
+		{
+			int ret = getCameraRegData(write_value, read_value, write_size, read_size);
+			if (ret == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
+		}
+		break;
+	}
+
+	return ret_value;
+}
+
+/**
+ * set the parameters.
+ *
+ * @param[in] option_name target parameter.
+ * @param[in] write_value value to set.
+ * @param[in] write_size value to set.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size)
+{
+	int ret_value = CAMCONTROL_E_INVALID_REQUEST;
+
+	if (write_value == nullptr) {
+		return ret_value;
+	}
+
+	if (write_size == 0) {
+		return ret_value;
+	}
+
+	switch (option_name) {
+	case IscCameraParameter::kGenericWrite:
+	{
+		int ret = setCameraRegData(write_value, write_size);
+		if (ret == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+	}
+	break;
+	}
+
+	return ret_value;
+}
+
 // grab control
 /**
  * start image acquisition.
@@ -1841,17 +1917,6 @@ int XcSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].raw_color.channel_count = 0;
 		isc_image_info->frame_data[i].raw_color.image = new unsigned char[width * height * 2];
 
-		isc_image_info->frame_data[i].bayer_base.width = 0;
-		isc_image_info->frame_data[i].bayer_base.height = 0;
-		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
-		isc_image_info->frame_data[i].bayer_base.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_compare.width = 0;
-		isc_image_info->frame_data[i].bayer_compare.height = 0;
-		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
-		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
-
-
 		size_t image_size = width * height;
 		memset(isc_image_info->frame_data[i].p1.image, 0, image_size);
 		memset(isc_image_info->frame_data[i].p2.image, 0, image_size);
@@ -1932,18 +1997,6 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].raw_color.channel_count = 0;
 		delete[] isc_image_info->frame_data[i].raw_color.image;
 		isc_image_info->frame_data[i].raw_color.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_base.width = 0;
-		isc_image_info->frame_data[i].bayer_base.height = 0;
-		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
-		assert(isc_image_info->frame_data[i].bayer_base.image == nullptr);
-		isc_image_info->frame_data[i].bayer_base.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_compare.width = 0;
-		isc_image_info->frame_data[i].bayer_compare.height = 0;
-		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
-		assert(isc_image_info->frame_data[i].bayer_compare.image == nullptr);
-		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
 	}
 
 	return DPC_E_OK;
@@ -2216,52 +2269,13 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 	if (isc_grab_start_mode_.isc_grab_color_mode == IscGrabColorMode::kColorON) {
 		utility_measure_time.Start();
 		//enum class IscGetModeColor {
-		//	kYuv,               /**< output yuv */
-		//	kBayer,             /**< bayer output */
 		//	kBGR,               /**< yuv(bayer) -> bgr */
 		//	kCorrect,           /**< yuv(bayer) -> bgr -> correct */
 		//	kAwb,               /**< yuv(bayer) -> bgr -> correct -> auto white balance */
 		//	kAwbNoCorrect       /**< yuv(bayer) -> bgr -> auto white balance */
 		//};
 
-		if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kYuv) {
-
-			isc_image_info->frame_data[frame_data_id].color.width = width;
-			isc_image_info->frame_data[frame_data_id].color.height = height;
-			isc_image_info->frame_data[frame_data_id].color.channel_count = 1;
-
-			if (is_flip_for_compatibility) {
-				// 他のカメラとの互換性のために左右を反転します
-				//size_t cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count * 2;
-				//memcpy(isc_image_info->color.image, work_buffer_.buffer[0], cp_size);
-
-				unsigned char temp_yuv[4] = {};
-				int line_step = width * 2;
-
-				for (int y = 0; y < height; y++) {
-					unsigned char* src = work_buffer_.buffer[0] + (y * line_step) + (line_step - 4);
-					unsigned char* dst = isc_image_info->frame_data[frame_data_id].color.image + (y * line_step);
-					for (int x = 0; x < width / 2; x++) {
-						//temp_yuv[0] = *src++;
-						//temp_yuv[1] = *src++;
-						//temp_yuv[2] = *src++;
-						//temp_yuv[3] = *src++;
-						//src -= 8;
-						*((unsigned int*)&temp_yuv[0]) = *((unsigned int*)src);
-						src -= 4;
-
-						unsigned int temp_Value = (unsigned int)(temp_yuv[3] << 24 | temp_yuv[0] << 16 | temp_yuv[1] << 8 | temp_yuv[2]);
-						*((unsigned int*)dst) = temp_Value;
-						dst += 4;
-					}
-				}
-			}
-			else {
-				size_t cp_size = isc_image_info->frame_data[frame_data_id].color.width * isc_image_info->frame_data[frame_data_id].color.height * isc_image_info->frame_data[frame_data_id].color.channel_count * 2;
-				memcpy(isc_image_info->frame_data[frame_data_id].color.image, work_buffer_.buffer[0], cp_size);
-			}
-		}
-		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kBGR) {
+		if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kBGR) {
 
 			isc_image_info->frame_data[frame_data_id].color.width = width;
 			isc_image_info->frame_data[frame_data_id].color.height = height;
@@ -2533,8 +2547,6 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 		// color
 
 		//enum class IscGetModeColor {
-		//	kYuv,               /**< output yuv */
-		//	kBayer,             /**< bayer output */
 		//	kBGR,               /**< yuv(bayer) -> bgr */
 		//	kCorrect,           /**< yuv(bayer) -> bgr -> correct */
 		//	kAwb,               /**< yuv(bayer) -> bgr -> correct -> auto white balance */
@@ -2544,44 +2556,7 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 		size_t cp_size = width * height * 2;
 		memcpy(decode_buffer_.work_buffer.buffer[0], isc_image_info->frame_data[frame_data_id].raw_color.image, cp_size);
 
-		if (isc_get_color_mode == IscGetModeColor::kYuv) {
-
-			isc_image_info->frame_data[frame_data_id].color.width = width;
-			isc_image_info->frame_data[frame_data_id].color.height = height;
-			isc_image_info->frame_data[frame_data_id].color.channel_count = 1;
-
-			if (is_flip_for_compatibility) {
-				// 他のカメラとの互換性のために左右を反転します
-				//size_t cp_size = isc_image_info->color.width * isc_image_info->color.height * isc_image_info->color.channel_count * 2;
-				//memcpy(isc_image_info->color.image, decode_buffer_.work_buffer.buffer[0], cp_size);
-
-				unsigned char temp_yuv[4] = {};
-				int line_step = width * 2;
-
-				for (int y = 0; y < height; y++) {
-					unsigned char* src = decode_buffer_.work_buffer.buffer[0] + (y * line_step) + (line_step - 4);
-					unsigned char* dst = isc_image_info->frame_data[frame_data_id].color.image + (y * line_step);
-					for (int x = 0; x < width / 2; x++) {
-						//temp_yuv[0] = *src++;
-						//temp_yuv[1] = *src++;
-						//temp_yuv[2] = *src++;
-						//temp_yuv[3] = *src++;
-						//src -= 8;
-						*((unsigned int*)&temp_yuv[0]) = *((unsigned int*)src);
-						src -= 4;
-
-						unsigned int temp_Value = (unsigned int)(temp_yuv[3] << 24 | temp_yuv[0] << 16 | temp_yuv[1] << 8 | temp_yuv[2]);
-						*((unsigned int*)dst) = temp_Value;
-						dst += 4;
-					}
-				}
-			}
-			else {
-				size_t cp_size = isc_image_info->frame_data[frame_data_id].color.width * isc_image_info->frame_data[frame_data_id].color.height * isc_image_info->frame_data[frame_data_id].color.channel_count * 2;
-				memcpy(isc_image_info->frame_data[frame_data_id].color.image, decode_buffer_.work_buffer.buffer[0], cp_size);
-			}
-		}
-		else if (isc_get_color_mode == IscGetModeColor::kBGR) {
+		if (isc_get_color_mode == IscGetModeColor::kBGR) {
 
 			isc_image_info->frame_data[frame_data_id].color.width = width;
 			isc_image_info->frame_data[frame_data_id].color.height = height;

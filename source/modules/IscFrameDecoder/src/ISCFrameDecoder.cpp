@@ -103,9 +103,9 @@ static int *block_contrast_low; // [ISC_IMG_HEIGHT_MAX * ISC_IMG_WIDTH_MAX];
 static int contrastThreshold = 40;
 
 /// <summary>
-/// センサー輝度高解像度モードステータス 0:オフ 1:オン
+/// 階調補正モードステータス 0:オフ 1:オン
 /// </summary>
-static int contrastHighResoMode = 0;
+static int gradationCorrectionMode = 0;
 
 /// <summary>
 /// 視差値の制限　0:しない 1:する
@@ -184,11 +184,11 @@ void ISCFrameDecoder::finalize()
 /// フレームデコーダのパラメータを設定する
 /// </summary>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
-void ISCFrameDecoder::setFrameDecoderParameter(int crstthr, int crsthrm)
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
+void ISCFrameDecoder::setFrameDecoderParameter(int crstthr, int grdcrct)
 {
 	contrastThreshold = crstthr;
-	contrastHighResoMode = crsthrm;
+	gradationCorrectionMode = grdcrct;
 }
 
 
@@ -226,8 +226,8 @@ void ISCFrameDecoder::setDoubleShutterOutput(int dbdout, int dbcout)
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
 /// <param name="pfrmdat">フレームデータ(IN)</param>
-/// <param name="prgtimg">右（基準）画像データ 右下原点(OUT)</param>
-/// <param name="plftimg">左（比較）画像データまたは視差エンコードデータ 右下原点(OUT)</param>
+/// <param name="prgtimg">右（基準）画像データ(OUT)</param>
+/// <param name="plftimg">左（比較）画像データまたは視差エンコードデータ(OUT)</param>
 void ISCFrameDecoder::decodeFrameData(int imghgt, int imgwdt, unsigned char* pfrmdat, 
 	unsigned char* prgtimg, unsigned char* plftimg)
 {
@@ -270,9 +270,9 @@ void ISCFrameDecoder::decodeFrameData(int imghgt, int imgwdt, unsigned char* pfr
 /// <param name="imgwdt">画像の幅(IN)</param>
 /// <param name="prgtimg">右（基準）画像データ(IN)</param>
 /// <param name="pSrcImage">視差エンコードデータ(IN)</param>
-/// <param name="pDistImage">視差画像 右下基点(OUT)</param>
-/// <param name="pTempParallax">視差情報 右下基点(OUT)</param>
-/// <param name="pBlockDepth">ブロック視差情報 右下基点(OUT)</param>
+/// <param name="pDistImage">視差画像(OUT)</param>
+/// <param name="pTempParallax">視差情報(OUT)</param>
+/// <param name="pBlockDepth">ブロック視差情報(OUT)</param>
 /// <param name="pblkval">ブロック視差値(1000倍サブピクセル精度の整数)(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
 void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, 
@@ -291,8 +291,8 @@ void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char*
 	// コントラスト閾値
 	int crstthr = contrastThreshold;
 
-	// センサー輝度高解像度モードステータス 0:オフ 1:オン
-	int crsthrm = contrastHighResoMode;
+	// 階調補正モードステータス 0:オフ 1:オン
+	int grdcrct = gradationCorrectionMode;
 
 	// FPGAのマッチング探索幅を求める
 	// コントラストオフセットを設定する
@@ -398,9 +398,9 @@ void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char*
 
 			// 画素へ展開する
 			// 視差ブロック内の最大最小輝度を取得する
-			int sumr = 0; // Σ基準画像の輝度ij
-			int Lmin = 255;
-			int Lmax = 0;
+			double Lsumr = 0.0; // Σ基準画像の輝度ij
+			double Lmin = 255.0;
+			double Lmax = 0.0;
 			int blkcnt = 0;
 
 			for (int jpxl = j; jpxl < j + DISPARITY_BLOCK_HEIGHT_FPGA; jpxl++) {
@@ -417,8 +417,13 @@ void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char*
 					shift = shift << 0x01;
 
 					// 右（基準）画像データから視差ブロック内の最大最小輝度を取得する
-					int Lpxl = prgtimg[jpxl * imgwdt + ipxl];
-					sumr += Lpxl;
+					double Lpxl = (double)prgtimg[jpxl * imgwdt + ipxl];
+					// 階調補正モードオンの場合
+					// 補正前の値へ変換する
+					if (grdcrct == 1) {
+						Lpxl = (Lpxl * Lpxl) / 255;
+					}
+					Lsumr += Lpxl;
 					if (Lpxl < Lmin) {
 						Lmin = Lpxl;
 					}
@@ -434,26 +439,19 @@ void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char*
 			int crst = 0;
 
 			// ブロックの輝度値の平均
-			double Lave = sumr / blkcnt;
+			double Lave = Lsumr / blkcnt;
 
 			// ブロック内の輝度差
-			int deltaL = Lmax - Lmin;
+			double deltaL = Lmax - Lmin;
 			
 			// 以下の場合はコントラスト値はゼロ
 			// ブロックの最小輝度値が閾値未満
 			// ブロック内の輝度差が閾値未満
 			// ブロック平均輝度が閾値未満
-			if (Lmax >= bgtmax && deltaL >= mindltl && Lave >= minlave) {
-				// 輝度線形の場合
-				if (crsthrm == 0) {
+			if (Lmax >= (double)bgtmax && deltaL >= (double)mindltl && Lave >= minlave) {
+				// 階調補正モードオフの場合
 					crst = (int)((deltaL * 1000 - crstofs) / Lave);
 				}
-				// 輝度非線形の場合
-				// High Resolutionモード
-				else {
-					crst = (int)((deltaL * 1000 - crstofs) / crstave);
-				}
-			}
 
 			// コントラスト閾値を判定する
 			if (crst < crstthr) {
@@ -486,7 +484,7 @@ void ISCFrameDecoder::decodeDisparityData(int imghgt, int imgwdt, unsigned char*
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="prgtimg">右（基準）画像データ 右下原点(IN)</param>
+/// <param name="prgtimg">右（基準）画像データ(IN)</param>
 /// <param name="pdspenc">視差エンコードデータ(IN)</param>
 /// <param name="pblkhgt">視差ブロック高さ(OUT)</param>
 /// <param name="pblkwdt">視差ブロック幅(OUT)</param>
@@ -530,26 +528,6 @@ void ISCFrameDecoder::getDisparityData(int imghgt, int imgwdt, unsigned char* pr
 	*pdepth = depth;
 	*pshdwdt = depth;
 
-	struct IscBlockDisparityData {
-		int image_width;        /**< 基準画像幅 */
-		int image_height;       /**< 基準画像高さ */
-
-		unsigned char* prgtimg; /**< 右（基準）画像データ 右下原点 */
-		int blkhgt;             /**< 視差ブロック高さ */
-		int blkwdt;             /**< 視差ブロック幅 */
-		int mtchgt;             /**< マッチングブロック高さ */
-		int mtcwdt;             /**< マッチングブロック幅 */
-		int dspofsx;            /**< 視差ブロック横オフセット */
-		int dspofsy;            /**< 視差ブロック縦オフセット */
-		int depth;              /**< マッチング探索幅 */
-		int shdwdt;             /**< 画像遮蔽幅 */
-		int* pblkval;           /**< 視差ブロック視差値(1000倍サブピクセル精度の整数) */
-		int* pblkcrst;          /**< ブロックコントラスト */
-		unsigned char* pdspimg; /**< 視差画像 右下原点 */
-		float* ppxldsp;         /**< 視差データ 右下原点 */
-		float* pblkdsp;         /**< ブロック視差データ 右下原点 */
-};
-
 #if 0
 	// 上位での呼び出しへ変更
 
@@ -573,10 +551,10 @@ void ISCFrameDecoder::getDisparityData(int imghgt, int imgwdt, unsigned char* pr
 /// <param name="penchigh">高感度フレーム視差エンコードデータ(IN)</param>
 /// <param name="pimglow">低感度フレーム画像データ(IN)</param>
 /// <param name="penclow">低感度フレーム視差エンコードデータ(IN)</param>
-/// <param name="pbldimg">合成画像 右下基点(OUT)</param>
-/// <param name="pdspimg">視差画像 右下基点(OUT)</param>
-/// <param name="ppxldsp">視差情報 右下基点(OUT)</param>
-/// <param name="pblkdsp">ブロック視差情報 右下基点(OUT)</param>
+/// <param name="pbldimg">合成画像(OUT)</param>
+/// <param name="pdspimg">視差画像(OUT)</param>
+/// <param name="ppxldsp">視差情報(OUT)</param>
+/// <param name="pblkdsp">ブロック視差情報(OUT)</param>
 /// <param name="pblkval">ブロック視差値(1000倍サブピクセル精度の整数)(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
 void ISCFrameDecoder::decodeDoubleDisparityData(int imghgt, int imgwdt,
@@ -767,16 +745,16 @@ void ISCFrameDecoder::getDoubleDisparityData(int imghgt, int imgwdt,
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="pbldimg_h">高感度 合成画像 右下基点(IN/OUT)</param>
-/// <param name="pdspimg_h">高感度 視差画像 右下基点(IN/OUT)</param>
-/// <param name="ppxldsp_h">高感度 視差情報 右下基点(IN/OUT)</param>
-/// <param name="pblkdsp_h">高感度 ブロック視差情報 右下基点(IN/OUT)</param>
+/// <param name="pbldimg_h">高感度 合成画像(IN/OUT)</param>
+/// <param name="pdspimg_h">高感度 視差画像(IN/OUT)</param>
+/// <param name="ppxldsp_h">高感度 視差情報(IN/OUT)</param>
+/// <param name="pblkdsp_h">高感度 ブロック視差情報(IN/OUT)</param>
 /// <param name="pblkval_h">高感度 ブロック視差値(1000倍サブピクセル精度の整数)(IN/OUT)</param>
 /// <param name="pblkcrst_h">高感度 ブロックコントラスト(IN/OUT)</param>
-/// <param name="pbldimg_l">低感度 合成画像 右下基点(IN)</param>
-/// <param name="pdspimg_l">低感度 視差画像 右下基点(IN)</param>
-/// <param name="ppxldsp_l">低感度 視差情報 右下基点(IN)</param>
-/// <param name="pblkdsp_l">低感度 ブロック視差情報 右下基点(IN)</param>
+/// <param name="pbldimg_l">低感度 合成画像(IN)</param>
+/// <param name="pdspimg_l">低感度 視差画像(IN)</param>
+/// <param name="ppxldsp_l">低感度 視差情報(IN)</param>
+/// <param name="pblkdsp_l">低感度 ブロック視差情報(IN)</param>
 /// <param name="pblkval_l">低感度 ブロック視差値(1000倍サブピクセル精度の整数)(IN)</param>
 /// <param name="pblkcrst_l">低感度 ブロックコントラスト(IN)</param>
 void ISCFrameDecoder::blendDisparityData(int imghgt, int imgwdt, 

@@ -139,6 +139,8 @@ public:
 
 	bool ScreenPostionToImagePosition(const POINT& screen_position, POINT* image_position, int* selected_inex);
 	
+	bool ScreenPostionToDepthImagePosition(const POINT& screen_position, POINT* image_position);
+		
 	bool Image3DPositionToScreenPostion(const float x, const float y, const float z, float* xr, float* yr, float* zr);
 
 	bool GetCurrentDrawParameter(DrawParameter* draw_parameter);
@@ -201,6 +203,7 @@ private:
 		ImageDrawMode mode;				/**< mode for display */
 
 		SIZE original_image_size[2];	/**< original image size[left,right] */
+		SIZE draw_image_size[2];		/**< draw image size[left,right] */
 		SIZE image_size;				/**< image for draw size */
 		double magnification;			/**< display magnification */
 		POINT magnification_center;		/**< magnification center positionrequest */

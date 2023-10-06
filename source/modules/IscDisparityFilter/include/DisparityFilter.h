@@ -45,12 +45,7 @@ public:
 	/** @brief Configure the use of OpenCL for the disparity averaging process.
 		@return none.
 	 */
-	static void setUseOpenCLForAveragingDisparity(int usecl);
-
-	/** @brief Save parallax values for blocks.
-		@return none.
-	 */
-	static void saveBlockDisparity();
+	static void setUseOpenCLForAveragingDisparity(int usecl, int runsgcr = 0);
 
 	/** @brief Set the upper and lower parallax limits.
 		@return none.
@@ -72,7 +67,7 @@ public:
 		@return none.
 	 */
 	static void setComplementParameter(int enb, double lowlmt, double slplmt,
-		double insrt, double rndrt, double btmrt, int crstlmt, int hlfil, double hlsz);
+		double insrt, double rndrt, int crstlmt, int hlfil, double hlsz);
 
 	/** @brief Set edge completion parameters.
 		@return none.
@@ -192,11 +187,6 @@ private:
 	static void complementBackward(int imgblkwdt, int ii, int sti, int jd, int id,
 		int* pblkval, int *pblkcrst, bool holefill,
 		double blkwdt, double midrt, double toprt, double btmrt);
-
-	/** @brief Write out the parallax value of the block.
-		@return none.
-	 */
-	static void writeBlockDisparity(int imghgt, int imgwdt, float *pavedsp);
 
 	/** @brief Parallax Averaging Thread.
 		@return none.

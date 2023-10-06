@@ -59,6 +59,8 @@ struct IscSaveDataConfiguration {
 	__int64 minimum_capacity_required;		/**< 最小ディスク空き容量 */
 
 	int save_time_for_one_file;				/**< 保存ファイルの1個あたりの時間 (分) */
+
+    int max_buffer_count;                   /**< 内部バッファーの数 */
 };
 
 
@@ -102,7 +104,10 @@ enum class IscCameraParameter {
     kAdjustAuto,                /**< [bool] Automatic adjustment valid */
     kAdjustForce,               /**< [bool] Automatic adjustment forced execution */
     kOcclusionRemoval,          /**< [int] Sets the occlusion removal value */
-    kPeculiarRemoval            /**< [bool] Settings to remove peculiarity */
+    kPeculiarRemoval,           /**< [bool] Settings to remove peculiarity */
+    kSelfCalibration,           /**< [bool] Software Calibration(selft calibration) valid */
+    kGenericRead,               /**< [uc*, uc*, int,int ] General purpose loading */
+    kGenericWrite               /**< [uc*, int ] General purpose writing */
 };
 
 /** @struct  IscCameraDisparityParameter
@@ -155,8 +160,6 @@ struct IscGetMode {
  *  @brief This is the request to get the color image
  */
 enum class IscGetModeColor {
-    kYuv,               /**< output yuv */
-    kBayer,             /**< bayer output */
     kBGR,               /**< yuv(bayer) -> bgr */
     kCorrect,           /**< yuv(bayer) -> bgr -> correct */
     kAwb,               /**< yuv(bayer) -> bgr -> correct -> auto white balance */
@@ -257,8 +260,6 @@ struct IscImageInfo {
         DepthType depth;                    /**< 視差 */
         ImageType raw;                      /**< Camera RAW (展開以前のカメラデータ） */
         ImageType raw_color;                /**< Camera RAW Color(展開以前のカメラデータ） */
-        ImageType bayer_base;               /**< Bayer */
-        ImageType bayer_compare;            /**< Bayer */
     };
 
     IscCameraSpecificParameter camera_specific_parameter;   /**< カメラ固有のパラメータ */

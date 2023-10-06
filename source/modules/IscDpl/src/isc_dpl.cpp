@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <process.h>
 #include <mutex>
+#include <functional>
 
 #include "isc_dpl_error_def.h"
 #include "isc_dpl_def.h"
@@ -40,10 +41,12 @@
 #include "isc_image_info_ring_buffer.h"
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 #include "isc_sdk_control.h"
 #include "isc_file_write_control_impl.h"
 #include "isc_raw_data_decoder.h"
 #include "isc_file_read_control_impl.h"
+#include "isc_selftcalibration_interface.h"
 #include "isc_camera_control.h"
 #include "isc_dataproc_resultdata_ring_buffer.h"
 #include "isc_framedecoder_interface.h"

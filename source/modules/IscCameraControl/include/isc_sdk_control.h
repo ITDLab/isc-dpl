@@ -52,6 +52,11 @@ public:
 	*/
 	int DeviceClose();
 
+	/** @brief Get the recommended number of buffers.
+		@return 0, if successful.
+	*/
+	int GetRecommendedBufferCount(int* buffer_count);
+
 	// camera dependent paraneter
 
 	/** @brief whether or not the parameter is implemented.
@@ -276,6 +281,16 @@ public:
 	*/
 	int DeviceSetOption(const IscCameraParameter option_name, const IscShutterMode value);
 
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	int DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	int DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size);
+
 	// grab control
 	/** @brief start image acquisition.
 		@return 0, if successful.
@@ -314,5 +329,6 @@ private:
 
 	ns_vmsdk_wrapper::VmSdkWrapper* vm_sdk_wrapper_;
 	ns_xcsdk_wrapper::XcSdkWrapper* xc_sdk_wrapper_;
+	ns_k4asdk_wrapper::K4aSdkWrapper* k4a_sdk_wrapper_;
 
 };

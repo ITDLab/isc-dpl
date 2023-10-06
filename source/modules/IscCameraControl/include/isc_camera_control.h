@@ -50,6 +50,11 @@ public:
 
 	// camera dependent paraneter
 
+	/** @brief Get the recommended number of buffers.
+		@return 0, if successful.
+	*/
+	int GetRecommendedBufferCount(int* buffer_count);
+
 	/** @brief whether or not the parameter is implemented.
 		@return true, if implemented.
 	*/
@@ -272,6 +277,16 @@ public:
 	*/
 	int DeviceSetOption(const IscCameraParameter option_name, const IscShutterMode value);
 
+	/** @brief get the value of the parameter.
+		@return 0, if successful.
+	*/
+	int DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size);
+
+	/** @brief set the parameters.
+		@return 0, if successful.
+	*/
+	int DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size);
+
 	// grab control
 
 	/** @brief start image acquisition.
@@ -317,13 +332,16 @@ private:
 	UtilityMeasureTime* measure_tackt_time_;
 
 	IscCameraControlConfiguration isc_camera_control_config_;
-
 	IscCameraSpecificParameter camera_specific_parameter_;
 
 	IscSdkControl* isc_sdk_control_;
-
 	IscFileWriteControlImpl* isc_file_write_control_impl_;
 	IscFileReadControlImpl* isc_file_read_control_impl_;
+
+	bool enabled_isc_selfcalibration_;
+	IscSelftCalibrationInterface* isc_selfcalibration_interface_;
+
+	IscImageInfoRingBuffer* isc_image_info_ring_buffer_;
 
 	enum class IscRunState {
 		stop,
@@ -334,8 +352,6 @@ private:
 		IscGrabStartMode isc_grab_start_mode;
 	};
 	IscRunStatus isc_run_status_;
-
-	IscImageInfoRingBuffer* isc_image_info_ring_buffer_;
 
 	// Thread Control
 	struct ThreadControl {

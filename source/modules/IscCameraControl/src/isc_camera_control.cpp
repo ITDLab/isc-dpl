@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <process.h>
 #include <mutex>
+#include <functional>
 
 #include "isc_dpl_error_def.h"
 #include "isc_camera_def.h"
@@ -37,11 +38,13 @@
 
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 #include "isc_sdk_control.h"
 #include "isc_image_info_ring_buffer.h"
 #include "isc_file_write_control_impl.h"
 #include "isc_raw_data_decoder.h"
 #include "isc_file_read_control_impl.h"
+#include "isc_selftcalibration_interface.h"
 
 #include "isc_camera_control.h"
 
@@ -52,12 +55,67 @@
 #pragma comment (lib, "imagehlp")
 #pragma comment (lib, "VmSdkWrapper")
 #pragma comment (lib, "XcSdkWrapper")
+#pragma comment (lib, "XcSdkWrapper")
+#pragma comment (lib, "K4aSdkWrapper")
+#pragma comment (lib, "IscSelfCalibration")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
+
+// Callback Control
+/*
+	IscSelfCalibrationにおいてカメラのRegistへ直接R/Wするための関数を提供する
+*/
+int CallbackGetCameraRegData(unsigned char* wbuf, unsigned char* rbuf, int write_size, int read_size);
+int CallbackSetCameraRegData(unsigned char* wbuf, int write_size);
+
+class CallbackIscSdkControlControl {
+public:
+	IscSdkControl* isc_sdk_control_;
+
+	CallbackIscSdkControlControl():isc_sdk_control_(nullptr)
+	{
+		
+	}
+
+	~CallbackIscSdkControlControl()
+	{
+		isc_sdk_control_ = nullptr;
+	}
+
+
+	void SetSdkControl(IscSdkControl* isc_sdk_control)
+	{
+		isc_sdk_control_ = isc_sdk_control;
+	}
+
+	int GetCameraRegData(unsigned char* wbuf, unsigned char* rbuf, int write_size, int read_size)
+	{
+		if (isc_sdk_control_ == nullptr) {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		
+		int ret = isc_sdk_control_->DeviceGetOption(IscCameraParameter::kGenericRead, wbuf, write_size, rbuf, read_size);
+		
+		return ret;
+	}
+
+	int SetCameraRegData(unsigned char* wbuf, int write_size)
+	{
+		if (isc_sdk_control_ == nullptr) {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+
+		int ret = isc_sdk_control_->DeviceSetOption(IscCameraParameter::kGenericWrite, wbuf, write_size);
+
+		return ret;
+	}
+
+};
+static CallbackIscSdkControlControl callback_iscsdkcontrol_control_;
 
 /**
  * constructor
@@ -71,8 +129,10 @@ IscCameraControl::IscCameraControl() :
 	isc_sdk_control_(nullptr), 
 	isc_file_write_control_impl_(nullptr),
 	isc_file_read_control_impl_(nullptr),
-	isc_run_status_(), 
+	enabled_isc_selfcalibration_(false),
+	isc_selfcalibration_interface_(nullptr),
 	isc_image_info_ring_buffer_(nullptr),
+	isc_run_status_(),
 	thread_control_(), 
 	handle_semaphore_(NULL), 
 	thread_handle_(NULL), 
@@ -174,12 +234,19 @@ int IscCameraControl::Initialize(const IscCameraControlConfiguration* isc_camera
 		}
 
 		// writer
+		int max_buffer_count = 0;
+		ret = isc_sdk_control_->GetRecommendedBufferCount(&max_buffer_count);
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
+
 		IscSaveDataConfiguration save_data_configration = {};
 		save_data_configration.max_save_folder_count = 1;
 		save_data_configration.save_folder_count = 1;
 		swprintf_s(save_data_configration.save_folders[0], L"%s", isc_camera_control_configuration->save_image_path);
 		save_data_configration.minimum_capacity_required = 20;	// 20GB
 		save_data_configration.save_time_for_one_file = 60;		// 60分
+		save_data_configration.max_buffer_count = max_buffer_count;
 		
 		isc_file_write_control_impl_ = new IscFileWriteControlImpl;
 		ret = isc_file_write_control_impl_->Initialize(isc_camera_control_configuration, &save_data_configration, width, height, isc_log_);
@@ -191,9 +258,15 @@ int IscCameraControl::Initialize(const IscCameraControlConfiguration* isc_camera
 		isc_file_read_control_impl_ = new IscFileReadControlImpl;
 		isc_file_read_control_impl_->Initialize(isc_camera_control_configuration);
 
+		// selft calibration
+		callback_iscsdkcontrol_control_.SetSdkControl(isc_sdk_control_);
+
+		isc_selfcalibration_interface_ = new IscSelftCalibrationInterface;
+		isc_selfcalibration_interface_->Initialize(isc_camera_control_configuration, width, height);
+		isc_selfcalibration_interface_->SetCallbackFunc(CallbackGetCameraRegData, CallbackSetCameraRegData);
+
 		// Get Buffer
 		isc_image_info_ring_buffer_ = new IscImageInfoRingBuffer;
-		constexpr int max_buffer_count = 16;
 		isc_image_info_ring_buffer_->Initialize(true, true, max_buffer_count, width, height);
 		isc_image_info_ring_buffer_->Clear();
 
@@ -245,7 +318,7 @@ int IscCameraControl::Initialize(const IscCameraControlConfiguration* isc_camera
 
 		// Get Buffer
 		isc_image_info_ring_buffer_ = new IscImageInfoRingBuffer;
-		constexpr int max_buffer_count = 16;
+		constexpr int max_buffer_count = 4;	// 16;
 		isc_image_info_ring_buffer_->Initialize(true, true, max_buffer_count, width, height);
 		isc_image_info_ring_buffer_->Clear();
 	}
@@ -297,6 +370,12 @@ int IscCameraControl::Terminate()
 			isc_image_info_ring_buffer_ = nullptr;
 		}
 
+		if (isc_selfcalibration_interface_ != nullptr) {
+			isc_selfcalibration_interface_->Terminate();
+			delete isc_selfcalibration_interface_;
+			isc_selfcalibration_interface_ = nullptr;
+		}
+
 		if (isc_file_read_control_impl_ != nullptr) {
 			isc_file_read_control_impl_->Terminate();
 			delete isc_file_read_control_impl_;
@@ -343,6 +422,24 @@ int IscCameraControl::Terminate()
 	isc_log_ = nullptr;
 
 	return DPC_E_OK;
+}
+
+/**
+ * Work Bufferの推奨数を戻します
+ *
+ * @param[out] buffer_count Buffer数
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscCameraControl::GetRecommendedBufferCount(int* buffer_count)
+{
+	if (isc_sdk_control_ == nullptr) {
+		return false;
+	}
+
+	bool ret = isc_sdk_control_->GetRecommendedBufferCount(buffer_count);
+
+	return ret;
 }
 
 /**
@@ -455,6 +552,11 @@ int IscCameraControl::ImageHandler(IscImageInfoRingBuffer::BufferData* buffer_da
 	// data write
 	if (isc_run_status_.isc_grab_start_mode.isc_record_mode == IscRecordMode::kRecordOn) {
 		isc_file_write_control_impl_->Add(&buffer_data->isc_image_info);
+	}
+
+	// self calibration
+	if (enabled_isc_selfcalibration_) {
+		isc_selfcalibration_interface_->ParallelizeSelfCalibration(&buffer_data->isc_image_info);
 	}
 
 	// set takt time
@@ -1185,9 +1287,20 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, bool
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
-	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
-	if (ret != DPC_E_OK) {
-		return ret;
+	int ret = DPC_E_OK;
+
+	switch (option_name) {
+	case IscCameraParameter::kSelfCalibration:
+		*value = enabled_isc_selfcalibration_;
+		ret = DPC_E_OK;
+		break;
+
+	default:
+		ret = isc_sdk_control_->DeviceGetOption(option_name, value);
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
+		break;
 	}
 
 	return ret;
@@ -1207,9 +1320,28 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
-	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
-	if (ret != DPC_E_OK) {
-		return ret;
+	int ret = DPC_E_OK;
+
+	switch (option_name) {
+	case IscCameraParameter::kSelfCalibration:
+
+		if (value) {
+			isc_selfcalibration_interface_->StartSelfCalibration();
+			enabled_isc_selfcalibration_ = true;
+		}
+		else {
+			isc_selfcalibration_interface_->StoptSelfCalibration();
+			enabled_isc_selfcalibration_ = false;
+		}
+		ret = DPC_E_OK;
+		break;
+
+	default:
+		ret = isc_sdk_control_->DeviceSetOption(option_name, value);
+		if (ret != DPC_E_OK) {
+			return ret;
+		}
+		break;
 	}
 
 	return ret;
@@ -1414,6 +1546,53 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 	return ret;
 }
 
+/**
+ * 値を取得します(汎用アクセス)
+ *
+ * @param[in] option_name target parameter.
+ * @param[int] write_value obtained value.
+ * @param[int] write_size obtained value.
+ * @param[out] read_value obtained value.
+ * @param[int] read_size obtained value.
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size)
+{
+	if (isc_sdk_control_ == nullptr) {
+		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	int ret = isc_sdk_control_->DeviceGetOption(option_name, write_value, write_size, read_value, read_size);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return ret;
+}
+
+/**
+ * 値を設定します(汎用アクセス)
+ *
+ * @param[in] option_name target parameter.
+ * @param[in] write_value value to set.
+ * @param[in] write_size value to set.
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size)
+{
+	if (isc_sdk_control_ == nullptr) {
+		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	int ret = isc_sdk_control_->DeviceSetOption(option_name, write_value, write_size);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return ret;
+}
 
 // grab control
 
@@ -1720,14 +1899,6 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].raw.height = 0;
 		isc_image_info->frame_data[i].raw.channel_count = 0;
 
-		isc_image_info->frame_data[i].bayer_base.width = 0;
-		isc_image_info->frame_data[i].bayer_base.height = 0;
-		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
-
-		isc_image_info->frame_data[i].bayer_compare.width = 0;
-		isc_image_info->frame_data[i].bayer_compare.height = 0;
-		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
-
 		// p1
 		isc_image_info->frame_data[i].p1.width = buffer_data->isc_image_info.frame_data[i].p1.width;
 		isc_image_info->frame_data[i].p1.height = buffer_data->isc_image_info.frame_data[i].p1.height;
@@ -1813,37 +1984,6 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 			}
 		}
 
-		// bayer
-		if (isc_run_status_.isc_grab_start_mode.isc_get_color_mode == IscGetModeColor::kBayer) {
-			if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerBase) {
-				// bayer_base
-				if (buffer_data->isc_image_info.frame_data[i].bayer_base.width != 0 && buffer_data->isc_image_info.frame_data[i].bayer_base.height != 0) {
-
-					isc_image_info->frame_data[i].bayer_base.width = buffer_data->isc_image_info.frame_data[i].bayer_base.width;
-					isc_image_info->frame_data[i].bayer_base.height = buffer_data->isc_image_info.frame_data[i].bayer_base.height;
-					isc_image_info->frame_data[i].bayer_base.channel_count = buffer_data->isc_image_info.frame_data[i].bayer_base.channel_count;
-
-					copy_size = buffer_data->isc_image_info.frame_data[i].bayer_base.width * buffer_data->isc_image_info.frame_data[i].bayer_base.height;
-					if (copy_size > 0) {
-						memcpy(isc_image_info->frame_data[i].bayer_base.image, buffer_data->isc_image_info.frame_data[i].bayer_base.image, copy_size);
-					}
-				}
-			}
-			else if (isc_run_status_.isc_grab_start_mode.isc_grab_mode == IscGrabMode::kBayerCompare) {
-				// bayer_compare
-				if (buffer_data->isc_image_info.frame_data[i].bayer_compare.width != 0 && buffer_data->isc_image_info.frame_data[i].bayer_compare.height != 0) {
-
-					isc_image_info->frame_data[i].bayer_compare.width = buffer_data->isc_image_info.frame_data[i].bayer_compare.width;
-					isc_image_info->frame_data[i].bayer_compare.height = buffer_data->isc_image_info.frame_data[i].bayer_compare.height;
-					isc_image_info->frame_data[i].bayer_compare.channel_count = buffer_data->isc_image_info.frame_data[i].bayer_compare.channel_count;
-
-					copy_size = buffer_data->isc_image_info.frame_data[i].bayer_compare.width * buffer_data->isc_image_info.frame_data[i].bayer_compare.height;
-					if (copy_size > 0) {
-						memcpy(isc_image_info->frame_data[i].bayer_compare.image, buffer_data->isc_image_info.frame_data[i].bayer_compare.image, copy_size);
-					}
-				}
-			}
-		}
 	}
 
 	isc_image_info_ring_buffer_->DoneGetBuffer(get_index);
@@ -1879,3 +2019,36 @@ int IscCameraControl::GetDataReadFile(IscImageInfo* isc_image_info)
 	return DPC_E_OK;
 }
 
+/**
+ * CallBack用　レジスタアクセス関数
+ *
+ * @param[in] wbuf バッファー構造体
+ * @param[in] rbuf バッファー構造体
+ * @param[in] write_size 書き込み数
+ * @param[in] read_size 読み込み数
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int CallbackGetCameraRegData(unsigned char* wbuf, unsigned char* rbuf, int write_size, int read_size)
+{
+	int ret = callback_iscsdkcontrol_control_.GetCameraRegData(wbuf, rbuf, write_size, read_size);
+
+	return ret;
+}
+
+/**
+ * CallBack用　レジスタアクセス関数
+ *
+ * @param[in] wbuf バッファー構造体
+ * @param[in] write_size 書き込み数
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int CallbackSetCameraRegData(unsigned char* wbuf, int write_size)
+{
+	int ret = callback_iscsdkcontrol_control_.SetCameraRegData(wbuf, write_size);
+
+	return ret;
+}

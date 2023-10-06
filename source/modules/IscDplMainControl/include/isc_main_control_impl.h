@@ -383,7 +383,6 @@ private:
 	IscCameraControl* isc_camera_control_;
 	IscDataProcessingControl* isc_data_processing_control_;
 
-	IscImageInfo isc_image_info_;
 	IscImageInfoRingBuffer* isc_image_info_ring_buffer_;
 
 	IscGrabStartMode temp_isc_grab_start_mode_;

@@ -118,6 +118,10 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 
 bool CheckDiskFreeSpace(const TCHAR* target_folder, const unsigned __int64 requested_size);
 
+bool GetProcessMemoryUse(DWORD* process_id, SIZE_T* peak_working_set_size_mb, SIZE_T* working_set_size_mb);
+
+bool GetGlobalMemoryStatus(unsigned long long* total_physical_memory_mb, unsigned long long* total_installed_physical_memory_mb);
+
 class GuiSupport
 {
 

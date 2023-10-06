@@ -49,13 +49,13 @@ public:
 	/** @brief configure use of OpenCL for stereo matching.
 		@return none.
 	 */
-	static void setUseOpenCLForMatching(int usecl);
+	static void setUseOpenCLForMatching(int usecl, int runsgcr = 0);
 
 	/** @brief set stereo matching parameters.
 		@return none.
 	 */
 	static void setMatchingParameter(int imghgt, int imgwdt, int depth,
-		int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int blkofsx, int blkofsy, int crstthr, int crsthrm);
+		int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int blkofsx, int blkofsy, int crstthr, int grdcrct);
 
 	/** @brief set back matching parameters.
 		@return none.
@@ -101,21 +101,21 @@ private:
 	/** @brief get parallax.
 		@return none.
 	 */
-	static void getMatchingDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getMatchingDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst);
 
 	/** @brief get the parallax of the whole image.
 		@return none.
 	 */
-	static void getWholeDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getWholeDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst);
 
 	/** @brief gGet In-Band Parallax.
 		@return none.
 	 */
-	static void getDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float * pblkdsp, int *pblkcrst, int jstart, int jend);
 
@@ -123,14 +123,14 @@ private:
 		@return none.
 	 */
 	static void getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int depth,
-		int crstthr, int crstofs, int crsthrm,
+		int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float * pblkdsp, int *pblkcrst);
 
 	/** @brief get the disparity in both directions within the band.
 		@return none.
 	 */
-	static void getBothDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getBothDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst,
 		int jstart, int jend);
@@ -139,7 +139,7 @@ private:
 		@return none.
 	*/
 	static void getBothDisparityBySSD(int x, int y, int imghgt, int imgwdt, int depth,
-		int crstthr, int crstofs, int crsthrm,
+		int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, 
 		float * pblkdsp, float * pblkbkdsp, int *pblkcrst);
@@ -168,21 +168,21 @@ private:
 		@return none.
 	 */
 	static void getDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth,
-		int crstthr, int crstofs, int crsthrm,
+		int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		cv::UMat imgref, cv::UMat imgcmp, cv::UMat blkdsp, cv::UMat blkcrst);
 
 	/** @brief get parallax by bi-directional matching.(OpenCL)
 		@return none.
 	 */
-	static void getBothDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getBothDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		cv::UMat imgref, cv::UMat imgcmp, cv::UMat blkdsp, cv::UMat blkbkdsp, cv::UMat blkcrst);
 
 	/** @brief get parallax by band splitting.
 		@return none.
 	 */
-	static void getBandDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+	static void getBandDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 		int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 		unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst);
 

@@ -100,7 +100,5 @@ private:
 	float* buff_depth_;
 	unsigned char* buff_raw_;
 	unsigned char* buff_raw_color_;
-	unsigned char* buff_bayer_base_;
-	unsigned char* buff_bayer_compare_;
 
 };

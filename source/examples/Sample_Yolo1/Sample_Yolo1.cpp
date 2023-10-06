@@ -39,9 +39,9 @@
 #pragma comment (lib, "IscDpl")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 #pragma comment (lib, "yolo_cpp_dll")

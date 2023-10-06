@@ -136,7 +136,6 @@ private:
 
 	struct WorkBuffers {
 		IscImageInfo::ImageType buff_image[4];
-		IscImageInfo::DepthType buff_depth[4];
 	};
 	WorkBuffers work_buffers_;
 

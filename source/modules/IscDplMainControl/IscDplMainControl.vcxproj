@@ -134,13 +134,13 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\K4aSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\IscSelfCalibration\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(OutDir);$(OpenCV_DIR)\x64\vc17\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(OpenCV_DIR)\x64\vc16\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,7 +153,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\K4aSdkWrapper\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\IscSelfCalibration\include;..\shared;$(OpenCV_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,7 +161,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>$(OutDir);$(OpenCV_DIR)\x64\vc17\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(OpenCV_DIR)\x64\vc16\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

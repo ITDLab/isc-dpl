@@ -27,6 +27,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <cassert>
+#include <Psapi.h>
 
 #include "isc_dpl_error_def.h"
 #include "isc_dpl_def.h"
@@ -89,12 +90,12 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 
 	if (isc_control->camera_status == CameraStatus::kStop) {
 		// stop -> start
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kParallax;
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_get_color_mode = IscGetModeColor::kBGR;
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_record_mode = IscRecordMode::kRecordOff;
-		isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode = IscPlayMode::kPlayOff;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode		= IscGrabMode::kParallax;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode	= IscGrabColorMode::kColorOFF;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode	= IscGetModeRaw::kRawOff;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_get_color_mode	= IscGetModeColor::kBGR;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_record_mode		= IscRecordMode::kRecordOff;
+		isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode		= IscPlayMode::kPlayOff;
 		isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = 30;
 		memset(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, 0, sizeof(isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name));
 
@@ -191,7 +192,7 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 				if (is_base_image_correct) {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
-					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOn;
+					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
 				}
 				else {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kBeforeCorrect;
@@ -203,7 +204,7 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 				if (is_compare_image_correct) {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
-					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOn;
+					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
 				}
 				else {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kBeforeCorrect;
@@ -939,6 +940,79 @@ bool CheckDiskFreeSpace(const TCHAR* target_folder, const unsigned __int64 reque
 		return false;
 	}
 
+	return true;
+}
+
+/**
+ * @brief Get process memory use
+ * @param[OUT] process_id Proecss ID
+ * @param[OUT] peak_working_set_size_mb Peak Working Memory Use(MB)
+ * @param[OUT] working_set_size_mb Working Memory Use(MB)
+ * @retuen {@code 0} success , {@code >0} Failure
+ * @throws never
+ */
+bool GetProcessMemoryUse(DWORD* process_id, SIZE_T* peak_working_set_size_mb, SIZE_T* working_set_size_mb)
+{
+
+	*process_id = 0;
+	*peak_working_set_size_mb	= 0;
+	*working_set_size_mb		= 0;
+
+	PROCESS_MEMORY_COUNTERS pmc = { 0 };
+	DWORD dwProcessID = GetCurrentProcessId();
+	HANDLE hProcess;
+
+	TCHAR logMsg[512] = { 0 };
+	constexpr int kb = 1024;
+
+	if ((hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwProcessID)) != NULL) {
+		if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
+
+			*process_id = dwProcessID;
+			*peak_working_set_size_mb	= pmc.PeakWorkingSetSize / kb / kb;
+			*working_set_size_mb		= pmc.WorkingSetSize / kb / kb;
+		}
+		else {
+		}
+		CloseHandle(hProcess);
+
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Get memory status
+ * @param[OUT] total_physical_memory_mb total MB of physical memory
+ * @param[OUT] total_installed_physical_memory_mb total MB of physical memory installed
+ * @retuen {@code 0} success , {@code >0} Failure
+ * @throws never
+ */
+bool GetGlobalMemoryStatus(unsigned long long* total_physical_memory_mb, unsigned long long* total_installed_physical_memory_mb)
+{
+	MEMORYSTATUSEX statex;
+
+	statex.dwLength = sizeof(statex);
+
+	BOOL ret = GlobalMemoryStatusEx(&statex);
+
+	if (ret == FALSE) {
+		return false;
+	}
+
+	constexpr int kb = 1024;
+
+	*total_physical_memory_mb = statex.ullTotalPhys / kb / kb;
+
+	unsigned long long totalMemoryInKilobytes = (unsigned long long)0;
+	ret = GetPhysicallyInstalledSystemMemory(&totalMemoryInKilobytes);
+
+	if (ret == FALSE) {
+		return false;
+	}
+	*total_installed_physical_memory_mb = totalMemoryInKilobytes / kb;
+	
 	return true;
 }
 

@@ -75,6 +75,51 @@ private:
 
 	UtilityMeasureTime* utility_measure_time_;
 
+	struct FileWriteSpeedInformation {
+		ULONGLONG start_time;
+
+		int check_interval_count;
+		int write_count;
+
+		int Init(int interval_count)
+		{
+			check_interval_count = interval_count;
+			start_time = 0;
+			write_count = 0;
+			return 0;
+		}
+
+		int Start()
+		{
+			start_time = 0;
+			write_count = 0;
+			return 0;
+		}
+
+		int WriteOnce()
+		{
+			if (write_count == 0) {
+				start_time = GetTickCount64();
+				write_count++;
+				return -1;
+			}
+			write_count++;
+			if (write_count >= check_interval_count) {
+				ULONGLONG time = GetTickCount64();
+				double elapsed_time = (double)(time - start_time) / 1000.0;
+
+				int fps = (int)((double)write_count / elapsed_time);
+
+				write_count = 0;
+
+				return fps;
+			}
+
+			return -1;
+		}
+	};
+	FileWriteSpeedInformation file_write_speed_info_;
+
 	struct FileWriteInformation {
 		int target_folder_count;
 		int current_folder_index;
@@ -84,10 +129,10 @@ private:
 
 		__int64 initial_size;
 
-		__int64 minimum_capacity_required;			/**< 最小ディスク空き容量 */
+		__int64 minimum_capacity_required;				/**< 最小ディスク空き容量 */
 
-		__int64 start_time_of_current_file_msec;	/**< 現在のファイルの保存開始時間 msec(=GetTickCount) */
-		int save_time_for_one_file_sec;				/**< 保存ファイルの1個あたりの時間 (秒) */ 
+		__int64 start_time_of_current_file_msec;		/**< 現在のファイルの保存開始時間 msec(=GetTickCount) */
+		int save_time_for_one_file_sec;					/**< 保存ファイルの1個あたりの時間 (秒) */ 
 
 		__int64 previous_time_free_space_monitoring;	/**< 空き容量の監視　前回の時間 msec(=GetTickCount) */
 		int free_space_monitoring_cycle_sec;			/**< 空き容量の監視周期 (秒) */

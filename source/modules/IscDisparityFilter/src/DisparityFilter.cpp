@@ -66,6 +66,11 @@ static float *average_disp;
 static int useOpenCLForAveDisp = 0;
 
 /// <summary>
+/// 視差平均化処理をシングルコア実行 しない：0 する：1 　
+/// </summary>
+static int runSingleCoreForAveDisp = 0;
+
+/// <summary>
 /// 特異点除去処理、視差平均化のための視差値コピー)
 /// </summary>
 static int *wrk;
@@ -228,12 +233,7 @@ static double dispComplementRatioInside = 1.0;
 /// <summary>
 /// 視差を補完する画素幅の視差値倍率（周辺）
 /// </summary>
-static double dispComplementRatioRound = 0.2;
-
-/// <summary>
-/// 視差を補完する画素幅の視差値倍率（下端）
-/// </summary>
-static double dispComplementRatioBottom = 0.1;
+static double dispComplementRatioRound = 0.1;
 
 /// <summary>
 /// 視差を補完するコントラストの上限値
@@ -253,10 +253,6 @@ static int dispComplementHoleFilling = 0;
 /// </summary>
 static double dispComplementHoleSize = 8.0;
 
-/// <summary>
-/// ブロック視差値保存フラグ
-/// </summary>
-static bool saveBlockInfo = false;
 
 /// <summary>
 /// バンド視差平均化
@@ -434,21 +430,12 @@ void DisparityFilter::finalize()
 /// <summary>
 /// 視差平均化処理にOpenCLの使用を設定する
 /// </summary>
-/// <param name="usecl"></param>
-void DisparityFilter::setUseOpenCLForAveragingDisparity(int usecl)
+/// <param name="usecl">OpenCLを使用 0:しない 1:する(IN)</param>
+/// <param name="runsgcr">シングルスレッドで実行 0:しない 1:する(IN)</param>
+void DisparityFilter::setUseOpenCLForAveragingDisparity(int usecl, int runsgcr)
 {
 	useOpenCLForAveDisp = usecl;
-}
-
-
-/// <summary>
-/// ブロックの視差値を保存する
-/// </summary>
-void DisparityFilter::saveBlockDisparity()
-{
-	if (dispAveDisp == 1) {
-		saveBlockInfo = true;
-	}
+	runSingleCoreForAveDisp = runsgcr;
 }
 
 
@@ -528,12 +515,11 @@ void DisparityFilter::setAveragingBlockWeight(int cntwgt, int nrwgt, int rndwgt)
 /// <param name="slplmt">補完幅の最大視差勾配(IN)</param>
 /// <param name="insrt">補完画素幅の視差値倍率（内側）(IN)</param>
 /// <param name="rndrt">補完画素幅の視差値倍率（周辺）(IN)</param>
-/// <param name="btmrt">補完画素幅の視差値倍率（下端）(IN)</param>
 /// <param name="crstlmt">補完ブロックのコントラスト上限値(IN)</param>
 /// <param name="hlfil">穴埋め処理しない：0 する：1 (IN)</param>
 /// <param name="hlsz">穴埋め幅 (IN)</param>
 void DisparityFilter::setComplementParameter(int enb, double lowlmt, double slplmt, 
-	double insrt, double rndrt, double btmrt, int crstlmt, int hlfil, double hlsz)
+	double insrt, double rndrt, int crstlmt, int hlfil, double hlsz)
 {
 
 	// 視差を補完する
@@ -547,8 +533,7 @@ void DisparityFilter::setComplementParameter(int enb, double lowlmt, double slpl
 	dispComplementRatioInside = insrt;
 	// 視差を補完する画素幅の視差値倍率（周辺）
 	dispComplementRatioRound = rndrt;
-	// 視差を補完する画素幅の視差値倍率（下端）
-	dispComplementRatioBottom = btmrt;
+
 	// 補完ブロックのコントラスト上限値
 	dispComplementContrastLimit = crstlmt;
 
@@ -623,7 +608,7 @@ void DisparityFilter::setHoughTransformParameter(int edgthr1, int edgthr2, int l
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="prgtimg">右（基準）画像データ 右下原点(IN)</param>
+/// <param name="prgtimg">右（基準）画像データ(IN)</param>
 /// <param name="blkhgt">視差ブロックの高さ(IN)</param>
 /// <param name="blkwdt">視差ブロックの幅(IN)</param>
 /// <param name="mtchgt">マッチングブロックの高さ(IN)</param>
@@ -634,9 +619,9 @@ void DisparityFilter::setHoughTransformParameter(int edgthr1, int edgthr2, int l
 /// <param name="shdwdt">遮蔽領域幅(IN)</param>
 /// <param name="pblkval">視差ブロック視差値(1000倍サブピクセル精度整数)(IN)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-/// <param name="pdspimg">視差画像 右下原点(OUT)</param>
-/// <param name="ppxldsp">視差データ 右下原点(OUT)</param>
-/// <param name="pblkdsp">ブロック視差データ 右下原点(OUT)</param>
+/// <param name="pdspimg">視差画像(OUT)</param>
+/// <param name="ppxldsp">視差データ(OUT)</param>
+/// <param name="pblkdsp">ブロック視差データ(OUT)</param>
 /// <returns>処理結果を返す</returns>
 bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg,
 	int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int dspofsx, int dspofsy, int depth, int shdwdt,
@@ -701,12 +686,6 @@ bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char
 	// ブロックの視差を画素へ展開する
 	getDisparityImage(imghgt, imgwdt, pblkval, pdspimg, ppxldsp, pblkdsp);
 
-	// ブロック視差値を保存する
-	if (saveBlockInfo == true) {
-		writeBlockDisparity(imghgt, imgwdt, average_disp);
-		saveBlockInfo = false;
-	}
-
 	return true;
 }
 
@@ -716,7 +695,7 @@ bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="prgtimg">右（基準）画像データ 右下原点(IN)</param>
+/// <param name="prgtimg">右（基準）画像データ(IN)</param>
 /// <param name="blkhgt">視差ブロックの高さ(IN)</param>
 /// <param name="blkwdt">視差ブロックの幅(IN)</param>
 /// <param name="mtchgt">マッチングブロックの高さ(IN)</param>
@@ -752,11 +731,14 @@ void DisparityFilter::sharpenLinearEdge(int imghgt, int imgwdt, unsigned char* p
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 void DisparityFilter::getAveragingDisparity(int imghgt, int imgwdt, int* pblkval)
 {
-	if (numOfBands < 2) {
-		getWholeAveragingDisparity(imghgt, imgwdt, pblkval);
-	}
-	else {
+
+	// マルチスレッドで実行する
+	if (runSingleCoreForAveDisp == 0) {
 		getBandAveragingDisparity(imghgt, imgwdt, pblkval);
+	}
+	// シングルスレッドで実行する
+	else {
+		getWholeAveragingDisparity(imghgt, imgwdt, pblkval);
 	}
 
 }
@@ -838,7 +820,7 @@ static char *kernelAverageDisparity = (char*)"__kernel void kernelAverageDispari
 	int wgtblks[289];\n\
 	int poswgt[9];\n\
 	int dspwdt = depth * dspsubrt;\n\
-	int dspitgrt = dspwdt / 1024 + 1;\n\
+	int dspitgrt = dspwdt / 256 + 1;\n\
 	int integ[1024] = { 0 };\n\
 	int dspitgwdt = dspwdt / dspitgrt;\n\
 	int idx = width * y + x;\n\
@@ -885,7 +867,7 @@ static char *kernelAverageDisparity = (char*)"__kernel void kernelAverageDispari
 		}\n\
 	}\n\
 	float density = (float)wgtdspcnt / wgtttlcnt * 100;\n\
-	if (density < aveDispRatio) {\n\
+	if (density <= aveDispRatio) {\n\
 		result[idx] = 0.0;\n\
 		return;\n\
 	}\n\
@@ -910,7 +892,7 @@ static char *kernelAverageDisparity = (char*)"__kernel void kernelAverageDispari
 		}\n\
 	}\n\
 	maxdsp += (maxwnd - 1) / 2;\n\
-	int mode = maxdsp * dspitgrt;\n\
+	int mode = maxdsp * dspitgrt + dspitgrt / 2;\n\
 	int high = mode + aveLimitRange;\n\
 	int low = mode - aveLimitRange;\n\
 	high = high >= dspwdt ? (dspwdt - 1) : high;\n\
@@ -1138,7 +1120,8 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 {
 	// jd : マッチングブロックのyインデックス
 	// id : マッチングブロックのxインデックス
-	int id, jd, i, j, ii, jj;
+	int id, jd, i, j;
+	int is, js, ie, je, ii, jj;
 
 	// マッチング探索幅
 	int depth = matchingDepth;
@@ -1169,9 +1152,16 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 	// 探索幅の倍精度整数
 	int dspwdt = depth * MATCHING_SUBPIXEL_TIMES;
 	// 視差サブピクセル精度倍率
-	int dspitgrt = dspwdt / 1024 + 1;
+	// 探索幅256の場合は移動積分ヒストグラム区間幅は1画素(256/256)になる
+	// ヒストグラム幅を1024にしているので最小で0.25画素(256/1024)
+	// その場合は1024で割る
+	int dspitgrt = dspwdt / 256 + 1;
+
 	// 移動積分視差サブピクセル幅
 	int dspitgwdt = dspwdt / dspitgrt;
+
+	int jjs = (-1) * dispAveBlockHeight;
+	int iis = (-1) * dispAveBlockWidth;
 
 	for (jd = jstart; jd < jend; jd++) {
 		for (id = 0; id < dspwdtblk; id++) {
@@ -1200,8 +1190,13 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 			int tgval = wrk[imgwdtblk * jd + id];
 
 			// 平均対象領域のヒストグラムを作成
-			for (j = jd - dispAveBlockHeight, jj = (-1) * dispAveBlockHeight; j <= jd + dispAveBlockHeight; j++, jj++) {
-				for (i = id - dispAveBlockWidth, ii = (-1) * dispAveBlockWidth; i <= id + dispAveBlockWidth; i++, ii++) {
+			js = jd - dispAveBlockHeight;
+			is = id - dispAveBlockWidth;
+			je = jd + dispAveBlockHeight;
+			ie = id + dispAveBlockWidth;
+
+			for (j = js, jj = jjs; j <= je; j++, jj++) {
+				for (i = is, ii = iis; i <= ie; i++, ii++) {
 					int disp = wrk[imgwdtblk * j + i];
 
 					// ブロック位置重み
@@ -1238,8 +1233,7 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 			// 視差平均化有効比率をチェックする
 			// 視差含有率
 			float density = (float)wgtdspcnt / wgtttlcnt * 100;
-
-			if (density < dispAveDispRatio) {
+			if (density <= dispAveDispRatio) {
 				pblkval[idx] = 0;
 				continue;
 			}
@@ -1271,7 +1265,8 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 
 			// 平均計算の対象を範囲を求める
 			// 最頻値のサブピクセル精度を倍精度整数へ戻す
-			int mode = maxdsp * dspitgrt;
+			// 移動積分ヒストグラム区間幅の半分を足して区間中央を最頻値とする
+			int mode = maxdsp * dspitgrt + dspitgrt / 2;
 
 			int high = mode + dispAveLimitRange;
 			int low = mode - dispAveLimitRange;
@@ -1325,9 +1320,9 @@ void DisparityFilter::getAveragingDisparityInBand(int imghgtblk, int imgwdtblk, 
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN)</param>
-/// <param name="pDestImage">視差画像 右下基点(OUT)</param>
-/// <param name="pTempParallax">視差情報 右下基点(OUT)</param>
-/// <param name="pBlockDepth">ブロック視差情報 右下基点(OUT)</param>
+/// <param name="pDestImage">視差画像(OUT)</param>
+/// <param name="pTempParallax">視差情報(OUT)</param>
+/// <param name="pBlockDepth">ブロック視差情報(OUT)</param>
 void DisparityFilter::getDisparityImage(int imghgt, int imgwdt,
 	int* pblkval, unsigned char* pDestImage, float* pTempParallax, float* pBlockDepth)
 {
@@ -1443,16 +1438,16 @@ void DisparityFilter::getHorizontalComplementDisparity(int imghgt, int imgwdt, b
 	int vrtOfs = dispAveBlockHeight;
 	int hztOfs = dispAveBlockWidth;
 
-	// 右下基点画像　
-	// 補完走査の先頭は右端
+	// 左上原点正立画像　
+	// 補完走査の先頭は左端
 	for (jd = vrtOfs; jd < je - vrtOfs; jd++) {
 		// ブロック前方走査
-		// 右下基点画像 右から左
+		// 左から右
 		for (id = hztOfs; id < ie - hztOfs; id++) {
 			complementForward(imgblkwdt, id, hztOfs, jd, id, pblkval);
 		}
 		// ブロック後方走査
-		// 右下基点画像 左から右　
+		// 右から左　
 		int stid = id - 1;
 		for (id = stid; id >= hztOfs; id--) {
 			complementBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
@@ -1488,21 +1483,21 @@ void DisparityFilter::getVerticalComplementDisparity(int imghgt, int imgwdt, boo
 	int vrtOfs = dispAveBlockHeight;
 	int hztOfs = dispAveBlockWidth;
 
-	// 右下基点画像　
-	// 補完走査の先頭は下端
+	// 左上原点正立画像　
+	// 補完走査の先頭は上端
 	for (id = hztOfs; id < ie - hztOfs; id++) {
 		// ブロック下方走査
-		// 右下基点画像 下から上
+		// 上から下
 		for (jd = vrtOfs; jd < je - vrtOfs; jd++) {
 			complementForward(imgblkwdt, jd, vrtOfs, jd, id, pblkval);
 		}
 		// ブロック上方走査
-		// 右下基点画像 上から下
+		// 下から上
 		int stjd = jd - 1;
 		for (jd = stjd; jd >= vrtOfs; jd--) {
 			complementBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockHeight,
-				dispComplementRatioInside, dispComplementRatioBottom, dispComplementRatioRound);
+				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
 		}
 	}
 }
@@ -1537,14 +1532,11 @@ void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt,
 	drct = 0;
 	idd = hztOfs - 1;
 
-	// 走査の先頭の補完倍率
-	double headrt = dispComplementRatioBottom;
-
-	// 右下原点画像
-	// 右下から左上へ斜め方向の補完
-	// 補完走査の先頭は右下端
-	// 先ず走査の先頭を右下端から左へ　走査の先頭は常に下端
-	// 次に走査の先頭を右下端から上へ　走査の先頭は常に右端
+	// 左上原点正立画像
+	// 左上から右下へ斜め方向の補完
+	// 補完走査の先頭は左上端
+	// 先ず走査の先頭を左上端から右へ　走査の先頭は常に上端
+	// 次に走査の先頭を左上端から下へ　走査の先頭は常に左端
 	for (ij = 0; ij < (je + ie); ij++) {
 		// 対角走査開始位置を求める
 		// 1行目右方向
@@ -1562,20 +1554,19 @@ void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt,
 				break;
 			}
 			idd = hztOfs;
-			headrt = dispComplementRatioRound;
 		}
 		// ブロック斜め右下走査
-		// 右下原点画像 右下から左上
+		//  左上から右下
 		for (jd = jdd, id = idd; (jd < (je - vrtOfs)) && (id < (ie - hztOfs)); jd++, id++) {
 			complementForward(imgblkwdt, id, idd, jd, id, pblkval);
 		}
 		// ブロック斜め左上走査
-		// 右下原点画像 左上から右下
+		// 右下から左上
 		int stid = id - 1;
 		for (jd = jd - 1, id = stid; jd >= vrtOfs && id >= hztOfs; jd--, id--) {
 			complementBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockDiagonal,
-				dispComplementRatioInside, headrt, dispComplementRatioRound);
+				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
 		}
 	}
 
@@ -1614,19 +1605,15 @@ void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, b
 	// i開始位置
 	idd = hztOfs - 1;
 
-	// 走査の先頭の補完倍率
-	double headrt = dispComplementRatioBottom;
-
-
-	// 右下原点画像　
-	// 左下から右上へ斜め方向の補完
-	// 補完走査の開始位置は右下端
-	// 先ず走査の先頭を右下端から左へ　走査の先頭は常に下端
-	// 補完走査の開始位置は左下端へ移して
-	// 次に走査の先頭を左下端から上へ　走査の先頭は常に左端
+	// 左上原点正立画像　
+	// 右上から左下へ斜め方向の補完
+	// 補完走査の開始位置は左上端
+	// 先ず走査の先頭を左上端から右へ　走査の先頭は常に上端
+	// 補完走査の開始位置は右上端へ移して
+	// 次に走査の先頭を右上端から下へ　走査の先頭は常に右端
 	for (ij = 0; ij < (je + ie); ij++) {
 		// 対角走査開始位置を求める
-		// 1行目左方向（右下原点画像）
+		// 1行目右方向
 		if (drct == 0) {
 			jdd = vrtOfs; // 行固定
 			idd++;
@@ -1634,29 +1621,26 @@ void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, b
 				drct = 1;
 			}
 		}
-		// 最終列目上方向（右下原点画像）
+		// 最終列目下方向
 		else {
 			jdd++;
 			if (jdd > (je - (vrtOfs + 1))) {
 				break;
 			}
-
 			idd = ie - (hztOfs + 1); //最終列固定;
-			// 補完倍率を切り替える
-			headrt = dispComplementRatioRound;
 		}
-		// ブロック斜め右上走査
-		// 右下基点画像 右上から左下
+		// ブロック斜め左下走査
+		// 左下から右上
 		for (jd = jdd, id = idd; (jd < (je - vrtOfs)) && (id >= hztOfs); jd++, id--) {
 			complementForward(imgblkwdt, jd, jdd, jd, id, pblkval);
 		}
-		// ブロック斜め左下走査
-		// 右下基点画像 左下から右上
+		// ブロック斜め右上走査
+		// 右上から左下
 		int stjd = jd - 1;
 		for (jd = stjd, id = id + 1; (jd >= vrtOfs) && (id < (ie - hztOfs)); jd--, id++) {
 			complementBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockDiagonal,
-				dispComplementRatioInside, headrt, dispComplementRatioBottom);
+				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
 		}
 	}
 
@@ -1872,94 +1856,6 @@ void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd,
 
 
 /// <summary>
-/// ブロックの視差値を書き出す
-/// </summary>
-/// <param name="imghgt">画像の高さ(IN)</param>
-/// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="pavedsp">ブロック視差値(倍精度浮動小数)(IN)</param>
-void DisparityFilter::writeBlockDisparity(int imghgt, int imgwdt, float *pavedsp)
-{
-	int id, jd, ie, je, pj, pi;
-
-	pj = disparityBlockHeight;
-	pi = disparityBlockWidth;
-
-	je = imghgt / pj;
-	ie = imgwdt / pi;
-
-	SYSTEMTIME st = {};
-	wchar_t date_time_str[_MAX_PATH] = {};
-	GetLocalTime(&st);
-
-	// YYYYMMDD_HHMMSS
-	swprintf_s(date_time_str, L"%04d%02d%02d_%02d%02d%02d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
-
-	wchar_t file_name[_MAX_PATH] = {};
-	swprintf_s(file_name, L"block_depth_%s.csv", date_time_str);
-
-#define STR_BUFFER_SIZE 5000
-
-	wchar_t* sbuf = (wchar_t*)malloc(STR_BUFFER_SIZE);
-	int slen = 0;
-	size_t len;
-	wchar_t str[32];
-
-	FILE* fp = nullptr;
-	errno_t err = _wfopen_s(&fp, file_name, _T("wt+, ccs=UTF-8 "));
-
-	if (err != 0) {
-		return;
-	}
-
-	if (fp) {
-	}
-	else {
-		return;
-	}
-
-	// x軸インデックスを書き出す
-	for (id = 0; id < ie; id++) {
-		swprintf_s(str, L",%d", id);
-		len = wcslen(str);
-		wcscpy_s(sbuf + slen, len + 1, str);
-		slen += (int)len;
-	}
-	_ftprintf_s(fp, sbuf);
-
-	// y軸インデックスと視差値を書き出す
-	for (jd = 0; jd < je; jd++) {
-		slen = 0;
-		for (id = 0; id < ie; id++) {
-
-			// 3Dグラフ表示のために左右反転する
-			// 右下基点から左下基点へ
-			float dsp = *(pavedsp + ie * (jd + 1) - id - 1) / MATCHING_SUBPIXEL_TIMES;
-
-			if (id == 0) {
-				swprintf_s(str, L"\n%d,%d", jd, (int)dsp);
-				len = wcslen(str);
-				wcscpy_s(sbuf + slen, len + 1, str);
-				slen += (int)len;
-			}
-			else {
-				swprintf_s(str, L",%d", (int)dsp);
-				len = wcslen(str);
-				wcscpy_s(sbuf + slen, len + 1, str);
-				slen += (int)len;
-			}
-		}
-		_ftprintf_s(fp, sbuf);
-	}
-
-	fclose(fp);
-
-	free(sbuf);
-
-	return;
-}
-
-
-/// <summary>
 /// 視差平均化スレッドを生成する
 /// </summary>
 void DisparityFilter::createAveragingThread()
@@ -2117,7 +2013,7 @@ void DisparityFilter::getBandAveragingDisparity(int imghgt, int imgwdt, int* pbl
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="prgtimg">右（基準）画像データ 右下原点(IN)/param>
+/// <param name="prgtimg">右（基準）画像データ(IN)/param>
 /// <param name="linnum">線分座標を格納する配列のサイズ</param>
 /// <param name="linseg">線分座標を格納する配列(OUT)</param>
 /// <param name="plinnum">検出した線分の総数(OUT)</param>
@@ -2183,7 +2079,7 @@ int DisparityFilter::getEdgeLineSegment(int imghgt, int imgwdt, unsigned char *p
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// /// <param name="prgtimg">右（基準）画像データ 右下原点(IN)/param>
+/// <param name="prgtimg">右（基準）画像データ(IN)/param>
 /// <param name="blkhgt">視差ブロックの高さ(IN)</param>
 /// <param name="blkwdt">視差ブロックの幅(IN)</param>
 /// <param name="mtchgt">マッチングブロックの高さ(IN)</param>
@@ -2564,7 +2460,7 @@ int DisparityFilter::removeOutsideDisparity(int blknum, int *dspval, int depth)
 	// 探索幅の倍精度整数
 	int dspwdt = depth * MATCHING_SUBPIXEL_TIMES;
 	// 視差サブピクセル精度倍率
-	int dspitgrt = dspwdt / 1024 + 1;
+	int dspitgrt = dspwdt / 256 + 1;
 	// 移動積分視差サブピクセル幅
 	int dspitgwdt = dspwdt / dspitgrt;
 
@@ -2622,7 +2518,8 @@ int DisparityFilter::removeOutsideDisparity(int blknum, int *dspval, int depth)
 
 	// 有効範囲を求める
 	// 最頻値のサブピクセル精度を倍精度整数へ戻す
-	int mode = maxdsp * dspitgrt;
+	// 移動積分ヒストグラム区間幅の半分を足して区間中央を最頻値とする
+	int mode = maxdsp * dspitgrt + dspitgrt / 2;
 
 	// 最頻値の±1/4幅を有効範囲とする
 	int high = mode + mode / 4;

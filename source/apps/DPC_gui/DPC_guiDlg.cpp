@@ -42,9 +42,9 @@
 
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 #ifdef _DEBUG
@@ -90,6 +90,7 @@ struct MousePostionInformation {
 	POINT position_at_client;
 	POINT position_at_image;
 	POINT position_at_original_image;
+	POINT position_at_depth_image;
 	int currently_selected_index;
 
 	void Clear(void)
@@ -104,6 +105,9 @@ struct MousePostionInformation {
 		position_at_original_image.x = 0;
 		position_at_original_image.y = 0;
 
+		position_at_depth_image.x = 0;
+		position_at_depth_image.y = 0;
+
 		currently_selected_index = -1;
 	}
 };
@@ -113,6 +117,7 @@ struct MouseRectInformation {
 	RECT rect_at_client;
 	RECT rect_at_image;
 	RECT rect_at_original_image;
+	RECT rect_at_depth_image;
 	int currently_selected_index[2];
 
 	void Clear(void)
@@ -128,10 +133,15 @@ struct MouseRectInformation {
 		rect_at_image.bottom = 0;
 		rect_at_image.right = 0;
 
-		rect_at_image.top = 0;
-		rect_at_image.left = 0;
-		rect_at_image.bottom = 0;
-		rect_at_image.right = 0;
+		rect_at_original_image.top = 0;
+		rect_at_original_image.left = 0;
+		rect_at_original_image.bottom = 0;
+		rect_at_original_image.right = 0;
+
+		rect_at_depth_image.top = 0;
+		rect_at_depth_image.left = 0;
+		rect_at_depth_image.bottom = 0;
+		rect_at_depth_image.right = 0;
 
 		currently_selected_index[0] = -1;
 		currently_selected_index[1] = -1;
@@ -419,6 +429,40 @@ BOOL CDPCguiDlg::OnInitDialog()
 			dpl_gui_configuration_ = nullptr;
 
 			exit(0);
+		}
+	}
+
+	// check memory size for 4k
+	{
+		const int camera_model = dpl_gui_configuration_->GetCameraModel();
+
+		bool check_it = false;
+		if (camera_model == 2) {
+			// 2:4K
+			check_it = true;
+		}
+		else if (camera_model == 3) {
+			// 3:4KA
+			check_it = true;
+		}
+		else if (camera_model == 4) {
+			// 4:4KJ
+			check_it = true;
+		}
+
+		if (check_it) {
+			unsigned long long total_physical_memory_mb = 0;
+			unsigned long long total_installed_physical_memory_mb = 0;
+			bool ret = GetGlobalMemoryStatus(&total_physical_memory_mb, &total_installed_physical_memory_mb);
+
+			if (ret) {
+				constexpr unsigned long long size_for_limit_mb = (unsigned long long)16 * (unsigned long long)1024;
+				if (total_installed_physical_memory_mb < size_for_limit_mb) {
+					TCHAR msg[64] = {};
+					_stprintf_s(msg, _T("[WARNING]isc_dpl_ Initialize() 4Kシリーズのカメラの使用には,16GB以上のメモリを推奨します"));
+					MessageBox(msg, _T("CDPCguiDlg::OnInitDialog()"), MB_ICONWARNING);
+				}
+			}
 		}
 	}
 
@@ -1013,6 +1057,11 @@ void CDPCguiDlg::OnLButtonUp(UINT nFlags, CPoint point)
 		int currently_selected_index = -1;
 		draw_data_lib_->ScreenPostionToImagePosition(mouse_operation_control_.mouse_position_real_time_monitor.position_at_client, &image_position_on_original_image, &currently_selected_index);
 		mouse_operation_control_.mouse_position_pick_information[index].position_at_original_image = image_position_on_original_image;
+
+		POINT position_on_depth_image = {};
+		draw_data_lib_->ScreenPostionToDepthImagePosition(mouse_operation_control_.mouse_position_real_time_monitor.position_at_client, &position_on_depth_image);
+		mouse_operation_control_.mouse_position_pick_information[index].position_at_depth_image = position_on_depth_image;
+
 		mouse_operation_control_.mouse_position_pick_information[index].currently_selected_index = currently_selected_index;
 
 	}
@@ -1070,10 +1119,19 @@ void CDPCguiDlg::OnLButtonUp(UINT nFlags, CPoint point)
 			draw_data_lib_->ScreenPostionToImagePosition(rect_at_client_point[0], &image_position_on_original_image[0], &currently_selected_index[0]);
 			draw_data_lib_->ScreenPostionToImagePosition(rect_at_client_point[1], &image_position_on_original_image[1], &currently_selected_index[1]);
 
-			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.top = image_position_on_original_image[0].y;
-			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.left = image_position_on_original_image[0].x;
-			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.bottom = image_position_on_original_image[1].y;
-			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.right = image_position_on_original_image[1].x;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.top		= image_position_on_original_image[0].y;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.left		= image_position_on_original_image[0].x;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.bottom	= image_position_on_original_image[1].y;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_original_image.right		= image_position_on_original_image[1].x;
+
+			POINT position_on_depth_image[2] = { {}, {} };
+			draw_data_lib_->ScreenPostionToDepthImagePosition(rect_at_client_point[0], &position_on_depth_image[0]);
+			draw_data_lib_->ScreenPostionToDepthImagePosition(rect_at_client_point[1], &position_on_depth_image[1]);
+
+			mouse_operation_control_.mouse_rect_information[index].rect_at_depth_image.top		= position_on_depth_image[0].y;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_depth_image.left		= position_on_depth_image[0].x;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_depth_image.bottom	= position_on_depth_image[1].y;
+			mouse_operation_control_.mouse_rect_information[index].rect_at_depth_image.right	= position_on_depth_image[1].x;
 
 			mouse_operation_control_.mouse_rect_information[index].currently_selected_index[0] = currently_selected_index[0];
 			mouse_operation_control_.mouse_rect_information[index].currently_selected_index[1] = currently_selected_index[1];
@@ -3062,11 +3120,22 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 	// IDC_CHECK5   Base Image Correct
 	((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(TRUE);
 
-	// IDC_CHECK16  Data Processing Block Matching
-	((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(TRUE);
-
-	// IDC_CHECK15  Data Processing Frame Decoder
-	((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(TRUE);
+	if (isc_dpl_configuration_.enabled_data_proc_module) {
+		// IDC_CHECK16  Data Processing Block Matching
+		((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(TRUE);
+		// IDC_CHECK15  Data Processing Frame Decoder
+		((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(TRUE);
+		// IDC_CHECK1   Disparity
+		((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(FALSE);
+	}
+	else {
+		// IDC_CHECK16  Data Processing Block Matching
+		((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(FALSE);
+		// IDC_CHECK15  Data Processing Frame Decoder
+		((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(FALSE);
+		// IDC_CHECK1   Disparity
+		((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(TRUE);
+	}
 
 	return true;
 }
@@ -3501,15 +3570,18 @@ bool CDPCguiDlg::ImageDrawProc()
 			}
 		}
 
+		POINT position_on_depth_image = {};
+		draw_data_lib_->ScreenPostionToDepthImagePosition(mouse_operation_control_.mouse_position_real_time_monitor.position_at_client, &position_on_depth_image);
+
 		float disparity = 0, depth = 0;
-		int get_success = isc_dpl_->GetPositionDepth(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &disparity, &depth);
+		int get_success = isc_dpl_->GetPositionDepth(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &disparity, &depth);
 		if (get_success != DPC_E_OK) {
 			disparity = 0;
 			depth = 0;
 		}
 
 		float x_d = 0, y_d = 0, z_d = 0;
-		get_success = isc_dpl_->GetPosition3D(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &x_d, &y_d, &z_d);
+		get_success = isc_dpl_->GetPosition3D(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &x_d, &y_d, &z_d);
 		float xr_d = 0, yr_d = 0, zr_d = 0;
 		if (get_success == DPC_E_OK) {
 			draw_data_lib_->Image3DPositionToScreenPostion(x_d, y_d, z_d, &xr_d, &yr_d, &zr_d);
@@ -3540,7 +3612,7 @@ bool CDPCguiDlg::ImageDrawProc()
 	if (mouse_operation_control_.mouse_position_pick_information[0].valid) {
 		POINT image_position = mouse_operation_control_.mouse_position_pick_information[0].position_at_image;
 
-		POINT image_position_on_original_image = mouse_operation_control_.mouse_position_pick_information[0].position_at_original_image;
+		POINT position_on_depth_image = mouse_operation_control_.mouse_position_pick_information[0].position_at_depth_image;
 		int currently_selected_index = mouse_operation_control_.mouse_position_pick_information[0].currently_selected_index;
 
 		IscImageInfo* isc_image_info = &isc_control_.isc_image_info;
@@ -3564,7 +3636,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		}
 
 		float disparity = 0, depth = 0;
-		int get_success = isc_dpl_->GetPositionDepth(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &disparity, &depth);
+		int get_success = isc_dpl_->GetPositionDepth(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &disparity, &depth);
 		if (get_success != DPC_E_OK) {
 			disparity = 0;
 			depth = 0;
@@ -3575,7 +3647,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		GetDlgItem(IDC_STATIC_IP0_XY)->SetWindowText(str);
 
 		float x_d = 0, y_d = 0, z_d = 0;
-		get_success = isc_dpl_->GetPosition3D(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &x_d, &y_d, &z_d);
+		get_success = isc_dpl_->GetPosition3D(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &x_d, &y_d, &z_d);
 		float xr_d = 0, yr_d = 0, zr_d = 0;
 		if (get_success == DPC_E_OK) {
 			draw_data_lib_->Image3DPositionToScreenPostion(x_d, y_d, z_d, &xr_d, &yr_d, &zr_d);
@@ -3600,7 +3672,7 @@ bool CDPCguiDlg::ImageDrawProc()
 	if (mouse_operation_control_.mouse_position_pick_information[1].valid) {
 		POINT image_position = mouse_operation_control_.mouse_position_pick_information[1].position_at_image;
 
-		POINT image_position_on_original_image = mouse_operation_control_.mouse_position_pick_information[1].position_at_original_image;
+		POINT position_on_depth_image = mouse_operation_control_.mouse_position_pick_information[1].position_at_depth_image;
 		int currently_selected_index = mouse_operation_control_.mouse_position_pick_information[1].currently_selected_index;
 
 		IscImageInfo* isc_image_info = &isc_control_.isc_image_info;
@@ -3624,7 +3696,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		}
 
 		float disparity = 0, depth = 0;
-		int get_success = isc_dpl_->GetPositionDepth(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &disparity, &depth);
+		int get_success = isc_dpl_->GetPositionDepth(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &disparity, &depth);
 		if (get_success != DPC_E_OK) {
 			disparity = 0;
 			depth = 0;
@@ -3635,7 +3707,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		GetDlgItem(IDC_STATIC_IP1_XY)->SetWindowText(str);
 
 		float x_d = 0, y_d = 0, z_d = 0;
-		get_success = isc_dpl_->GetPosition3D(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &x_d, &y_d, &z_d);
+		get_success = isc_dpl_->GetPosition3D(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &x_d, &y_d, &z_d);
 		float xr_d = 0, yr_d = 0, zr_d = 0;
 		if (get_success == DPC_E_OK) {
 			draw_data_lib_->Image3DPositionToScreenPostion(x_d, y_d, z_d, &xr_d, &yr_d, &zr_d);
@@ -3660,7 +3732,7 @@ bool CDPCguiDlg::ImageDrawProc()
 	if (mouse_operation_control_.mouse_position_pick_information[2].valid) {
 		POINT image_position = mouse_operation_control_.mouse_position_pick_information[2].position_at_image;
 
-		POINT image_position_on_original_image = mouse_operation_control_.mouse_position_pick_information[2].position_at_original_image;
+		POINT position_on_depth_image = mouse_operation_control_.mouse_position_pick_information[2].position_at_depth_image;
 		int currently_selected_index = mouse_operation_control_.mouse_position_pick_information[2].currently_selected_index;
 
 		IscImageInfo* isc_image_info = &isc_control_.isc_image_info;
@@ -3684,7 +3756,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		}
 
 		float disparity = 0, depth = 0;
-		int get_success = isc_dpl_->GetPositionDepth(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &disparity, &depth);
+		int get_success = isc_dpl_->GetPositionDepth(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &disparity, &depth);
 		if (get_success != DPC_E_OK) {
 			disparity = 0;
 			depth = 0;
@@ -3695,7 +3767,7 @@ bool CDPCguiDlg::ImageDrawProc()
 		GetDlgItem(IDC_STATIC_IP2_XY)->SetWindowText(str);
 
 		float x_d = 0, y_d = 0, z_d = 0;
-		get_success = isc_dpl_->GetPosition3D(image_position_on_original_image.x, image_position_on_original_image.y, isc_image_info, &x_d, &y_d, &z_d);
+		get_success = isc_dpl_->GetPosition3D(position_on_depth_image.x, position_on_depth_image.y, isc_image_info, &x_d, &y_d, &z_d);
 		float xr_d = 0, yr_d = 0, zr_d = 0;
 		if (get_success == DPC_E_OK) {
 			draw_data_lib_->Image3DPositionToScreenPostion(x_d, y_d, z_d, &xr_d, &yr_d, &zr_d);
@@ -3724,11 +3796,11 @@ bool CDPCguiDlg::ImageDrawProc()
 		image_position[1].y = mouse_operation_control_.mouse_rect_information[0].rect_at_image.bottom;
 		image_position[1].x = mouse_operation_control_.mouse_rect_information[0].rect_at_image.right;
 
-		POINT image_position_on_original_image[2] = { {}, {} };
-		image_position_on_original_image[0].y = mouse_operation_control_.mouse_rect_information[0].rect_at_original_image.top;
-		image_position_on_original_image[0].x = mouse_operation_control_.mouse_rect_information[0].rect_at_original_image.left;
-		image_position_on_original_image[1].y = mouse_operation_control_.mouse_rect_information[0].rect_at_original_image.bottom;
-		image_position_on_original_image[1].x = mouse_operation_control_.mouse_rect_information[0].rect_at_original_image.right;
+		POINT position_on_depth_image[2] = { {}, {} };
+		position_on_depth_image[0].y = mouse_operation_control_.mouse_rect_information[0].rect_at_depth_image.top;
+		position_on_depth_image[0].x = mouse_operation_control_.mouse_rect_information[0].rect_at_depth_image.left;
+		position_on_depth_image[1].y = mouse_operation_control_.mouse_rect_information[0].rect_at_depth_image.bottom;
+		position_on_depth_image[1].x = mouse_operation_control_.mouse_rect_information[0].rect_at_depth_image.right;
 
 		int currently_selected_index[2] = { -1, -1 };
 		currently_selected_index[0] = mouse_operation_control_.mouse_rect_information[0].currently_selected_index[0];
@@ -3740,22 +3812,23 @@ bool CDPCguiDlg::ImageDrawProc()
 
 		int roi_width = 0;
 		int roi_x = 0;
-		if (image_position_on_original_image[1].x > image_position_on_original_image[0].x) {
-			roi_width = image_position_on_original_image[1].x - image_position_on_original_image[0].x;
-			roi_x = image_position_on_original_image[0].x;
+		if (position_on_depth_image[1].x > position_on_depth_image[0].x) {
+			roi_width = position_on_depth_image[1].x - position_on_depth_image[0].x;
+			roi_x = position_on_depth_image[0].x;
 		}
 		else {
-			roi_width = image_position_on_original_image[0].x - image_position_on_original_image[1].x;
+			roi_width = position_on_depth_image[0].x - position_on_depth_image[1].x;
+			roi_x = position_on_depth_image[1].x;
 		}
 		int roi_height = 0;
 		int roi_y = 0;
-		if (image_position_on_original_image[1].y > image_position_on_original_image[0].y) {
-			roi_height = image_position_on_original_image[1].y - image_position_on_original_image[0].y;
-			roi_y = image_position_on_original_image[0].y;
+		if (position_on_depth_image[1].y > position_on_depth_image[0].y) {
+			roi_height = position_on_depth_image[1].y - position_on_depth_image[0].y;
+			roi_y = position_on_depth_image[0].y;
 		}
 		else {
-			roi_height = image_position_on_original_image[0].y - image_position_on_original_image[1].y;
-			roi_y = image_position_on_original_image[1].y;
+			roi_height = position_on_depth_image[0].y - position_on_depth_image[1].y;
+			roi_y = position_on_depth_image[1].y;
 		}
 
 		IscImageInfo* isc_image_info = &isc_control_.isc_image_info;

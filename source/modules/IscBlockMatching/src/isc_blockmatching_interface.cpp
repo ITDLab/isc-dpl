@@ -45,9 +45,9 @@
 #pragma comment (lib, "imagehlp")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 
@@ -161,17 +161,12 @@ int IscBlockMatchingInterface::Initialize(IscDataProcModuleConfiguration* isc_da
     size_t image_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
     size_t depth_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         work_buffers_.buff_image[i].image = new unsigned char[image_size];
         memset(work_buffers_.buff_image[i].image, 0, image_size);
-
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        work_buffers_.buff_depth[i].image = new float[depth_size];
-        memset(work_buffers_.buff_depth[i].image, 0, depth_size * sizeof(float));
     }
 
     // initialize FrameDecoder
@@ -375,17 +370,12 @@ int IscBlockMatchingInterface::Terminate()
     BlockMatching::deleteMatchingThread();
 
     // release work
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         delete[] work_buffers_.buff_image[i].image;
         work_buffers_.buff_image[i].image = nullptr;
-
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        delete[] work_buffers_.buff_depth[i].image;
-        work_buffers_.buff_depth[i].image = nullptr;
     }
 
     return DPC_E_OK;

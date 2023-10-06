@@ -37,6 +37,7 @@
 #include "isc_image_info_ring_buffer.h"
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 #include "isc_raw_data_decoder.h"
 
 #include "isc_file_read_control_impl.h"
@@ -573,14 +574,6 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 	isc_image_info->frame_data[frame_data_index].raw.width = 0;
 	isc_image_info->frame_data[frame_data_index].raw.height = 0;
 	isc_image_info->frame_data[frame_data_index].raw.channel_count = 0;
-
-	isc_image_info->frame_data[frame_data_index].bayer_base.width = 0;
-	isc_image_info->frame_data[frame_data_index].bayer_base.height = 0;
-	isc_image_info->frame_data[frame_data_index].bayer_base.channel_count = 0;
-
-	isc_image_info->frame_data[frame_data_index].bayer_compare.width = 0;
-	isc_image_info->frame_data[frame_data_index].bayer_compare.height = 0;
-	isc_image_info->frame_data[frame_data_index].bayer_compare.channel_count = 0;
 
 	// decode
 	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_header.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;

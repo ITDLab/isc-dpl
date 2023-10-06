@@ -42,7 +42,7 @@ public:
 	/** @brief set decoder parameters.
 		@return none.
 	 */
-	static void setFrameDecoderParameter(int crstthr, int crsthrm);
+	static void setFrameDecoderParameter(int crstthr, int grdcrct);
 
 	/** @brief set the upper and lower limits of parallax.
 		@return none.

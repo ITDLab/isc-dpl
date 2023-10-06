@@ -100,9 +100,9 @@ static int matchingBlockWidth = 4;
 static int contrastThreshold = 40;
 
 /// <summary>
-/// センサー輝度高解像度モードステータス 0:オフ 1:オン
+/// 階調補正モードステータス 0:オフ 1:オン
 /// </summary>
-static int contrastHighResoMode = 0;
+static int gradationCorrectionMode = 0;
 
 // 画像サイズ
 #define IMG_WIDTH_VM 752
@@ -113,6 +113,9 @@ static int contrastHighResoMode = 0;
 // コントラスト⊿L/Lmeanを1000倍して評価値とする
 #define CONTRAST_OFFSET_VM (1.8 * 1000)
 #define CONTRAST_OFFSET_XC (1.2 * 1000)
+
+// 階調補正のコントラストオフセットの倍率
+#define CONTRAST_XC_DRADATION_FACTOR (2.0) 
 
 // 輝度最小値
 // ブロック内の輝度の最大値がこの値未満の場合
@@ -132,6 +135,11 @@ static int contrastHighResoMode = 0;
 /// ブロックマッチングにOpenCLの使用を設定する
 /// </summary>
 static int dispMatchingUseOpenCL = 0;
+
+/// <summary>
+/// ブロックマッチングのシングルコア実行を設定する
+/// </summary>
+static int dispMatchingRunSingleCore = 0;
 
 /// <summary>
 /// 視差ブロック横オフセット
@@ -201,8 +209,8 @@ struct BNAD_THREAD_INFO {
 	int crstthr;
 	// コントラストオフセット
 	int crstofs;
-	// センサー輝度高解像度モードステータス
-	int crsthrm;
+	// 階調補正モードステータス
+	int grdcrct;
 
 	// マッチングステップの高さ
 	int stphgt;
@@ -293,9 +301,12 @@ void StereoMatching::finalize()
 /// ステレオマッチングにOpenCLの使用を設定する
 /// </summary>
 /// <param name="usecl">OpenCLを使用 0:しない1:する(IN)</param>
-void StereoMatching::setUseOpenCLForMatching(int usecl)
+/// <param name="runsgcr">シングルスレッドで実行 0:しない1:する(IN)</param>
+void StereoMatching::setUseOpenCLForMatching(int usecl, int runsgcr)
 {
 	dispMatchingUseOpenCL = usecl;
+	dispMatchingRunSingleCore = runsgcr;
+
 }
 
 
@@ -312,9 +323,9 @@ void StereoMatching::setUseOpenCLForMatching(int usecl)
 /// <param name="blkofsx">視差ブロック横オフセット(IN)</param>
 /// <param name="blkofsy">視差ブロック縦オフセット(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 void StereoMatching::setMatchingParameter(int imghgt, int imgwdt, int depth,
-	int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int blkofsx, int blkofsy, int crstthr, int crsthrm)
+	int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int blkofsx, int blkofsy, int crstthr, int grdcrct)
 {
 
 	correctedImageHeight = imghgt; // 入力補正画像の縦サイズ
@@ -331,7 +342,7 @@ void StereoMatching::setMatchingParameter(int imghgt, int imgwdt, int depth,
 	dispBlockOffsetY = blkofsy; // 視差ブロック縦オフセット
 
 	contrastThreshold = crstthr; // コントラスト閾値
-	contrastHighResoMode = crsthrm; // センサー輝度高解像度モードステータス
+	gradationCorrectionMode = grdcrct; // 階調補正モードステータス
 
 }
 
@@ -483,8 +494,8 @@ void StereoMatching::executeMatching(int imghgt, int imgwdt, int depth,
 
 	// コントラスト閾値
 	int crstthr = contrastThreshold;
-	// センサー輝度高解像度モードステータス
-	int crsthrm = contrastHighResoMode;
+	// 階調補正モードステータス
+	int grdcrct = gradationCorrectionMode;
 
 	// コントラストオフセット
 	int crstofs = 0;
@@ -494,6 +505,10 @@ void StereoMatching::executeMatching(int imghgt, int imgwdt, int depth,
 	}
 	else if (imgwdt == IMG_WIDTH_XC) {
 		crstofs = (int)CONTRAST_OFFSET_XC;
+		// 階調補正モードの場合
+		if (grdcrct == 1) {
+			crstofs = (int)(CONTRAST_OFFSET_XC * CONTRAST_XC_DRADATION_FACTOR);
+		}
 	}
 
 	// バックマッチング
@@ -507,7 +522,7 @@ void StereoMatching::executeMatching(int imghgt, int imgwdt, int depth,
 	}
 
 	// 視差を取得する
-	getMatchingDisparity(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+	getMatchingDisparity(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 		stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 		pimgref, pimgcmp, pblkdsp, pblkbkdsp, pblkcrst);
 
@@ -528,7 +543,7 @@ void StereoMatching::executeMatching(int imghgt, int imgwdt, int depth,
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -540,17 +555,20 @@ void StereoMatching::executeMatching(int imghgt, int imgwdt, int depth,
 /// <param name="pblkdsp">マッチングの視差値(OUT)</param>
 /// <param name="pblkbkdsp">バックマッチングの視差値(OUT)</param>
 /// <param name="pblkmsk">ブロックコントラスト(OUT)</param>
-void StereoMatching::getMatchingDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getMatchingDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst)
 {
-	if (numOfBands < 2) {
-		getWholeDisparity(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+
+	// マルチスレッドで実行する
+	if (dispMatchingRunSingleCore == 0) {
+		getBandDisparity(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			pimgref, pimgcmp, pblkdsp, pblkbkdsp, pblkcrst);
 	}
+	// シングルスレッドで実行する
 	else {
-		getBandDisparity(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+		getWholeDisparity(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			pimgref, pimgcmp, pblkdsp, pblkbkdsp, pblkcrst);
 	}
@@ -566,7 +584,7 @@ void StereoMatching::getMatchingDisparity(int imghgt, int imgwdt, int depth, int
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -578,18 +596,18 @@ void StereoMatching::getMatchingDisparity(int imghgt, int imgwdt, int depth, int
 /// <param name="pblkdsp">マッチングの視差値(OUT)</param>
 /// <param name="pblkbkdsp">バックマッチングの視差値(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
-void StereoMatching::getWholeDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getWholeDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst)
 {
 
 	if (pblkbkdsp == NULL) {
-		getDisparityInBand(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+		getDisparityInBand(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			pimgref, pimgcmp, pblkdsp, pblkcrst, 0, imghgt);
 	}
 	else {
-		getBothDisparityInBand(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+		getBothDisparityInBand(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			pimgref, pimgcmp, pblkdsp, pblkbkdsp, pblkcrst, 0, imghgt);
 	}
@@ -605,7 +623,7 @@ void StereoMatching::getWholeDisparity(int imghgt, int imgwdt, int depth, int cr
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -618,7 +636,7 @@ void StereoMatching::getWholeDisparity(int imghgt, int imgwdt, int depth, int cr
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param> 
 /// <param name="jstart">バンド開始ブロック位置(IN)</param>
 /// <param name="jend">バンド終了ブロック位置(IN)</param>
-void StereoMatching::getDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float * pblkdsp, int *pblkcrst,
 	int jstart, int jend)
@@ -629,7 +647,7 @@ void StereoMatching::getDisparityInBand(int imghgt, int imgwdt, int depth, int c
 	for (int jpx = jstart; jpx < jend && jpx <= (imghgt - blkhgt); jpx++) {
 		for (int ipx = 0; ipx <= (imgwdt - depth - blkwdt); ipx++) {
 			// SSDにより視差値を求める
-			getDisparityBySSD(ipx, jpx, imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+			getDisparityBySSD(ipx, jpx, imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 				stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 				pimgref, pimgcmp, pblkdsp, pblkcrst);
 		}
@@ -648,7 +666,7 @@ void StereoMatching::getDisparityInBand(int imghgt, int imgwdt, int depth, int c
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)</param>
@@ -660,7 +678,7 @@ void StereoMatching::getDisparityInBand(int imghgt, int imgwdt, int depth, int c
 /// <param name="pblkdsp">マッチングの視差値(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
 void StereoMatching::getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int depth,
-	int crstthr, int crstofs, int crsthrm,
+	int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float * pblkdsp, int *pblkcrst)
 {
@@ -708,20 +726,26 @@ void StereoMatching::getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int
 
 	int sumr = 0; // Σ基準画像の輝度ij
 	int sumrr = 0; // Σ(基準画像の輝度ij^2)
-
-	int Lmin = 255; // ブロック内輝度最小値（初期値256階調最大輝度値）
-	int Lmax = 0; // ブロック内輝度最大値（初期値256階調最小輝度値）
-
+	double Lsumr = 0.0; // Σ基準画像の輝度ij
+	double Lmin = 255.0; // ブロック内輝度最小値（初期値256階調最大輝度値）
+	double Lmax = 0.0; // ブロック内輝度最大値（初期値256階調最小輝度値）
 	int blkcnt = blkhgt * blkwdt;
 
 	// 右画像ブロック輝度を評価する
 	for (int j = jpx; j < jpxe; j++) {
 		for (int i = ipx; i < ipxe; i++) {
-			int rfx = pimgref[j * imgwdt + i];
+			double rfx = (double)pimgref[j * imgwdt + i];
+			double xrfx = rfx * rfx;
 
-			sumr += rfx;
-			sumrr += rfx * rfx;
+			sumr += (int)rfx;
+			sumrr += (int)xrfx;
 
+			// 階調補正モードオンの場合
+			// 補正前の値へ変換する
+			if (grdcrct == 1) {
+				rfx = xrfx / 255;
+			}
+			Lsumr += rfx;
 			if (Lmin > rfx) {
 				Lmin = rfx;
 			}
@@ -736,25 +760,17 @@ void StereoMatching::getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int
 	int crst = 0;
 
 	// ブロックの輝度値の平均
-	double Lave = sumr / blkcnt;
+	double Lave = Lsumr / blkcnt;
 	// ブロック内の輝度差
-	int deltaL = Lmax - Lmin;
+	double deltaL = Lmax - Lmin;
 
 	// 以下の場合はコントラスト値はゼロ
 	// ブロックの最小輝度値が閾値未満
 	// ブロック内の輝度差が閾値未満
 	// ブロック平均輝度が閾値未満
-	if (Lmax >= bgtmax && deltaL >= mindltl && Lave >= minlave) {
-		// 輝度線形の場合
-		if (crsthrm == 0) {
+	if (Lmax >= (double)bgtmax && deltaL >= (double)mindltl && Lave >= minlave) {
 			crst = (int)((deltaL * 1000 - crstofs) / Lave);
 		}
-		// 輝度非線形の場合
-		// High Resolutionモード
-		else {
-			crst = (int)((deltaL * 1000 - crstofs) / crstave);
-		}
-	}
 
 	// コントラストが閾値未満の場合は視差値ゼロにする
 	if (crst < crstthr) {
@@ -837,7 +853,7 @@ void StereoMatching::getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -851,7 +867,7 @@ void StereoMatching::getDisparityBySSD(int x, int y, int imghgt, int imgwdt, int
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param> 
 /// <param name="jstart">バンド開始ブロック位置(IN)</param>
 /// <param name="jend">バンド終了ブロック位置(IN)</param>
-void StereoMatching::getBothDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getBothDisparityInBand(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst,
 	int jstart, int jend)
@@ -862,7 +878,7 @@ void StereoMatching::getBothDisparityInBand(int imghgt, int imgwdt, int depth, i
 	for (int jpx = jstart; jpx < jend && jpx <= (imghgt - blkhgt); jpx++) {
 		for (int ipx = 0; ipx <= (imgwdt - blkwdt); ipx++) {
 			// SSDにより視差値を求める
-			getBothDisparityBySSD(ipx, jpx, imghgt, imgwdt, depth, crstthr, crstofs, /*bgtmax,*/ crsthrm,
+			getBothDisparityBySSD(ipx, jpx, imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 				stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 				pimgref, pimgcmp, pblkdsp, pblkbkdsp, pblkcrst);
 		}
@@ -882,7 +898,7 @@ void StereoMatching::getBothDisparityInBand(int imghgt, int imgwdt, int depth, i
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
 /// <param name="bgtmax">ブロック輝度最大値(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)</param>
@@ -895,7 +911,7 @@ void StereoMatching::getBothDisparityInBand(int imghgt, int imgwdt, int depth, i
 /// <param name="pblkbkdsp">バックマッチングの視差値(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
 void StereoMatching::getBothDisparityBySSD(int x, int y, int imghgt, int imgwdt, int depth,
-	int crstthr, int crstofs, /*int bgtmax,*/ int crsthrm,
+	int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp,
 	float * pblkdsp, float * pblkbkdsp, int *pblkcrst)
@@ -948,36 +964,51 @@ void StereoMatching::getBothDisparityBySSD(int x, int y, int imghgt, int imgwdt,
 	// フォアマッチング
 	int sumr = 0; // Σ基準画像の輝度ij
 	int sumrr = 0; // Σ(基準画像の輝度ij^2)
-	int Lmin = 255; // ブロック内輝度最小値（初期値256階調最大輝度値）
-	int Lmax = 0; // ブロック内輝度最大値（初期値256階調最小輝度値）
+	double Lsumr = 0.0; // Σ基準画像の輝度ij
+	double Lmin = 255.0; // ブロック内輝度最小値（初期値256階調最大輝度値）
+	double Lmax = 0.0; // ブロック内輝度最大値（初期値256階調最小輝度値）
 
 	// バックマッチング
 	int bk_sumr = 0; // Σ基準画像の輝度ij
 	int bk_sumrr = 0; // Σ(基準画像の輝度ij^2)
-	int bk_Lmin = 255; // ブロック内輝度最小値（初期値256階調最大輝度値）
-	int bk_Lmax = 0; // ブロック内輝度最大値（初期値256階調最小輝度値）
+	double bk_Lsumr = 0.0; // Σ基準画像の輝度ij
+	double bk_Lmin = 255.0; // ブロック内輝度最小値（初期値256階調最大輝度値）
+	double bk_Lmax = 0.0; // ブロック内輝度最大値（初期値256階調最小輝度値）
 
 	int blkcnt = blkhgt * blkwdt;
 
 	// 基準画像ブロック輝度を評価する
 	for (int j = jpx; j < jpxe; j++) {
 		for (int i = ipx; i < ipxe; i++) {
-			int rfx = pimgref[j * imgwdt + i]; // 基準（右）カメラ
-			int cpx = pimgcmp[j * imgwdt + i]; // 比較（左）カメラ
+
+			double rfx = (double)pimgref[j * imgwdt + i]; // 基準（右）カメラ
+			double xrfx = rfx * rfx;
+			double cpx = (double)pimgcmp[j * imgwdt + i]; // 比較（左）カメラ
+			double xcpx = cpx * cpx;
 
 			// フォアマッチング
-			sumr += rfx;
-			sumrr += rfx * rfx;
+			sumr += (int)rfx;
+			sumrr += (int)xrfx;
+			// バックマッチング
+			bk_sumr += (int)cpx;
+			bk_sumrr += (int)xcpx;
+
+			// 階調補正モードオンの場合
+			// 補正前の値へ変換する
+			if (grdcrct == 1) {
+				rfx = xrfx / 255;
+				cpx = xcpx / 255;
+			}
+			// フォアマッチング
+			Lsumr += rfx;
 			if (Lmin > rfx) {
 				Lmin = rfx;
 			}
 			if (Lmax < rfx) {
 				Lmax = rfx;
 			}
-
 			// バックマッチング
-			bk_sumr += cpx;
-			bk_sumrr += cpx * cpx;
+			bk_Lsumr += cpx;
 			if (cpx > bk_Lmax) {
 				bk_Lmax = cpx;
 			}
@@ -993,45 +1024,29 @@ void StereoMatching::getBothDisparityBySSD(int x, int y, int imghgt, int imgwdt,
 	int crst = 0;
 
 	// ブロックの輝度値の平均
-	double Lave = sumr / blkcnt;
+	double Lave = Lsumr / blkcnt;
 	// ブロック内の輝度差
-	int deltaL = Lmax - Lmin;
+	double deltaL = Lmax - Lmin;
 
 	// 以下の場合はコントラスト値はゼロ
 	// ブロックの最小輝度値が閾値未満
 	// ブロック内の輝度差が閾値未満
 	// ブロック平均輝度が閾値未満
-	if (Lmax >= bgtmax && deltaL >= mindltl && Lave >= minlave) {
-		// 輝度線形の場合
-		if (crsthrm == 0) {
+	if (Lmax >= (double)bgtmax && deltaL >= (double)mindltl && Lave >= minlave) {
 			crst = (int)((deltaL * 1000 - crstofs) / Lave);
 		}
-		// 輝度非線形の場合
-		// High Resolutionモード
-		else {
-			crst = (int)((deltaL * 1000 - crstofs) / crstave);
-		}
-	}
 
 	// バックマッチング
 	int bk_crst = 0;
 
 	// ブロックの輝度値の平均
-	double bk_Lave = bk_sumr / blkcnt;
+	double bk_Lave = bk_Lsumr / blkcnt;
 	// ブロック内の輝度差
-	int bk_deltaL = bk_Lmax - bk_Lmin;
+	double bk_deltaL = bk_Lmax - bk_Lmin;
 
-	if (bk_Lmax >= bgtmax && bk_deltaL >= mindltl && bk_Lave >= minlave) {
-		// 輝度線形の場合
-		if (crsthrm == 0) {
+	if (bk_Lmax >= (double)bgtmax && bk_deltaL >= (double)mindltl && bk_Lave >= minlave) {
 			bk_crst = (int)((bk_deltaL * 1000 - crstofs) / bk_Lave);
 		}
-		// 輝度非線形の場合
-		// High Resolutionモード
-		else {
-			bk_crst = (int)((bk_deltaL * 1000 - crstofs) / crstave);
-		}
-	}
 
 	// 探索マージンを求める
 	// フォアマッチング
@@ -1302,8 +1317,8 @@ void StereoMatching::executeMatchingOpenCL(int imghgt, int imgwdt, int depth,
 
 	// コントラスト閾値
 	int crstthr = contrastThreshold;
-	// センサー輝度高解像度モードステータス
-	int crsthrm = contrastHighResoMode;
+	// 階調補正モードステータス
+	int grdcrct = gradationCorrectionMode;
 
 	// コントラストオフセット
 	int crstofs = 0;
@@ -1312,6 +1327,10 @@ void StereoMatching::executeMatchingOpenCL(int imghgt, int imgwdt, int depth,
 	}
 	else if (imgwdt == IMG_WIDTH_XC) {
 		crstofs = (int)CONTRAST_OFFSET_XC;
+		// 階調補正モードの場合
+		if (grdcrct == 1) {
+			crstofs = (int)(CONTRAST_OFFSET_XC * CONTRAST_XC_DRADATION_FACTOR);
+		}
 	}
 
 	// 入力補正画像データのMatを生成する
@@ -1338,7 +1357,7 @@ void StereoMatching::executeMatchingOpenCL(int imghgt, int imgwdt, int depth,
 		shadeWidth = depth;
 
 		// SSDにより視差値を求める
-		getDisparityBySSDOpenCL(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+		getDisparityBySSDOpenCL(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			inputUMatImageRef, inputUMatImageCmp, outputUMatDisp, outputUMatCrst);
 		// 出力視差データをMatへコピーする
@@ -1357,7 +1376,7 @@ void StereoMatching::executeMatchingOpenCL(int imghgt, int imgwdt, int depth,
 		cv::UMat outputUMatBkDisp(imghgt, imgwdt, CV_32FC1, cv::Scalar(0));
 
 		// 両方向マッチングによる視差を取得する
-		getBothDisparityBySSDOpenCL(imghgt, imgwdt, depth, crstthr, crstofs, crsthrm,
+		getBothDisparityBySSDOpenCL(imghgt, imgwdt, depth, crstthr, crstofs, grdcrct,
 			stphgt, stpwdt, blkhgt, blkwdt, imghgtblk, imgwdtblk,
 			inputUMatImageRef, inputUMatImageCmp, outputUMatDisp, outputUMatBkDisp, outputUMatCrst);
 
@@ -1387,7 +1406,7 @@ void StereoMatching::executeMatchingOpenCL(int imghgt, int imgwdt, int depth,
 /// <remarks>ブロック平均輝度最小値 : BLOCK_MIN_AVERAGE_BRIGHTNESS 7.5</remarks>
 /// <remarks>高解像度モードのコントラスト計算のための平均輝度：CONTRAST_CALC_AVERAGE_FOR_HIGH_RESO 255</remarks>
 static char *kernelGetDisparityBySSD = (char*)"__kernel void kernelGetDisparityBySSD(\n\
-	int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,\n\
+	int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,\n\
 	int stphgt, int	stpwdt, int blkhgt, int blkwdt,\n\
 	int imghgtblk, int imgwdtblk,\n\
 	__global uchar* imgref, int imgref_step, int imgref_offset,\n\
@@ -1417,14 +1436,20 @@ static char *kernelGetDisparityBySSD = (char*)"__kernel void kernelGetDisparityB
 	int ipxe = ipx + blkwdt;\n\
 	int sumr = 0;\n\
 	int sumrr = 0;\n\
-	int Lmin = 255;\n\
-	int Lmax = 0;\n\
+	double Lsumr = 0.0;\n\
+	double Lmin = 255.0;\n\
+	double Lmax = 0.0;\n\
 	int blkcnt = blkhgt * blkwdt;\n\
 	for (int j = jpx; j < jpxe; j++) {\n\
 		for (int i = ipx; i < ipxe; i++) {\n\
-			int rfx = imgref[j * imgwdt + i]; \n\
-			sumr += rfx; \n\
-			sumrr += rfx * rfx; \n\
+			double rfx = (double)imgref[j * imgwdt + i];\n\
+			double xrfx = rfx * rfx;\n\
+			sumr += (int)rfx;\n\
+			sumrr += (int)xrfx;\n\
+			if (grdcrct == 1) {\n\
+				rfx = xrfx / 255;\n\
+			}\n\
+			Lsumr += rfx;\n\
 			if (Lmin > rfx) {\n\
 				Lmin = rfx; \n\
 			}\n\
@@ -1434,16 +1459,11 @@ static char *kernelGetDisparityBySSD = (char*)"__kernel void kernelGetDisparityB
 		}\n\
 	}\n\
 	int crst = 0;\n\
-	double Lave = sumr / blkcnt;\n\
-	int deltaL = Lmax - Lmin;\n\
-	if (Lmax >= 15 && deltaL >= 2 && Lave >= 7.5) {\n\
-		if (crsthrm == 0) {\n\
+	double Lave = Lsumr / blkcnt;\n\
+	double deltaL = Lmax - Lmin;\n\
+	if (Lmax >= 15.0 && deltaL >= 2.0 && Lave >= 7.5) {\n\
 			crst = (deltaL * 1000 - crstofs) / Lave;\n\
 		}\n\
-		else {\n\
- 			crst = (deltaL * 1000 - crstofs) / 255;\n\
-		}\n\
-	}\n\
 	if (crst < crstthr) {\n\
 		blkdsp[jblk * imgwdtblk + iblk] = 0.0;\n\
 		blkcrst[jblk * imgwdtblk + iblk] = 0;\n\
@@ -1518,7 +1538,7 @@ static size_t globalSizeMatching[2];
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -1529,7 +1549,7 @@ static size_t globalSizeMatching[2];
 /// <param name="imgcmp">入力比較画像データUMat(IN)</param>
 /// <param name="blkdsp">マッチングの視差値UMat(OUT)</param>
 /// <param name="blkcrst">ブロックコントラスト(OUT)</param>
-void StereoMatching::getDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	cv::UMat imgref, cv::UMat imgcmp, cv::UMat blkdsp, cv::UMat blkcrst)
 {
@@ -1613,7 +1633,7 @@ void StereoMatching::getDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, 
 		depth, // 3:マッチング探索幅
 		crstthr, // 4:コントラスト閾値
 		crstofs, // 5:コントラストオフセット
-		crsthrm, // 6:センサー輝度高解像度モードステータス
+		grdcrct, // 6:階調補正モードステータス
 		stphgt, // 7:マッチングステップの高さ
 		stpwdt, // 8:マッチングステップの幅
 		blkhgt, // 9:マッチングブロックの高さ
@@ -1657,7 +1677,7 @@ void StereoMatching::getDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, 
 /// <remarks>ブロック平均輝度最小値 : BLOCK_MIN_AVERAGE_BRIGHTNESS 7.5</remarks>
 /// <remarks>高解像度モードのコントラスト計算のための平均輝度：CONTRAST_CALC_AVERAGE_FOR_HIGH_RESO 255</remarks>
 static char *kernelGetBothDisparityBySSD = (char*)"__kernel void kernelGetBothDisparityBySSD(\n\
-	int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,\n\
+	int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,\n\
 	int stphgt, int	stpwdt, int blkhgt, int blkwdt,\n\
 	int imghgtblk, int imgwdtblk,\n\
 	__global uchar* imgref, int imgref_step, int imgref_offset,\n\
@@ -1691,27 +1711,37 @@ static char *kernelGetBothDisparityBySSD = (char*)"__kernel void kernelGetBothDi
 	int ipxe = ipx + blkwdt;\n\
 	int sumr = 0;\n\
 	int sumrr = 0;\n\
-	int Lmin = 255;\n\
-	int Lmax = 0;\n\
+	double Lsumr = 0.0;\n\
+	double Lmin = 255.0;\n\
+	double Lmax = 0.0;\n\
 	int bk_sumr = 0;\n\
 	int bk_sumrr = 0;\n\
-	int bk_Lmin = 255;\n\
-	int bk_Lmax = 0;\n\
+	double bk_Lsumr = 0.0;\n\
+	double bk_Lmin = 255.0;\n\
+	double bk_Lmax = 0.0;\n\
 	int blkcnt = blkhgt * blkwdt;\n\
 	for (int j = jpx; j < jpxe; j++) {\n\
 		for (int i = ipx; i < ipxe; i++) {\n\
-			int rfx = imgref[j * imgwdt + i];\n\
-			int cpx = imgcmp[j * imgwdt + i];\n\
-			sumr += rfx; \n\
-			sumrr += rfx * rfx; \n\
+			double rfx = (double)imgref[j * imgwdt + i];\n\
+			double cpx = (double)imgcmp[j * imgwdt + i];\n\
+			double xrfx = rfx * rfx;\n\
+			double xcpx = cpx * cpx;\n\
+			sumr += (int)rfx; \n\
+			sumrr += (int)xrfx; \n\
+			bk_sumr += (int)cpx;\n\
+			bk_sumrr += (int)xcpx;\n\
+			if (grdcrct == 1) {\n\
+				rfx = xrfx / 255;\n\
+				cpx = xcpx / 255;\n\
+			}\n\
+			Lsumr += rfx;\n\
+			bk_Lsumr += cpx;\n\
 			if (Lmin > rfx) {\n\
 				Lmin = rfx; \n\
 			}\n\
 			if (Lmax < rfx) {\n\
 				Lmax = rfx; \n\
 			}\n\
-			bk_sumr += cpx;\n\
-			bk_sumrr += cpx * cpx;\n\
 			if (cpx > bk_Lmax) {\n\
 				bk_Lmax = cpx;\n\
 			}\n\
@@ -1721,27 +1751,17 @@ static char *kernelGetBothDisparityBySSD = (char*)"__kernel void kernelGetBothDi
 		}\n\
 	}\n\
 	int crst = 0;\n\
-	double Lave = sumr / blkcnt;\n\
-	int deltaL = Lmax - Lmin;\n\
-	if (Lmax >= 15 && deltaL >= 2 && Lave >= 7.5) {\n\
-		if (crsthrm == 0) {\n\
+	double Lave = Lsumr / blkcnt;\n\
+	double deltaL = Lmax - Lmin;\n\
+	if (Lmax >= 15.0 && deltaL >= 2.0 && Lave >= 7.5) {\n\
 			crst = (deltaL * 1000 - crstofs) / Lave;\n\
 		}\n\
-		else {\n\
- 			crst = (deltaL * 1000 - crstofs) / 255;\n\
-		}\n\
-	}\n\
 	int bk_crst = 0;\n\
 	double bk_Lave = bk_sumr / blkcnt;\n\
-	int bk_deltaL = bk_Lmax - bk_Lmin;\n\
-	if (bk_Lmax >= 15 && bk_deltaL >= 2 && bk_Lave >= 7.5) {\n\
-		if (crsthrm == 0) {\n\
+	double bk_deltaL = bk_Lmax - bk_Lmin;\n\
+	if (bk_Lmax >= 15.0 && bk_deltaL >= 2.0 && bk_Lave >= 7.5) {\n\
 			bk_crst = (bk_deltaL * 1000 - crstofs) / Lave;\n\
 		}\n\
-		else {\n\
- 			bk_crst = (bk_deltaL * 1000 - crstofs) / 255;\n\
-		}\n\
-	}\n\
 	int fr_mrgn = imgwdt - (ipx + depth + blkwdt);\n\
 	int bk_mrgn = ipx - depth;\n\
 	int fr_depth = depth;\n\
@@ -1854,7 +1874,7 @@ static size_t globalSizeBothMatching[2];
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -1866,7 +1886,7 @@ static size_t globalSizeBothMatching[2];
 /// <param name="blkdsp">マッチングの視差値UMat(OUT)</param>
 /// <param name="blkbkdsp">バックマッチングの視差値UMat(OUT)</param>
 /// <param name="blkcrst">ブロックコントラスト(OUT)</param>
-void StereoMatching::getBothDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getBothDisparityBySSDOpenCL(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	cv::UMat imgref, cv::UMat imgcmp, cv::UMat blkdsp, cv::UMat blkbkdsp, cv::UMat blkcrst)
 {
@@ -1949,7 +1969,7 @@ void StereoMatching::getBothDisparityBySSDOpenCL(int imghgt, int imgwdt, int dep
 		depth, // 3:マッチング探索幅
 		crstthr, // 4:コントラスト閾値
 		crstofs, // 5:コントラストオフセット
-		crsthrm, // 6:センサー輝度高解像度モードステータス
+		grdcrct, // 6:階調補正モードステータス
 		stphgt, // 7:マッチングステップの高さ
 		stpwdt, // 8:マッチングステップの幅
 		blkhgt, // 9:マッチングブロックの高さ
@@ -2008,12 +2028,12 @@ UINT  StereoMatching::matchingBandThread(LPVOID parg)
 
 		// バンド内の視差を取得する
 		if (pBand->pblkbkdsp == NULL) {
-			getDisparityInBand(pBand->imghgt, pBand->imgwdt, pBand->depth, pBand->crstthr, pBand->crstofs, pBand->crsthrm,
+			getDisparityInBand(pBand->imghgt, pBand->imgwdt, pBand->depth, pBand->crstthr, pBand->crstofs, pBand->grdcrct,
 				pBand->stphgt, pBand->stpwdt, pBand->blkhgt, pBand->blkwdt, pBand->imghgtblk, pBand->imgwdtblk,
 				pBand->pimgref, pBand->pimgcmp, pBand->pblkdsp, pBand->pblkcrst, pBand->bandStart, pBand->bandEnd);
 		}
 		else {
-			getBothDisparityInBand(pBand->imghgt, pBand->imgwdt, pBand->depth, pBand->crstthr, pBand->crstofs, pBand->crsthrm,
+			getBothDisparityInBand(pBand->imghgt, pBand->imgwdt, pBand->depth, pBand->crstthr, pBand->crstofs, pBand->grdcrct,
 				pBand->stphgt, pBand->stpwdt, pBand->blkhgt, pBand->blkwdt, pBand->imghgtblk, pBand->imgwdtblk,
 				pBand->pimgref, pBand->pimgcmp, pBand->pblkdsp, pBand->pblkbkdsp, pBand->pblkcrst,
 				pBand->bandStart, pBand->bandEnd);
@@ -2084,7 +2104,7 @@ void StereoMatching::deleteMatchingThread()
 /// <param name="depth">マッチング探索幅(IN)</param>
 /// <param name="crstthr">コントラスト閾値(IN)</param>
 /// <param name="crstofs">コントラストオフセット(IN)</param>
-/// <param name="crsthrm">センサー輝度高解像度モードステータス 0:オフ 1:オン(IN)</param>
+/// <param name="grdcrct">階調補正モードステータス 0:オフ 1:オン(IN)</param>
 /// <param name="stphgt">マッチングステップの高さ(IN)</param>
 /// <param name="stpwdt">マッチングステップの幅(IN)</param>
 /// <param name="blkhgt">マッチングブロックの高さ(IN)/param>
@@ -2096,7 +2116,7 @@ void StereoMatching::deleteMatchingThread()
 /// <param name="pblkdsp">マッチングの視差値(OUT)</param>
 /// <param name="pblkbkdsp">バックマッチングの視差値(OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(OUT)</param>
-void StereoMatching::getBandDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int crsthrm,
+void StereoMatching::getBandDisparity(int imghgt, int imgwdt, int depth, int crstthr, int crstofs, int grdcrct,
 	int stphgt, int stpwdt, int blkhgt, int blkwdt, int imghgtblk, int imgwdtblk,
 	unsigned char *pimgref, unsigned char *pimgcmp, float *pblkdsp, float *pblkbkdsp, int *pblkcrst)
 {
@@ -2120,8 +2140,8 @@ void StereoMatching::getBandDisparity(int imghgt, int imgwdt, int depth, int crs
 		bandInfo[i].crstthr = crstthr;
 		// コントラストオフセット
 		bandInfo[i].crstofs = crstofs;
-		// センサー輝度高解像度モードステータス
-		bandInfo[i].crsthrm = crsthrm;
+		// 階調補正モードステータス
+		bandInfo[i].grdcrct = grdcrct;
 
 		// マッチングステップの高さ
 		bandInfo[i].stphgt = stphgt;

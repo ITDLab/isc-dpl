@@ -36,6 +36,7 @@
 #include "isc_camera_def.h"
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 
 #include "isc_raw_data_decoder.h"
 

@@ -112,7 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\shared;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscDplMainControl\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\shared;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\K4aSdkWrapper\include;..\IscDplMainControl\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\IscSelfCalibration\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -131,7 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\shared;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\IscDplMainControl\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;.\include;..\..\include;..\shared;..\VmSdkWrapper\include;..\XcSdkWrapper\include;..\K4aSdkWrapper\include;..\IscDplMainControl\include;..\IscCameraControl\include;..\IscStereoMatching\include;..\IscFrameDecoder\include;..\IscDisparityFilter\include;..\IscDataProcessingControl\include;..\IscSelfCalibration\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

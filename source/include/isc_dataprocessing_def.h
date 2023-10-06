@@ -35,6 +35,7 @@ struct IscDataProcModuleConfiguration {
 
     bool enabled_data_proc_module;              /**< whether to use a data processing library */
 
+    int max_buffer_count;                       /**< number of internal buffers */
 };
 
 /** @struct  IscDataProcStartMode

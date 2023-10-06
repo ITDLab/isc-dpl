@@ -45,9 +45,9 @@
 #pragma comment (lib, "imagehlp")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 
@@ -77,7 +77,7 @@ IscStereoMatchingInterface::IscStereoMatchingInterface():
     stereo_matching_parameters_.matching_parameter.blkofsx = 2;  // VM:2
     stereo_matching_parameters_.matching_parameter.blkofsy = 2;  // VM:2
     stereo_matching_parameters_.matching_parameter.crstthr = 40; // VM:45
-	stereo_matching_parameters_.matching_parameter.crsthrm = 0;	 // VM:0
+	stereo_matching_parameters_.matching_parameter.grdcrct = 0;	 // VM:0
 
     stereo_matching_parameters_.back_matching_parameter.enb = 1;
     stereo_matching_parameters_.back_matching_parameter.bkevlwdt = 1;    // VM:1
@@ -162,17 +162,12 @@ int IscStereoMatchingInterface::Initialize(IscDataProcModuleConfiguration* isc_d
     size_t image_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
     size_t depth_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         work_buffers_.buff_image[i].image = new unsigned char[image_size];
         memset(work_buffers_.buff_image[i].image, 0, image_size);
-
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        work_buffers_.buff_depth[i].image = new float[depth_size];
-        memset(work_buffers_.buff_depth[i].image, 0, depth_size * sizeof(float));
     }
 
     // initialize FrameDecoder
@@ -246,8 +241,8 @@ int IscStereoMatchingInterface::LoadParameterFromFile(const wchar_t* file_name, 
     GetPrivateProfileString(L"MATCHING", L"crstthr", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     stereo_matching_parameters->matching_parameter.crstthr = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"MATCHING", L"crsthrm", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    stereo_matching_parameters->matching_parameter.crsthrm = _wtoi(returned_string);
+    GetPrivateProfileString(L"MATCHING", L"grdcrct", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->matching_parameter.grdcrct = _wtoi(returned_string);
 
     // BackMatchingParameter
     GetPrivateProfileString(L"BACKMATCHING", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
@@ -315,8 +310,8 @@ int IscStereoMatchingInterface::SaveParameterToFile(const wchar_t* file_name, co
     swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.crstthr);
     WritePrivateProfileString(L"MATCHING", L"crstthr", string, file_name);
 
-    swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.crsthrm);
-    WritePrivateProfileString(L"MATCHING", L"crsthrm", string, file_name);
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.grdcrct);
+    WritePrivateProfileString(L"MATCHING", L"grdcrct", string, file_name);
 
     // BackMatchingParameter
     swprintf_s(string, L"%d", (int)stereo_matching_parameters->back_matching_parameter.enb);
@@ -359,7 +354,7 @@ int IscStereoMatchingInterface::SetParameterToStereoMatchingModule(const StereoM
         stereo_matching_parameters->matching_parameter.blkofsx,
         stereo_matching_parameters->matching_parameter.blkofsy,
         stereo_matching_parameters->matching_parameter.crstthr,
-        stereo_matching_parameters->matching_parameter.crsthrm
+        stereo_matching_parameters->matching_parameter.grdcrct
     );
 
     StereoMatching::setBackMatchingParameter(
@@ -383,17 +378,12 @@ int IscStereoMatchingInterface::Terminate()
     StereoMatching::deleteMatchingThread();
 
     // release work
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         delete[] work_buffers_.buff_image[i].image;
         work_buffers_.buff_image[i].image = nullptr;
-
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        delete[] work_buffers_.buff_depth[i].image;
-        work_buffers_.buff_depth[i].image = nullptr;
     }
 
     return DPC_E_OK;
@@ -518,7 +508,7 @@ int IscStereoMatchingInterface::GetParameter(IscDataProcModuleParameter* isc_dat
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.blkofsx, L"blkofsx",  L"Matching", L"視差ブロック横オフセット", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.blkofsy, L"blkofsy",  L"Matching", L"視差ブロック縦オフセット", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.crstthr, L"crstthr",  L"Matching", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(stereo_matching_parameters_.matching_parameter.crsthrm, L"crsthrm",  L"Matching", L"センサー輝度高解像度モードステータス", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.matching_parameter.grdcrct, L"grdcrct",  L"Matching", L"階調補正モードステータス 0:オフ 1:オン", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     // BackMatchingParameter
     MakeParameterSet(stereo_matching_parameters_.back_matching_parameter.enb,        L"enb",         L"BackMatching", L"バックマッチング 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -610,7 +600,7 @@ int IscStereoMatchingInterface::SetParameter(IscDataProcModuleParameter* isc_dat
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.blkofsx);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.blkofsy);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.crstthr);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.crsthrm);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.grdcrct);
 
     // BackMatchingParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.back_matching_parameter.enb);

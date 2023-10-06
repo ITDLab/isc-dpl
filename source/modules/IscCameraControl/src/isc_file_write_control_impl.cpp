@@ -49,7 +49,7 @@
  */
 IscFileWriteControlImpl::IscFileWriteControlImpl():
 	isc_camera_control_config_(), isc_save_data_configuration_(), camera_width_(0), camera_height_(0), isc_image_info_ring_buffer_(nullptr), isc_log_(nullptr), utility_measure_time_(nullptr),
-	file_write_information_(), thread_control_(), handle_semaphore_(NULL), thread_handle_(NULL), threads_critical_()
+	file_write_speed_info_(), file_write_information_(), thread_control_(), handle_semaphore_(NULL), thread_handle_(NULL), threads_critical_()
 {
 
 }
@@ -97,6 +97,8 @@ int IscFileWriteControlImpl::Initialize(const IscCameraControlConfiguration* isc
 	}
 	isc_save_data_configuration_.minimum_capacity_required = isc_save_data_configuration->minimum_capacity_required;
 	isc_save_data_configuration_.save_time_for_one_file = isc_save_data_configuration->save_time_for_one_file;
+	
+	isc_save_data_configuration_.max_buffer_count = isc_save_data_configuration->max_buffer_count;
 
 	camera_width_ = width;
 	camera_height_ = height;
@@ -207,9 +209,12 @@ int IscFileWriteControlImpl::Initialize(const IscCameraControlConfiguration* isc
 
 	// get buffer
 	isc_image_info_ring_buffer_ = new IscImageInfoRingBuffer;
-	constexpr int max_buffer_count = 16;
+	const int max_buffer_count = isc_save_data_configuration_.max_buffer_count;	// 16;
 	isc_image_info_ring_buffer_->Initialize(true, true, max_buffer_count, camera_width_, camera_height_);
 	isc_image_info_ring_buffer_->Clear();
+
+	// for check speed
+	file_write_speed_info_.Init(60);
 
 	// utility
 	utility_measure_time_ = new UtilityMeasureTime;
@@ -397,6 +402,9 @@ int IscFileWriteControlImpl::Start(const IscCameraSpecificParameter* camera_spec
 
 	file_write_information_.start_time_of_current_file_msec = GetTickCount64();
 	file_write_information_.previous_time_free_space_monitoring = GetTickCount64();
+
+	// write speed check
+	file_write_speed_info_.Start();
 
 	// clear thread control
 	thread_control_.terminate_request = 0;
@@ -1393,18 +1401,26 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 					}
 
 					isc_file_write_Control->file_write_information_.frame_index++;
+
 				}
+
+				// debug
+				//int write_fps = file_write_speed_info_.WriteOnce();
+				//if (write_fps > 0) {
+				//	swprintf_s(logMag, L"[INFO]File Save FPS=%d\n", write_fps);
+				//	OutputDebugString(logMag);
+				//}
 			}
 
 			// ended
 			isc_file_write_Control->isc_image_info_ring_buffer_->DoneGetBuffer(get_index);
 
 			// debug
-			double elapsed_time = isc_file_write_Control->utility_measure_time_->Stop();
-			if (elapsed_time > 100.0) {
-				swprintf_s(logMag, L"[WARN]elapsed_time > 100 %.2f\n", elapsed_time);
-				OutputDebugString(logMag);
-			}
+			//double elapsed_time = isc_file_write_Control->utility_measure_time_->Stop();
+			//if (elapsed_time > 100.0) {
+			//	swprintf_s(logMag, L"[WARN]elapsed_time > 100 %.2f\n", elapsed_time);
+			//	OutputDebugString(logMag);
+			//}
 
 		}
 		else if (wait_result == WAIT_TIMEOUT) {

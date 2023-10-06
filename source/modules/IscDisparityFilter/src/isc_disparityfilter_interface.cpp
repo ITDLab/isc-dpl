@@ -46,9 +46,9 @@
 #pragma comment (lib, "imagehlp")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 
@@ -64,7 +64,8 @@ IscDisparityFilterInterface::IscDisparityFilterInterface():
     work_buffers_()
 {
     // default
-    frame_decoder_parameters_.system_parameter.enabled_opencl_for_avedisp = 0;
+    frame_decoder_parameters_.system_parameter.enabled_opencl_for_avedisp = false;
+    frame_decoder_parameters_.system_parameter.single_threaded_execution = false;
 
     // defult for XC
     frame_decoder_parameters_.disparity_limitation_parameter.limit = 0;
@@ -89,7 +90,6 @@ IscDisparityFilterInterface::IscDisparityFilterInterface():
     frame_decoder_parameters_.complement_parameter.slplmt = 0.1;
     frame_decoder_parameters_.complement_parameter.insrt = 1;
     frame_decoder_parameters_.complement_parameter.rndrt = 0.2;
-    frame_decoder_parameters_.complement_parameter.btmrt = 0.1;
     frame_decoder_parameters_.complement_parameter.crstlmt = 40;   // VM:45
     frame_decoder_parameters_.complement_parameter.hlfil = 1;
     frame_decoder_parameters_.complement_parameter.hlsz = 8;
@@ -181,7 +181,7 @@ int IscDisparityFilterInterface::Initialize(IscDataProcModuleConfiguration* isc_
     size_t image_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
     size_t depth_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
@@ -234,6 +234,10 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     GetPrivateProfileString(L"SYSTEM", L"enabled_opencl_for_avedisp", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     int temp_value = _wtoi(returned_string);
     frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp = temp_value == 1 ? true : false;
+
+    GetPrivateProfileString(L"SYSTEM", L"single_threaded_execution", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    temp_value = _wtoi(returned_string);
+    frame_decoder_parameters->system_parameter.single_threaded_execution = temp_value == 1 ? true : false;
 
     // DisparityLimitationParameter
     GetPrivateProfileString(L"DISPARITY_LIMITATION", L"limit", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
@@ -296,9 +300,6 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     GetPrivateProfileString(L"COMPLEMENT", L"rndrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->complement_parameter.rndrt = _wtof(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"btmrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.btmrt = _wtof(returned_string);
-
     GetPrivateProfileString(L"COMPLEMENT", L"crstlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->complement_parameter.crstlmt = _wtoi(returned_string);
 
@@ -355,6 +356,9 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     // SystemParameter
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp);
     WritePrivateProfileString(L"SYSTEM", L"enabled_opencl_for_avedisp", string, file_name);
+
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->system_parameter.single_threaded_execution);
+    WritePrivateProfileString(L"SYSTEM", L"single_threaded_execution", string, file_name);
 
     // DisparityLimitationParameter
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->disparity_limitation_parameter.limit);
@@ -417,9 +421,6 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.rndrt);
     WritePrivateProfileString(L"COMPLEMENT", L"rndrt", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.btmrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"btmrt", string, file_name);
-
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.crstlmt);
     WritePrivateProfileString(L"COMPLEMENT", L"crstlmt", string, file_name);
 
@@ -472,7 +473,9 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
  int IscDisparityFilterInterface::SetParameterToFrameDecoderModule(const FrameDecoderParameters* frame_decoder_parameters)
 {
 
-    DisparityFilter::setUseOpenCLForAveragingDisparity(frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp);
+    DisparityFilter::setUseOpenCLForAveragingDisparity(
+        frame_decoder_parameters->system_parameter.enabled_opencl_for_avedisp,
+        frame_decoder_parameters->system_parameter.single_threaded_execution);
 
     DisparityFilter::setDisparityLimitation(
         frame_decoder_parameters->disparity_limitation_parameter.limit,
@@ -500,7 +503,6 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
         frame_decoder_parameters->complement_parameter.slplmt,
         frame_decoder_parameters->complement_parameter.insrt,
         frame_decoder_parameters->complement_parameter.rndrt,
-        frame_decoder_parameters->complement_parameter.btmrt,
         frame_decoder_parameters->complement_parameter.crstlmt,
         frame_decoder_parameters->complement_parameter.hlfil,
         frame_decoder_parameters->complement_parameter.hlsz);
@@ -533,7 +535,7 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
      DisparityFilter::deleteAveragingThread();
     
     // release work
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
@@ -684,7 +686,6 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.slplmt,     L"slplmt",   L"Complement", L"補完幅の最大視差勾配", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.insrt,      L"insrt",    L"Complement", L"補完画素幅の視差値倍率（内側）", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.rndrt,      L"rndrt",    L"Complement", L"補完画素幅の視差値倍率（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.btmrt,      L"btmrt",    L"Complement", L"補完画素幅の視差値倍率（下端）", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.crstlmt,    L"crstlmt",  L"Complement", L"補完ブロックのコントラスト上限値", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlfil,      L"hlfil",    L"Complement", L"穴埋め処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlsz,       L"hlsz",     L"Complement", L"穴埋め幅", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -803,7 +804,6 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.slplmt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.insrt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.rndrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.btmrt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.crstlmt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlfil);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlsz);

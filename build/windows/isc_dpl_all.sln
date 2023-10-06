@@ -5,7 +5,9 @@ VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IscCameraControl", "..\..\source\modules\IscCameraControl\IscCameraControl.vcxproj", "{5FD1E943-F9BE-4413-9038-45794625376A}"
 	ProjectSection(ProjectDependencies) = postProject
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1} = {74D9EFD4-A9EE-45DA-AC84-96215A197EF1}
 		{DB32D1E0-0818-407D-9AA2-3531E41B3DD8} = {DB32D1E0-0818-407D-9AA2-3531E41B3DD8}
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE} = {ED457D4F-8686-4935-B2F4-DA977E2FC8EE}
 		{FCD95E43-B979-45F3-825C-986FF8B24A81} = {FCD95E43-B979-45F3-825C-986FF8B24A81}
 	EndProjectSection
 EndProject
@@ -48,6 +50,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IscStereoMatching", "..\..\source\modules\IscStereoMatching\IscStereoMatching.vcxproj", "{4150A15D-C423-4CC2-87CA-245DC9EE131F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IscUtility", "..\..\source\modules\IscUtility\IscUtility.vcxproj", "{246B4A29-79EC-47BB-B515-35F3F4952E5A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "K4aSdkWrapper", "..\..\source\modules\K4aSdkWrapper\K4aSdkWrapper.vcxproj", "{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IscSelfCalibration", "..\..\source\modules\IscSelfCalibration\IscSelfCalibration.vcxproj", "{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +159,22 @@ Global
 		{246B4A29-79EC-47BB-B515-35F3F4952E5A}.Release|x64.Build.0 = Release|x64
 		{246B4A29-79EC-47BB-B515-35F3F4952E5A}.Release|x86.ActiveCfg = Release|Win32
 		{246B4A29-79EC-47BB-B515-35F3F4952E5A}.Release|x86.Build.0 = Release|Win32
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Debug|x64.ActiveCfg = Debug|x64
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Debug|x64.Build.0 = Debug|x64
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Debug|x86.ActiveCfg = Debug|Win32
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Debug|x86.Build.0 = Debug|Win32
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Release|x64.ActiveCfg = Release|x64
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Release|x64.Build.0 = Release|x64
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Release|x86.ActiveCfg = Release|Win32
+		{74D9EFD4-A9EE-45DA-AC84-96215A197EF1}.Release|x86.Build.0 = Release|Win32
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Debug|x64.ActiveCfg = Debug|x64
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Debug|x64.Build.0 = Debug|x64
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Debug|x86.ActiveCfg = Debug|Win32
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Debug|x86.Build.0 = Debug|Win32
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Release|x64.ActiveCfg = Release|x64
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Release|x64.Build.0 = Release|x64
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Release|x86.ActiveCfg = Release|Win32
+		{ED457D4F-8686-4935-B2F4-DA977E2FC8EE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

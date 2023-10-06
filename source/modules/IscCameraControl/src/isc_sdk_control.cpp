@@ -34,6 +34,7 @@
 
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 
 #include "isc_sdk_control.h"
 
@@ -44,7 +45,7 @@
  */
 IscSdkControl::IscSdkControl():
 	isc_camera_model_(IscCameraModel::kUnknown),
-	vm_sdk_wrapper_(nullptr), xc_sdk_wrapper_(nullptr)
+	vm_sdk_wrapper_(nullptr), xc_sdk_wrapper_(nullptr), k4a_sdk_wrapper_(nullptr)
 {
 
 }
@@ -89,8 +90,9 @@ int IscSdkControl::Initialize(const IscCameraModel isc_camera_model)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		k4a_sdk_wrapper_ = new ns_k4asdk_wrapper::K4aSdkWrapper;
+		ret = k4a_sdk_wrapper_->Initialize();
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -136,8 +138,12 @@ int IscSdkControl::Terminate()
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret = k4a_sdk_wrapper_->Terminate();
+			delete k4a_sdk_wrapper_;
+			k4a_sdk_wrapper_ = nullptr;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -189,8 +195,16 @@ int IscSdkControl::DeviceOpen()
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceOpen();
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -242,8 +256,16 @@ int IscSdkControl::DeviceClose()
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceClose();
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -258,6 +280,46 @@ int IscSdkControl::DeviceClose()
 }
 
 // camera dependent paraneter
+
+/**
+ * Work Bufferの推奨数を戻します
+ *
+ * @param[out] buffer_count Buffer数
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscSdkControl::GetRecommendedBufferCount(int* buffer_count)
+{
+	*buffer_count = 8;
+
+	switch (isc_camera_model_) {
+	case IscCameraModel::kVM:
+		*buffer_count = 16;
+		break;
+
+	case IscCameraModel::kXC:
+		*buffer_count = 16;
+		break;
+
+	case IscCameraModel::k4K:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::k4KA:
+		*buffer_count = 4;
+		break;
+
+	case IscCameraModel::k4KJ:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	default:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+	}
+
+	return DPC_E_OK;
+}
 
 /**
  * 機能が実装されているかどうかを確認します(IscCameraInfo)
@@ -295,8 +357,13 @@ bool IscSdkControl::DeviceOptionIsImplemented(const IscCameraInfo option_name)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsImplemented(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -346,8 +413,13 @@ bool IscSdkControl::DeviceOptionIsReadable(const IscCameraInfo option_name)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsReadable(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -396,8 +468,13 @@ bool IscSdkControl::DeviceOptionIsWritable(const IscCameraInfo option_name)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsWritable(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -451,12 +528,20 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraInfo option_name, int* valu
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+//break;
 
 	default:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -506,8 +591,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraInfo option_name, int* valu
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -561,8 +654,16 @@ int IscSdkControl::DeviceGetOptionInc(const IscCameraInfo option_name, int* valu
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionInc(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -616,8 +717,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraInfo option_name, int* value)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -671,8 +780,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraInfo option_name, const int va
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -726,8 +843,16 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraInfo option_name, float* va
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -781,8 +906,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraInfo option_name, float* va
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -836,8 +969,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraInfo option_name, float* value
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -891,8 +1032,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraInfo option_name, const float 
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -946,8 +1095,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraInfo option_name, bool* value)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1001,8 +1158,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraInfo option_name, const bool v
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1057,8 +1222,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraInfo option_name, char* value,
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value, max_length);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1112,8 +1285,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraInfo option_name, const char* 
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1167,8 +1348,16 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraInfo option_name, uint64_t*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1222,8 +1411,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraInfo option_name, uint64_t*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1277,8 +1474,16 @@ int IscSdkControl::DeviceGetOptionInc(const IscCameraInfo option_name, uint64_t*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionInc(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1332,8 +1537,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraInfo option_name, uint64_t* va
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1387,8 +1600,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraInfo option_name, const uint64
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1441,8 +1662,13 @@ bool IscSdkControl::DeviceOptionIsImplemented(const IscCameraParameter option_na
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsImplemented(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -1492,8 +1718,13 @@ bool IscSdkControl::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsReadable(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -1543,8 +1774,13 @@ bool IscSdkControl::DeviceOptionIsWritable(const IscCameraParameter option_name)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return false;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			ret_value = k4a_sdk_wrapper_->DeviceOptionIsWritable(option_name);
+		}
+		else {
+			return false;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return false;
@@ -1598,8 +1834,16 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraParameter option_name, int*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1653,8 +1897,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraParameter option_name, int*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1708,8 +1960,16 @@ int IscSdkControl::DeviceGetOptionInc(const IscCameraParameter option_name, int*
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionInc(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1763,8 +2023,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, int* va
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1818,8 +2086,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const i
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1873,8 +2149,16 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraParameter option_name, floa
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1928,8 +2212,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraParameter option_name, floa
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -1983,8 +2275,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, float* 
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2038,8 +2338,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const f
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2093,8 +2401,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, bool* v
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2148,8 +2464,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const b
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2204,8 +2528,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, char* v
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value, max_length);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2259,8 +2591,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const c
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2314,8 +2654,16 @@ int IscSdkControl::DeviceGetOptionMin(const IscCameraParameter option_name, uint
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMin(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2369,8 +2717,16 @@ int IscSdkControl::DeviceGetOptionMax(const IscCameraParameter option_name, uint
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionMax(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2424,8 +2780,16 @@ int IscSdkControl::DeviceGetOptionInc(const IscCameraParameter option_name, uint
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOptionInc(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2480,8 +2844,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, uint64_
 
 	case IscCameraModel::k4KA:
 		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
-
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
 		//break;
@@ -2534,8 +2906,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const u
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2589,8 +2969,16 @@ int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, IscShut
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2644,8 +3032,16 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const I
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, value);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2659,6 +3055,135 @@ int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, const I
 	return DPC_E_OK;
 }
 
+/**
+ * 値を取得します(汎用アクセス)
+ *
+ * @param[in] option_name target parameter.
+ * @param[int] write_value obtained value.
+ * @param[int] write_size obtained value.
+ * @param[out] read_value obtained value.
+ * @param[int] read_size obtained value.
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscSdkControl::DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size)
+{
+	switch (isc_camera_model_) {
+	case IscCameraModel::kVM:
+		if (vm_sdk_wrapper_ != nullptr) {
+			int ret = vm_sdk_wrapper_->DeviceGetOption(option_name, write_value, write_size, read_value, read_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::kXC:
+		if (xc_sdk_wrapper_ != nullptr) {
+			int ret = xc_sdk_wrapper_->DeviceGetOption(option_name, write_value, write_size, read_value, read_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::k4K:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::k4KA:
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceGetOption(option_name, write_value, write_size, read_value, read_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::k4KJ:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	default:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * 値を設定します(汎用アクセス)
+ *
+ * @param[in] option_name target parameter.
+ * @param[in] write_value value to set.
+ * @param[in] write_size value to set.
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscSdkControl::DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size)
+{
+	switch (isc_camera_model_) {
+	case IscCameraModel::kVM:
+		if (vm_sdk_wrapper_ != nullptr) {
+			int ret = vm_sdk_wrapper_->DeviceSetOption(option_name, write_value, write_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::kXC:
+		if (xc_sdk_wrapper_ != nullptr) {
+			int ret = xc_sdk_wrapper_->DeviceSetOption(option_name, write_value, write_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::k4K:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::k4KA:
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->DeviceSetOption(option_name, write_value, write_size);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
+
+	case IscCameraModel::k4KJ:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	default:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+	}
+
+	return DPC_E_OK;
+}
 
 // grab control
 
@@ -2702,8 +3227,16 @@ int IscSdkControl::Start(const IscGrabStartMode* isc_grab_start_mode)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->Start(isc_grab_start_mode);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2755,8 +3288,16 @@ int IscSdkControl::Stop()
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->Stop();
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2810,8 +3351,16 @@ int IscSdkControl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->GetGrabMode(isc_grab_start_mode);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2868,8 +3417,16 @@ int IscSdkControl::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->InitializeIscIamgeinfo(isc_image_info);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2923,8 +3480,16 @@ int IscSdkControl::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->ReleaeIscIamgeinfo(isc_image_info);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;
@@ -2979,8 +3544,16 @@ int IscSdkControl::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_ima
 		//break;
 
 	case IscCameraModel::k4KA:
-		return CAMCONTROL_E_INVALID_PARAMETER;
-		//break;
+		if (k4a_sdk_wrapper_ != nullptr) {
+			int ret = k4a_sdk_wrapper_->GetData(isc_get_mode, isc_image_info);
+			if (ret != DPC_E_OK) {
+				return ret;
+			}
+		}
+		else {
+			return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+		}
+		break;
 
 	case IscCameraModel::k4KJ:
 		return CAMCONTROL_E_INVALID_PARAMETER;

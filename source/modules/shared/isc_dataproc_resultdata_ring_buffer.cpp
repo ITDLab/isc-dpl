@@ -41,7 +41,7 @@ IscDataprocResultdataRingBuffer::IscDataprocResultdataRingBuffer():
 	last_mode_(false), allow_overwrite_(false), buffer_count_(0), width_(0), height_(0), channel_count_(0), buffer_data_(nullptr),
 	write_inex_(0), read_index_(0), put_index_(0), geted_inedx_(0),
 	buff_p1_(nullptr), buff_p2_(nullptr), buff_color_(nullptr),
-	buff_depth_(nullptr), buff_raw_(nullptr), buff_raw_color_(nullptr), buff_bayer_base_(nullptr), buff_bayer_compare_(nullptr),
+	buff_depth_(nullptr), buff_raw_(nullptr), buff_raw_color_(nullptr), 
 	flag_critical_()
 {
 }
@@ -90,8 +90,6 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 	buff_depth_			= new float[buffer_count_ * one_frame_size * max_fd_count];
 	buff_raw_			= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
 	buff_raw_color_		= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
-	buff_bayer_base_	= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
-	buff_bayer_compare_	= new unsigned char[buffer_count_ * one_frame_size * 2 * max_fd_count];
 
 	memset(buff_p1_,			0, buffer_count_ * one_frame_size * max_fd_count);
 	memset(buff_p2_,			0, buffer_count_ * one_frame_size * max_fd_count);
@@ -99,8 +97,6 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 	memset(buff_depth_,			0, buffer_count_ * one_frame_size * sizeof(float) * max_fd_count);
 	memset(buff_raw_,			0, buffer_count_ * one_frame_size * 2 * max_fd_count);
 	memset(buff_raw_color_,		0, buffer_count_ * one_frame_size * 2 * max_fd_count);
-	memset(buff_bayer_base_,	0, buffer_count_ * one_frame_size * max_fd_count);
-	memset(buff_bayer_compare_,	0, buffer_count_ * one_frame_size * max_fd_count);
 
 	for (int i = 0; i < buffer_count_; i++) {
 		buffer_data_[i].inedx = i;
@@ -171,17 +167,6 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 			unit = one_frame_size * 2;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].raw_color.image = buff_raw_color_ + (unit * ((i * max_fd_count) + j));
 
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.width = 0;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.height = 0;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.channel_count = 0;
-			unit = one_frame_size * 2;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_base.image = buff_bayer_base_ + (unit * ((i * max_fd_count) + j));
-
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.width = 0;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.height = 0;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.channel_count = 0;
-			unit = one_frame_size * 2;
-			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].bayer_compare.image = buff_bayer_compare_ + (unit * ((i * max_fd_count) + j));
 		}
 	}
 
@@ -207,8 +192,6 @@ int IscDataprocResultdataRingBuffer::Clear()
 	memset(buff_depth_,			0, buffer_count_ * one_frame_size * sizeof(float) * max_fd_count);
 	memset(buff_raw_,			0, buffer_count_ * one_frame_size * 2 * max_fd_count);
 	memset(buff_raw_color_,		0, buffer_count_ * one_frame_size * 2 * max_fd_count);
-	memset(buff_bayer_base_,	0, buffer_count_ * one_frame_size * max_fd_count);
-	memset(buff_bayer_compare_,	0, buffer_count_ * one_frame_size * max_fd_count);
 
 	return 0;
 }
@@ -227,8 +210,6 @@ int IscDataprocResultdataRingBuffer::Terminate()
 	delete[] buff_depth_;
 	delete[] buff_raw_;
 	delete[] buff_raw_color_;
-	delete[] buff_bayer_base_;
-	delete[] buff_bayer_compare_;
 
 	buff_p1_ = nullptr;
 	buff_p2_ = nullptr;
@@ -236,8 +217,6 @@ int IscDataprocResultdataRingBuffer::Terminate()
 	buff_depth_ = nullptr;
 	buff_raw_ = nullptr;
 	buff_raw_color_ = nullptr;
-	buff_bayer_base_ = nullptr;
-	buff_bayer_compare_ = nullptr;
 
 	delete buffer_data_;
 	buffer_data_ = nullptr;

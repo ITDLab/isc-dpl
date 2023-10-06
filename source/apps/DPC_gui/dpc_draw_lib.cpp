@@ -564,6 +564,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_data_left->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -642,6 +646,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_data_right->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -703,6 +711,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_data->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_depth_image_scaleimage.cols;
+			display_information_.draw_image_size[0].cy = mat_depth_image_scaleimage.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -784,6 +796,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_data_color->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -917,6 +933,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_data_left->height;
 			display_information_.original_image_size[1].cx = image_data_right->width;
 			display_information_.original_image_size[1].cy = image_data_right->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1037,6 +1057,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_data->height;
 			display_information_.original_image_size[1].cx = image_data_right->width; 
 			display_information_.original_image_size[1].cy = image_data_right->height; 
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1190,6 +1214,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_data->height;
 			display_information_.original_image_size[1].cx = image_data_color->width; 
 			display_information_.original_image_size[1].cy = image_data_color->height; 
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1337,6 +1365,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_data->height;
 			display_information_.original_image_size[1].cx = image_data_right->width;
 			display_information_.original_image_size[1].cy = image_data_right->height; 
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1438,6 +1470,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_dp_result->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1571,6 +1607,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_dp_result->height;
 			display_information_.original_image_size[1].cx = image_data_right->width;
 			display_information_.original_image_size[1].cy = image_data_right->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1711,6 +1751,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = image_dp_result->height;
 			display_information_.original_image_size[1].cx = image_data_color->width;
 			display_information_.original_image_size[1].cy = image_data_color->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1782,6 +1826,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_dpresult->height;
 			display_information_.original_image_size[1].cx = 0;
 			display_information_.original_image_size[1].cy = 0;
+			display_information_.draw_image_size[0].cx = mat_depth_image.cols;
+			display_information_.draw_image_size[0].cy = mat_depth_image.rows;
+			display_information_.draw_image_size[1].cx = 0;
+			display_information_.draw_image_size[1].cy = 0;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -1905,6 +1953,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_dpresult->height;
 			display_information_.original_image_size[1].cx = image_data_right->width; 
 			display_information_.original_image_size[1].cy = image_data_right->height; 
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -2058,6 +2110,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_dpresult->height;
 			display_information_.original_image_size[1].cx = image_data_color->width;
 			display_information_.original_image_size[1].cy = image_data_color->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -2201,6 +2257,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_dpresult->height;
 			display_information_.original_image_size[1].cx = depth_data->width;
 			display_information_.original_image_size[1].cy = depth_data->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -2344,6 +2404,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			display_information_.original_image_size[0].cy = depth_dpresult->height;
 			display_information_.original_image_size[1].cx = image_data_right->width;
 			display_information_.original_image_size[1].cy = image_data_right->height;
+			display_information_.draw_image_size[0].cx = mat_color_image0.cols;
+			display_information_.draw_image_size[0].cy = mat_color_image0.rows;
+			display_information_.draw_image_size[1].cx = mat_color_image1.cols;
+			display_information_.draw_image_size[1].cy = mat_color_image1.rows;
 			display_information_.image_size.cx = width_[0];
 			display_information_.image_size.cy = height_[0];
 			display_information_.magnification = magnification;
@@ -3174,14 +3238,14 @@ bool DpcDrawLib::ScreenPostionToDrawImagePosition(const POINT& screen_position, 
 	case ImageDrawMode::kDplDepthDepth:
 	{
 		// 左右の区別
-		if (position_1.x <= display_information_.original_image_size[0].cx) {
+		if (position_1.x <= display_information_.draw_image_size[0].cx) {
 			// 左
 			position_on_image.x = position_1.x;
 			position_on_image.y = position_1.y;
 		}
 		else {
 			// 右
-			position_on_image.x = position_1.x - display_information_.original_image_size[0].cx;
+			position_on_image.x = position_1.x - display_information_.draw_image_size[0].cx;
 			position_on_image.y = position_1.y;
 		}
 	}
@@ -3240,8 +3304,9 @@ bool DpcDrawLib::ScreenPostionToImagePosition(const POINT& screen_position, POIN
 	case ImageDrawMode::kDplImage:
 	case ImageDrawMode::kDplDepth:
 	{
-		position_on_image.x = display_information_.original_image_size[0].cx - position_1.x;
-		position_on_image.y = display_information_.original_image_size[0].cy - position_1.y;
+		double draw_to_org_mag = (double)display_information_.original_image_size[0].cx / (double)display_information_.draw_image_size[0].cx;
+		position_on_image.x = (int)((double)(display_information_.draw_image_size[0].cx - position_1.x) * draw_to_org_mag);
+		position_on_image.y = (int)((double)(display_information_.draw_image_size[0].cy - position_1.y) * draw_to_org_mag);
 		currently_selected_index = 0;
 	}
 	break;
@@ -3257,16 +3322,18 @@ bool DpcDrawLib::ScreenPostionToImagePosition(const POINT& screen_position, POIN
 	case ImageDrawMode::kDplDepthDepth:
 	{
 		// 左右の区別
-		if (position_1.x <= display_information_.original_image_size[0].cx) {
+		if (position_1.x <= display_information_.draw_image_size[1].cx) {
 			// 左
-			position_on_image.x = display_information_.original_image_size[0].cx - position_1.x;
-			position_on_image.y = display_information_.original_image_size[0].cy - position_1.y;
+			double draw_to_org_mag = (double)display_information_.original_image_size[1].cx / (double)display_information_.draw_image_size[1].cx;
+			position_on_image.x = (int)((double)(display_information_.draw_image_size[1].cx - position_1.x) * draw_to_org_mag);
+			position_on_image.y = (int)((double)(display_information_.draw_image_size[1].cy - position_1.y) * draw_to_org_mag);
 			currently_selected_index = 1;
 		}
 		else {
 			// 右
-			position_on_image.x = display_information_.original_image_size[1].cx - (position_1.x - display_information_.original_image_size[0].cx);
-			position_on_image.y = display_information_.original_image_size[0].cy - position_1.y;
+			double draw_to_org_mag = (double)display_information_.original_image_size[0].cx / (double)display_information_.draw_image_size[1].cx;
+			position_on_image.x = (int)((double)(display_information_.draw_image_size[0].cx - (position_1.x - display_information_.draw_image_size[1].cx)) * draw_to_org_mag);
+			position_on_image.y = (int)((double)(display_information_.draw_image_size[0].cy - position_1.y) * draw_to_org_mag);
 			currently_selected_index = 0;
 		}
 	}
@@ -3276,6 +3343,94 @@ bool DpcDrawLib::ScreenPostionToImagePosition(const POINT& screen_position, POIN
 	image_position->x = position_on_image.x;
 	image_position->y = position_on_image.y;
 	*selected_inex = currently_selected_index;
+
+	return true;
+}
+
+bool DpcDrawLib::ScreenPostionToDepthImagePosition(const POINT& screen_position, POINT* image_position)
+{
+	/*
+	  この関数は、元の視差画像上の座標に変換し、座標上のデータを取得を可能とします
+	  ScreenPostionToDrawImagePosition　と違い、回転も戻します
+	  2つの画像を並べた場合は、視差画像が[0]にあるので、その座標上での位置とします
+
+	  4Kシリーズのカメラでは、視差がフルサイズに対して基準画像の大きさが1/2であるため、それを考慮します
+
+	*/
+
+	image_position->x = -1;
+	image_position->y = -1;
+
+	if (!display_information_.valid) {
+		return true;
+	}
+
+	// LB変換を戻す
+	FLOAT lb_x_offset = display_information_.draw_lb_box.left;
+	FLOAT lb_y_offset = display_information_.draw_lb_box.top;
+
+	POINT position_1 = {};
+	position_1.x = screen_position.x - (LONG)lb_x_offset;
+	position_1.y = screen_position.y - (LONG)lb_y_offset;
+
+	double lb_x_magnification = (double)display_information_.image_size.cx / (double)(display_information_.draw_lb_box.right - display_information_.draw_lb_box.left);
+
+	position_1.x = (int)((double)position_1.x * lb_x_magnification);
+	position_1.y = (int)((double)position_1.y * lb_x_magnification);
+
+	POINT position_on_image = {};
+
+	// The following uses fall through
+	switch (display_information_.mode) {
+		// single
+	case ImageDrawMode::kBase:
+	case ImageDrawMode::kCompare:
+	case ImageDrawMode::kDepth:
+	case ImageDrawMode::kColor:
+	case ImageDrawMode::kOverlapedDepthBase:
+	case ImageDrawMode::kDplImage:
+	case ImageDrawMode::kDplDepth:
+	{
+		double draw_to_org_mag = (double)display_information_.original_image_size[0].cx / (double)display_information_.draw_image_size[0].cx;
+		position_on_image.x = (int)((double)(display_information_.draw_image_size[0].cx - position_1.x) * draw_to_org_mag);
+		position_on_image.y = (int)((double)(display_information_.draw_image_size[0].cy - position_1.y) * draw_to_org_mag);
+	}
+	break;
+
+	// dual
+	case ImageDrawMode::kBaseCompare:
+	case ImageDrawMode::kDepthBase:
+	case ImageDrawMode::kDepthColor:
+	case ImageDrawMode::kDplImageBase:
+	case ImageDrawMode::kDplImageColor:
+	case ImageDrawMode::kDplDepthBase:
+	case ImageDrawMode::kDplDepthColor:
+	case ImageDrawMode::kDplDepthDepth:
+	{
+		// 左右の区別と座標変換
+		if (position_1.x <= display_information_.draw_image_size[1].cx) {
+			// 左
+			// 基準画像側
+			double draw_to_org_mag = (double)display_information_.original_image_size[1].cx / (double)display_information_.draw_image_size[1].cx;
+			position_on_image.x = (int)((double)(display_information_.draw_image_size[1].cx - position_1.x) * draw_to_org_mag);
+			position_on_image.y = (int)((double)(display_information_.draw_image_size[1].cy - position_1.y) * draw_to_org_mag);
+
+			double img_to_depth_mag = (double)display_information_.original_image_size[0].cx / (double)display_information_.original_image_size[1].cx;
+			position_on_image.x = position_on_image.x * img_to_depth_mag;
+			position_on_image.y = position_on_image.y * img_to_depth_mag;
+		}
+		else {
+			// 右
+			double draw_to_org_mag = (double)display_information_.original_image_size[0].cx / (double)display_information_.draw_image_size[1].cx;
+			position_on_image.x = (int)((double)(display_information_.draw_image_size[0].cx - (position_1.x - display_information_.draw_image_size[1].cx)) * draw_to_org_mag);
+			position_on_image.y = (int)((double)(display_information_.draw_image_size[0].cy - position_1.y) * draw_to_org_mag);
+		}
+	}
+	break;
+	}
+
+	image_position->x = position_on_image.x;
+	image_position->y = position_on_image.y;
 
 	return true;
 }

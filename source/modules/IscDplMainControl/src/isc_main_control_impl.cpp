@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <process.h>
 #include <mutex>
+#include <functional>
 
 #include "isc_dpl_error_def.h"
 #include "isc_dpl_def.h"
@@ -39,10 +40,12 @@
 #include "isc_image_info_ring_buffer.h"
 #include "vm_sdk_wrapper.h"
 #include "xc_sdk_wrapper.h"
+#include "k4a_sdk_wrapper.h"
 #include "isc_sdk_control.h"
 #include "isc_file_write_control_impl.h"
 #include "isc_raw_data_decoder.h"
 #include "isc_file_read_control_impl.h"
+#include "isc_selftcalibration_interface.h"
 #include "isc_camera_control.h"
 #include "isc_dataproc_resultdata_ring_buffer.h"
 #include "isc_framedecoder_interface.h"
@@ -61,9 +64,9 @@
 #pragma comment (lib, "IscDataProcessingControl")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 /**
@@ -77,7 +80,6 @@ IscMainControlImpl::IscMainControlImpl():
 	ipc_dpl_configuration_(),
     isc_camera_control_(nullptr),
     isc_data_processing_control_(nullptr),
-    isc_image_info_(),
     isc_image_info_ring_buffer_(nullptr),
     temp_isc_grab_start_mode_(),
     temp_isc_dataproc_start_mode_(),
@@ -182,8 +184,6 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
         }
     }
 
-    isc_camera_control_->InitializeIscIamgeinfo(&isc_image_info_);
-
     // Width and height are available even if the camera is disabled
     int max_width = 0, max_height = 0;
     int ret = isc_camera_control_->DeviceGetOption(IscCameraInfo::kWidthMax, &max_width);
@@ -199,7 +199,11 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
 
     // get Buffer
     isc_image_info_ring_buffer_ = new IscImageInfoRingBuffer;
-    constexpr int max_buffer_count = 16;
+    int max_buffer_count = 0;
+    ret = isc_camera_control_->GetRecommendedBufferCount(&max_buffer_count);
+    if (ret != DPC_E_OK) {
+        return ret;
+    }
     isc_image_info_ring_buffer_->Initialize(true, true, max_buffer_count, max_width, max_height);
     isc_image_info_ring_buffer_->Clear();
 
@@ -208,7 +212,7 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
     work_buffers_.max_height = max_height;
     size_t work_buffer_frame_size = max_width * max_height;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 1; i++) {
         work_buffers_.image_buffer[i] = new unsigned char[work_buffer_frame_size * 3];
         memset(work_buffers_.image_buffer[i], 0, work_buffer_frame_size * 3);
 
@@ -231,6 +235,8 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
     isc_data_proc_module_configuration.max_image_height = max_height;
 
     isc_data_proc_module_configuration.enabled_data_proc_module = ipc_dpl_configuration_.enabled_data_proc_module;
+
+    isc_data_proc_module_configuration.max_buffer_count = max_buffer_count;
 
     isc_data_processing_control_ = new IscDataProcessingControl;
     isc_data_processing_control_->Initialize(&isc_data_proc_module_configuration);
@@ -307,7 +313,7 @@ int IscMainControlImpl::Terminate()
     }
     DeleteCriticalSection(&threads_critical_camera_);
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 1; i++) {
         delete[] work_buffers_.image_buffer[i];
         delete[] work_buffers_.depth_buffer[i];
     }
@@ -325,8 +331,6 @@ int IscMainControlImpl::Terminate()
         delete isc_image_info_ring_buffer_;
         isc_image_info_ring_buffer_ = nullptr;
     }
-
-    isc_camera_control_->ReleaeIscIamgeinfo(&isc_image_info_);
 
     if (isc_camera_control_ != nullptr) {
         isc_camera_control_->Terminate();
@@ -412,7 +416,8 @@ int IscMainControlImpl::RecieveDataProcCamera()
                 // There is space in the place to save
 
                 // Check if there is data from the camera
-                int camera_result = isc_camera_control_->GetData(&isc_image_info_);
+                int camera_result = isc_camera_control_->GetData(&buffer_data->isc_image_info);
+
                 if (camera_result == DPC_E_OK) {
                     // I have data from the camera
                     if (show_elaped_time) {
@@ -425,73 +430,7 @@ int IscMainControlImpl::RecieveDataProcCamera()
                     }
 
                     // start data processing
-                    int dpc_result = isc_data_processing_control_->Run(&isc_image_info_);
-
-                    buffer_data->isc_image_info.grab = isc_image_info_.grab;
-                    buffer_data->isc_image_info.color_grab_mode = isc_image_info_.color_grab_mode;
-                    buffer_data->isc_image_info.shutter_mode = isc_image_info_.shutter_mode;
-
-                    buffer_data->isc_image_info.camera_specific_parameter.d_inf = isc_image_info_.camera_specific_parameter.d_inf;
-                    buffer_data->isc_image_info.camera_specific_parameter.bf = isc_image_info_.camera_specific_parameter.bf;
-                    buffer_data->isc_image_info.camera_specific_parameter.base_length = isc_image_info_.camera_specific_parameter.base_length;
-                    buffer_data->isc_image_info.camera_specific_parameter.dz = isc_image_info_.camera_specific_parameter.dz;
-                    
-                    for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
-                        // copy image data
-                        buffer_data->isc_image_info.frame_data[i].frameNo = isc_image_info_.frame_data[i].frameNo;
-                        buffer_data->isc_image_info.frame_data[i].gain = isc_image_info_.frame_data[i].gain;
-                        buffer_data->isc_image_info.frame_data[i].exposure = isc_image_info_.frame_data[i].exposure;
-
-                        buffer_data->isc_image_info.frame_data[i].camera_status.error_code = isc_image_info_.frame_data[i].camera_status.error_code;
-                        buffer_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time = isc_image_info_.frame_data[i].camera_status.data_receive_tact_time;
-
-                        buffer_data->isc_image_info.frame_data[i].p1.width = isc_image_info_.frame_data[i].p1.width;
-                        buffer_data->isc_image_info.frame_data[i].p1.height = isc_image_info_.frame_data[i].p1.height;
-                        buffer_data->isc_image_info.frame_data[i].p1.channel_count = isc_image_info_.frame_data[i].p1.channel_count;
-                        size_t cp_size = isc_image_info_.frame_data[i].p1.width * isc_image_info_.frame_data[i].p1.height * isc_image_info_.frame_data[i].p1.channel_count;
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].p1.image, isc_image_info_.frame_data[i].p1.image, cp_size);
-                        }
-
-                        buffer_data->isc_image_info.frame_data[i].p2.width = isc_image_info_.frame_data[i].p2.width;
-                        buffer_data->isc_image_info.frame_data[i].p2.height = isc_image_info_.frame_data[i].p2.height;
-                        buffer_data->isc_image_info.frame_data[i].p2.channel_count = isc_image_info_.frame_data[i].p2.channel_count;
-                        cp_size = isc_image_info_.frame_data[i].p2.width * isc_image_info_.frame_data[i].p2.height * isc_image_info_.frame_data[i].p2.channel_count;
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].p2.image, isc_image_info_.frame_data[i].p2.image, cp_size);
-                        }
-
-                        buffer_data->isc_image_info.frame_data[i].color.width = isc_image_info_.frame_data[i].color.width;
-                        buffer_data->isc_image_info.frame_data[i].color.height = isc_image_info_.frame_data[i].color.height;
-                        buffer_data->isc_image_info.frame_data[i].color.channel_count = isc_image_info_.frame_data[i].color.channel_count;
-                        cp_size = isc_image_info_.frame_data[i].color.width * isc_image_info_.frame_data[i].color.height * isc_image_info_.frame_data[i].color.channel_count;
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].color.image, isc_image_info_.frame_data[i].color.image, cp_size);
-                        }
-
-                        buffer_data->isc_image_info.frame_data[i].depth.width = isc_image_info_.frame_data[i].depth.width;
-                        buffer_data->isc_image_info.frame_data[i].depth.height = isc_image_info_.frame_data[i].depth.height;
-                        cp_size = isc_image_info_.frame_data[i].depth.width * isc_image_info_.frame_data[i].depth.height * sizeof(float);
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].depth.image, isc_image_info_.frame_data[i].depth.image, cp_size);
-                        }
-
-                        buffer_data->isc_image_info.frame_data[i].raw.width = isc_image_info_.frame_data[i].raw.width;
-                        buffer_data->isc_image_info.frame_data[i].raw.height = isc_image_info_.frame_data[i].raw.height;
-                        buffer_data->isc_image_info.frame_data[i].raw.channel_count = isc_image_info_.frame_data[i].raw.channel_count;
-                        cp_size = isc_image_info_.frame_data[i].raw.width * isc_image_info_.frame_data[i].raw.height * isc_image_info_.frame_data[i].raw.channel_count;
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].raw.image, isc_image_info_.frame_data[i].raw.image, cp_size);
-                        }
-
-                        buffer_data->isc_image_info.frame_data[i].raw_color.width = isc_image_info_.frame_data[i].raw_color.width;
-                        buffer_data->isc_image_info.frame_data[i].raw_color.height = isc_image_info_.frame_data[i].raw_color.height;
-                        buffer_data->isc_image_info.frame_data[i].raw_color.channel_count = isc_image_info_.frame_data[i].raw_color.channel_count;
-                        cp_size = isc_image_info_.frame_data[i].raw_color.width * isc_image_info_.frame_data[i].raw_color.height * isc_image_info_.frame_data[i].raw_color.channel_count;
-                        if (cp_size > 0) {
-                            memcpy(buffer_data->isc_image_info.frame_data[i].raw_color.image, isc_image_info_.frame_data[i].raw_color.image, cp_size);
-                        }
-                    }
+                    int dpc_result = isc_data_processing_control_->Run(&buffer_data->isc_image_info);
 
                     image_status = 1;
                 }// if (camera_result == DPC_E_OK) {
@@ -1766,14 +1705,6 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
         dst_isc_image_Info->frame_data[i].raw_color.height = 0;
         dst_isc_image_Info->frame_data[i].raw_color.channel_count = 0;
 
-        dst_isc_image_Info->frame_data[i].bayer_base.width = 0;
-        dst_isc_image_Info->frame_data[i].bayer_base.height = 0;
-        dst_isc_image_Info->frame_data[i].bayer_base.channel_count = 0;
-
-        dst_isc_image_Info->frame_data[i].bayer_compare.width = 0;
-        dst_isc_image_Info->frame_data[i].bayer_compare.height = 0;
-        dst_isc_image_Info->frame_data[i].bayer_compare.channel_count = 0;
-
         // p1
         dst_isc_image_Info->frame_data[i].p1.width = src_isc_image_Info->frame_data[i].p1.width;
         dst_isc_image_Info->frame_data[i].p1.height = src_isc_image_Info->frame_data[i].p1.height;
@@ -1853,36 +1784,6 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
                 memcpy(dst_isc_image_Info->frame_data[i].raw_color.image, src_isc_image_Info->frame_data[i].raw_color.image, copy_size);
             }
         }
-
-        // bayer
-        if (src_isc_image_Info->grab == IscGrabMode::kBayerBase) {
-            // bayer_base
-            if (src_isc_image_Info->frame_data[i].bayer_base.width != 0 && src_isc_image_Info->frame_data[i].bayer_base.height != 0) {
-
-                dst_isc_image_Info->frame_data[i].bayer_base.width = src_isc_image_Info->frame_data[i].bayer_base.width;
-                dst_isc_image_Info->frame_data[i].bayer_base.height = src_isc_image_Info->frame_data[i].bayer_base.height;
-                dst_isc_image_Info->frame_data[i].bayer_base.channel_count = src_isc_image_Info->frame_data[i].bayer_base.channel_count;
-
-                copy_size = src_isc_image_Info->frame_data[i].bayer_base.width * src_isc_image_Info->frame_data[i].bayer_base.height;
-                if (copy_size > 0) {
-                    memcpy(dst_isc_image_Info->frame_data[i].bayer_base.image, src_isc_image_Info->frame_data[i].bayer_base.image, copy_size);
-                }
-            }
-        }
-        else if (src_isc_image_Info->grab == IscGrabMode::kBayerCompare) {
-            // bayer_compare
-            if (src_isc_image_Info->frame_data[i].bayer_compare.width != 0 && src_isc_image_Info->frame_data[i].bayer_compare.height != 0) {
-
-                dst_isc_image_Info->frame_data[i].bayer_compare.width = src_isc_image_Info->frame_data[i].bayer_compare.width;
-                dst_isc_image_Info->frame_data[i].bayer_compare.height = src_isc_image_Info->frame_data[i].bayer_compare.height;
-                dst_isc_image_Info->frame_data[i].bayer_compare.channel_count = src_isc_image_Info->frame_data[i].bayer_compare.channel_count;
-
-                copy_size = src_isc_image_Info->frame_data[i].bayer_compare.width * src_isc_image_Info->frame_data[i].bayer_compare.height;
-                if (copy_size > 0) {
-                    memcpy(dst_isc_image_Info->frame_data[i].bayer_compare.image, src_isc_image_Info->frame_data[i].bayer_compare.image, copy_size);
-                }
-            }
-        }
     }
 
     return DPC_E_OK;
@@ -1921,6 +1822,11 @@ int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImag
     int width = isc_image_info->frame_data[fd_index].depth.width;
     int height = isc_image_info->frame_data[fd_index].depth.height;
 
+    /*
+        視差の取り込みが無い取り込みモードであれば、width/heightが0であるため、下記でエラーとなる
+    
+    */
+
     if ((x < 0) || (x >= width)) {
         return ISCDPL_E_INVALID_PARAMETER;
     }
@@ -1929,15 +1835,52 @@ int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImag
         return ISCDPL_E_INVALID_PARAMETER;
     }
 
-    float disp = *(isc_image_info->frame_data[fd_index].depth.image + ((y * width) + x));
+    /*
+        視差は、4x4のBlockで算出されており、それを展開し画像サイズとしている
+        展開時に、MaskによるOn/Offにより、視差のない部分が発生しいる
+        
+        ユーザーが画面上で選択した座標は厳密ではいため、Block内に視差がれば、そこが選択れたものとして値を計算する
+    */
 
-    if (disp > isc_image_info->camera_specific_parameter.d_inf) {
-        *disparity = disp;
-        *depth = isc_image_info->camera_specific_parameter.bf / (disp - isc_image_info->camera_specific_parameter.d_inf);
+    int x_s = (int)(((double)x / 4.0) * 4);
+    int x_e = x_s + 4;
+
+    int y_s = (int)(((double)y / 4.0) * 4);
+    int y_e = y_s + 4;
+
+    float depth_array[16] = {};
+    int index = 0;
+    for (int i = y_s; i < y_e; i++) {
+        float* src = isc_image_info->frame_data[fd_index].depth.image + (i * width);
+
+        for (int j = x_s; j < x_e; j++) {
+            depth_array[index] = *(src + j);
+            index++;
+        }
     }
-    else {
+    
+    if (index == 0) {
         *disparity = 0;
         *depth = 0;
+    }
+    else {
+        float block_disparity = 0.0f;
+        for (auto value : depth_array) {
+            if (value > 0) {
+                // 有効な視差
+                block_disparity = value;
+                break;
+            }
+        }
+
+        if (block_disparity > isc_image_info->camera_specific_parameter.d_inf) {
+            *disparity = block_disparity;
+            *depth = isc_image_info->camera_specific_parameter.bf / (block_disparity - isc_image_info->camera_specific_parameter.d_inf);
+        }
+        else {
+            *disparity = 0;
+            *depth = 0;
+        }
     }
 
     return DPC_E_OK;
@@ -1973,28 +1916,24 @@ int IscMainControlImpl::GetPosition3D(const int x, const int y, const IscImageIn
         return ISCDPL_E_INVALID_PARAMETER;
     }
 
-    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+    float disparity = 0.0f;
+    float depth = 0.0f;
+    int ret = GetPositionDepth(x, y, isc_image_info, &disparity, &depth);
 
+    if (ret != DPC_E_OK) {
+        return ret;
+    }
+
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
     int width = isc_image_info->frame_data[fd_index].depth.width;
     int height = isc_image_info->frame_data[fd_index].depth.height;
 
-    if ((x < 0) || (x >= width)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if ((y < 0) || (y >= height)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    float disp = *(isc_image_info->frame_data[fd_index].depth.image + ((y * width) + x));
-
-    if (disp > isc_image_info->camera_specific_parameter.d_inf) {
-        float bd = isc_image_info->camera_specific_parameter.base_length / disp;
+    if (disparity > isc_image_info->camera_specific_parameter.d_inf) {
+        float bd = isc_image_info->camera_specific_parameter.base_length / disparity;
 
         *x_d = (float)(x - width / 2) * bd;
         *y_d = (float)(height / 2 - y) * bd;
-        *z_d = isc_image_info->camera_specific_parameter.bf / (disp - isc_image_info->camera_specific_parameter.d_inf);
-
+        *z_d = depth;
     }
     else {
         *x_d = 0;

@@ -91,6 +91,7 @@ private:
 
 	struct SystemParameter {
 		bool enabled_opencl_for_avedisp;	/**< 視差平均化処理にOpenCLの使用を設定する */
+		bool single_threaded_execution;		/**< シングルスレッドで実行 0:しない 1:する */
 	};
 
 	struct DisparityLimitationParameter {
@@ -122,7 +123,6 @@ private:
 		double slplmt;	/**< 補完幅の最大視差勾配 */
 		double insrt;	/**< 補完画素幅の視差値倍率（内側） */
 		double rndrt;	/**< 補完画素幅の視差値倍率（周辺） */
-		double btmrt;	/**< 補完画素幅の視差値倍率（下端） */
 		int crstlmt;	/**< 補完ブロックのコントラスト上限値 */
 		int hlfil;		/**< 穴埋め処理しない：0 する：1 */
 		double hlsz;	/**< 穴埋め幅 */

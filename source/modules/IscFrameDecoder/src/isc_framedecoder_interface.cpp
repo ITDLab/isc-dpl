@@ -46,9 +46,9 @@
 #pragma comment (lib, "imagehlp")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 
@@ -65,7 +65,7 @@ IscFramedecoderInterface::IscFramedecoderInterface():
 {
     // defult for XC
     frame_decoder_parameters_.decode_parameter.crstthr = 40;
-    frame_decoder_parameters_.decode_parameter.crsthrm = 0;
+    frame_decoder_parameters_.decode_parameter.grdcrct = 0;
 
     frame_decoder_parameters_.disparity_limitation_parameter.limit = 0;
     frame_decoder_parameters_.disparity_limitation_parameter.lower = 0;
@@ -146,22 +146,13 @@ int IscFramedecoderInterface::Initialize(IscDataProcModuleConfiguration* isc_dat
     size_t image_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
     size_t depth_size = isc_data_proc_module_configuration_.max_image_width * isc_data_proc_module_configuration_.max_image_height;
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 4; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         work_buffers_.buff_image[i].image = new unsigned char[image_size];
         memset(work_buffers_.buff_image[i].image, 0, image_size);
 
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        work_buffers_.buff_depth[i].image = new float[depth_size];
-        memset(work_buffers_.buff_depth[i].image, 0, depth_size * sizeof(float));
-
-        work_buffers_.buff_int_image[i].width = 0;
-        work_buffers_.buff_int_image[i].height = 0;
-        work_buffers_.buff_int_image[i].image = new int[image_size];
-        memset(work_buffers_.buff_int_image[i].image, 0, image_size * sizeof(int));
     }
     
     // initialize Framedecoder
@@ -192,8 +183,8 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     GetPrivateProfileString(L"DECODE", L"crstthr", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->decode_parameter.crstthr = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"DECODE", L"crsthrm", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->decode_parameter.crsthrm = _wtoi(returned_string);
+    GetPrivateProfileString(L"DECODE", L"grdcrct", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->decode_parameter.grdcrct = _wtoi(returned_string);
 
     // DisparityLimitationParameter
     GetPrivateProfileString(L"DISPARITY_LIMITATION", L"limit", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
@@ -216,7 +207,8 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
  * @param[in] block_matching_parameters　書き込むパラメータです
  * @retval 0 成功
  * @retval other 失敗
- */int IscFramedecoderInterface::SaveParameterToFile(const wchar_t* file_name, const FrameDecoderParameters* frame_decoder_parameters)
+ */
+int IscFramedecoderInterface::SaveParameterToFile(const wchar_t* file_name, const FrameDecoderParameters* frame_decoder_parameters)
 {
 
     wchar_t string[1024] = {};
@@ -225,8 +217,8 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.crstthr);
     WritePrivateProfileString(L"DECODE", L"crstthr", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.crsthrm);
-    WritePrivateProfileString(L"DECODE", L"crsthrm", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.grdcrct);
+    WritePrivateProfileString(L"DECODE", L"grdcrct", string, file_name);
 
     // DisparityLimitationParameter
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->disparity_limitation_parameter.limit);
@@ -241,19 +233,19 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     return DPC_E_OK;
 }
                                                                      
- /**
-  * パラメータをFrameDecoder実装へ設定します.
-  *
-  * @param[in] frame_decoder_parameters 設定するパラメータファイルです
-  * @retval 0 成功
-  * @retval other 失敗
-  */
- int IscFramedecoderInterface::SetParameterToFrameDecoderModule(const FrameDecoderParameters* frame_decoder_parameters)
+/**
+ * パラメータをFrameDecoder実装へ設定します.
+ *
+ * @param[in] frame_decoder_parameters 設定するパラメータファイルです
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscFramedecoderInterface::SetParameterToFrameDecoderModule(const FrameDecoderParameters* frame_decoder_parameters)
 {
 
-     ISCFrameDecoder::setFrameDecoderParameter(
+    ISCFrameDecoder::setFrameDecoderParameter(
          frame_decoder_parameters->decode_parameter.crstthr,
-         frame_decoder_parameters->decode_parameter.crsthrm);
+         frame_decoder_parameters->decode_parameter.grdcrct);
 
     ISCFrameDecoder::setDisparityLimitation(
         frame_decoder_parameters->disparity_limitation_parameter.limit,
@@ -263,34 +255,25 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     return DPC_E_OK;
 }
 
- /**
-  * 終了処理をします.
-  *
-  * @retval 0 成功
-  * @retval other 失敗
-  */
- int IscFramedecoderInterface::Terminate()
+/**
+ * 終了処理をします.
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscFramedecoderInterface::Terminate()
 {
 	
     ISCFrameDecoder::finalize();
     
     // release work
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 4; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
         work_buffers_.buff_image[i].channel_count = 0;
         delete[] work_buffers_.buff_image[i].image;
         work_buffers_.buff_image[i].image = nullptr;
 
-        work_buffers_.buff_depth[i].width = 0;
-        work_buffers_.buff_depth[i].height = 0;
-        delete[] work_buffers_.buff_depth[i].image;
-        work_buffers_.buff_depth[i].image = nullptr;
-
-        work_buffers_.buff_int_image[i].width = 0;
-        work_buffers_.buff_int_image[i].height = 0;
-        delete[] work_buffers_.buff_int_image[i].image;
-        work_buffers_.buff_int_image[i].image = nullptr;
     }
 
     return DPC_E_OK;
@@ -407,7 +390,7 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     // DecodeParameter
     MakeParameterSet(frame_decoder_parameters_.decode_parameter.crstthr, L"crstthr", L"Decode", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.decode_parameter.crsthrm, L"crsthrm", L"Decode", L"センサー輝度高解像度モード 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.decode_parameter.grdcrct, L"grdcrct", L"Decode", L"階調補正モードステータス 0:オフ 1:オン", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     // DisparityLimitationParameter
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.limit, L"limit", L"DisparityLimitation", L"視差値の制限　0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -491,7 +474,7 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
 
     // DecodeParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crstthr);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crsthrm);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.grdcrct);
 
     // DisparityLimitationParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.disparity_limitation_parameter.limit);
@@ -738,16 +721,16 @@ int IscFramedecoderInterface::GetDecodeDataDoubleShutter(IscImageInfo* isc_image
     int decode_width = width_latest;
     int decode_height = height_latest;
 
-    double gain_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].gain;
-    double exposure_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].exposure;
+    int gain_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].gain;
+    int exposure_latest = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].exposure;
 
-    double gain_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].gain;
-    double exposure_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].exposure;
+    int gain_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].gain;
+    int exposure_previous = isc_image_info_in->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].exposure;
 
-    work_buffers_.buff_image[5].width = decode_width;
-    work_buffers_.buff_image[5].height = decode_height;
-    work_buffers_.buff_image[5].channel_count = 1;
-    unsigned char* pdspimg = work_buffers_.buff_image[5].image;
+    work_buffers_.buff_image[0].width = decode_width;
+    work_buffers_.buff_image[0].height = decode_height;
+    work_buffers_.buff_image[0].channel_count = 1;
+    unsigned char* pdspimg = work_buffers_.buff_image[0].image;
 
     int* pblkhgt = &isc_block_disparity_data->blkhgt;
     int* pblkwdt = &isc_block_disparity_data->blkwdt;

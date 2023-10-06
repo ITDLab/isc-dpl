@@ -173,6 +173,29 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 	temp_value = _tstoi(returned_string);
 	draw_outside_bounds_ = temp_value == 1 ? true : false;
 
+
+	// for 4K
+	// 4Kカメラは、データ処理ライブラリの対象外です
+	// 4K cameras are not covered by the data processing library
+	if (camera_model_ == 0) {
+		// 0:VM
+	}
+	else if (camera_model_ == 1) {
+		// 1:XC
+	}
+	else if (camera_model_ == 2) {
+		// 2:4K
+		enabled_data_proc_library_ = false;
+	}
+	else if (camera_model_ == 3) {
+		// 3:4KA
+		enabled_data_proc_library_ = false;
+	}
+	else if (camera_model_ == 4) {
+		// 4:4KJ
+		enabled_data_proc_library_ = false;
+	}
+
 	successfully_loaded_ = true;
 
 	return true;

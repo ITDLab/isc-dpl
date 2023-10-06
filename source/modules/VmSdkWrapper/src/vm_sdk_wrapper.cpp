@@ -41,9 +41,9 @@
 #pragma comment (lib, "shlwapi")
 
 #ifdef _DEBUG
-#pragma comment (lib,"opencv_world470d")
+#pragma comment (lib,"opencv_world480d")
 #else
-#pragma comment (lib,"opencv_world470")
+#pragma comment (lib,"opencv_world480")
 #endif
 
 #define SDK_VERSION 2320
@@ -1769,6 +1769,82 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const Is
 	return ret_value;
 }
 
+/**
+ * get the value of the parameter.
+ *
+ * @param[in] option_name target parameter.
+ * @param[int] write_value obtained value.
+ * @param[int] write_size obtained value.
+ * @param[out] read_value obtained value.
+ * @param[int] read_size obtained value.
+ * @return 0 if successful.
+ */
+int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size, unsigned char* read_value, const int read_size)
+{
+	int ret_value = CAMCONTROL_E_INVALID_REQUEST;
+
+	if (write_value == nullptr || read_value == nullptr) {
+		return ret_value;
+	}
+
+	if (write_size == 0 || read_size == 0) {
+		return ret_value;
+	}
+
+	switch (option_name) {
+	case IscCameraParameter::kGenericRead:
+	{
+		int ret = getCameraRegData(write_value, read_value, write_size, read_size);
+		if (ret == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+	}
+	break;
+	}
+
+	return ret_value;
+}
+
+/**
+ * set the parameters.
+ *
+ * @param[in] option_name target parameter.
+ * @param[in] write_value value to set.
+ * @param[in] write_size value to set.
+ * @return 0 if successful.
+ */
+int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, unsigned char* write_value, const int write_size)
+{
+	int ret_value = CAMCONTROL_E_INVALID_REQUEST;
+
+	if (write_value == nullptr) {
+		return ret_value;
+	}
+
+	if (write_size == 0) {
+		return ret_value;
+	}
+
+	switch (option_name) {
+	case IscCameraParameter::kGenericWrite:
+	{
+		int ret = setCameraRegData(write_value, write_size);
+		if (ret == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+	}
+	break;
+	}
+
+	return ret_value;
+}
+
 // grab control
 /**
  * start image acquisition.
@@ -1946,16 +2022,6 @@ int VmSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].raw_color.channel_count = 0;
 		isc_image_info->frame_data[i].raw_color.image = nullptr;
 
-		isc_image_info->frame_data[i].bayer_base.width = 0;
-		isc_image_info->frame_data[i].bayer_base.height = 0;
-		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
-		isc_image_info->frame_data[i].bayer_base.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_compare.width = 0;
-		isc_image_info->frame_data[i].bayer_compare.height = 0;
-		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
-		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
-
 		size_t image_size = width * height;
 		memset(isc_image_info->frame_data[i].p1.image, 0, image_size);
 		memset(isc_image_info->frame_data[i].p2.image, 0, image_size);
@@ -2035,18 +2101,6 @@ int VmSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].raw_color.channel_count = 0;
 		assert(isc_image_info->frame_data[i].raw_color.image == nullptr);
 		isc_image_info->frame_data[i].raw_color.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_base.width = 0;
-		isc_image_info->frame_data[i].bayer_base.height = 0;
-		isc_image_info->frame_data[i].bayer_base.channel_count = 0;
-		assert(isc_image_info->frame_data[i].bayer_base.image == nullptr);
-		isc_image_info->frame_data[i].bayer_base.image = nullptr;
-
-		isc_image_info->frame_data[i].bayer_compare.width = 0;
-		isc_image_info->frame_data[i].bayer_compare.height = 0;
-		isc_image_info->frame_data[i].bayer_compare.channel_count = 0;
-		assert(isc_image_info->frame_data[i].bayer_compare.image == nullptr);
-		isc_image_info->frame_data[i].bayer_compare.image = nullptr;
 	}
 
 	return DPC_E_OK;

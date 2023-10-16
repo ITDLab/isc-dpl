@@ -74,6 +74,7 @@ public:
 
 	// functions
 	bool ImageCaptureProc();
+	bool ImageCaptureProcForPlay();
 	bool ImageDrawProc();
 	bool SetupDialogItemsInitial(bool is_disable_all);
 	bool SetupDialogItems(const bool is_start, const IscControl* isc_control);

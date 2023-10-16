@@ -599,14 +599,42 @@ BOOL CDPCguiDlg::OnInitDialog()
 	// initialize DpcDrawLib
 	draw_data_lib_ = new DpcDrawLib;
 	int draw_max_width = 0, draw_max_height = 0;
-	if (dpl_result == DPC_E_OK) {
+	if (isc_dpl_configuration_.enabled_camera && dpl_result == DPC_E_OK) {
 		isc_dpl_->DeviceGetOption(IscCameraInfo::kWidthMax, &draw_max_width);
 		isc_dpl_->DeviceGetOption(IscCameraInfo::kHeightMax, &draw_max_height);
 	}
 	else {
-		// 暫定として4kを確保する
-		draw_max_width = 3840;
-		draw_max_height = 1920;
+		// 暫定として指定カメラを確保する
+		switch (isc_camera_model) {
+		case IscCameraModel::kVM:
+			draw_max_width = 720;
+			draw_max_height = 480;
+			break;
+		case IscCameraModel::kXC:
+			draw_max_width = 1280;
+			draw_max_height = 720;
+			break;
+		case IscCameraModel::k4K:
+			draw_max_width = 3840;
+			draw_max_height = 1920;
+			break;
+		case IscCameraModel::k4KA:
+			draw_max_width = 3840;
+			draw_max_height = 1920;
+			break;
+		case IscCameraModel::k4KJ:
+			draw_max_width = 3840;
+			draw_max_height = 1920;
+			break;
+		case IscCameraModel::kUnknown:
+			draw_max_width = 3840;
+			draw_max_height = 1920;
+			break;
+		default:
+			draw_max_width = 3840;
+			draw_max_height = 1920;
+			break;
+		}
 	}
 	double draw_min_distancel = dpl_gui_configuration_->GetDrawMinDistance();
 	double draw_max_distancel = dpl_gui_configuration_->GetDrawMaxDistance();
@@ -902,7 +930,7 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 			}
 			else {
 				QueryPerformanceCounter(&start_time);
-				bool ret = ImageCaptureProc();
+				bool ret = ImageCaptureProcForPlay();
 
 				if (ret) {
 					bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false;
@@ -3371,6 +3399,53 @@ bool CDPCguiDlg::ImageCaptureProc()
 	if (dpl_result == DPC_E_OK) {
 		isc_control_.is_data_proc_result_valid = true;
 	}
+
+	return true;
+}
+
+bool CDPCguiDlg::ImageCaptureProcForPlay()
+{
+	isc_control_.is_isc_image_info_valid = false;
+	isc_control_.is_data_proc_result_valid = false;
+
+	if (isc_control_.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching ||
+		isc_control_.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter) {
+
+		// deta processing result
+		DPL_RESULT dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
+		if (dpl_result == DPC_E_OK) {
+			isc_control_.is_data_proc_result_valid = true;
+		}
+		else {
+			return false;
+		}
+
+		// throw away previous data
+		if (isc_control_.isc_start_mode.isc_grab_start_mode.isc_grab_mode != isc_control_.isc_data_proc_result_data.isc_image_info.grab) {
+			return false;
+		}
+	}
+	else {
+		// camera images
+		DPL_RESULT dpl_result = isc_dpl_->GetCameraData(&isc_control_.isc_image_info);
+		if (dpl_result != DPC_E_OK) {
+			return false;
+		}
+
+		// throw away previous data
+		if (isc_control_.isc_start_mode.isc_grab_start_mode.isc_grab_mode != isc_control_.isc_image_info.grab) {
+			return false;
+		}
+
+		isc_control_.is_isc_image_info_valid = true;
+
+		// deta processing result
+		dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
+		if (dpl_result == DPC_E_OK) {
+			isc_control_.is_data_proc_result_valid = true;
+		}
+	}
+
 
 	return true;
 }

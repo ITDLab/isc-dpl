@@ -580,6 +580,10 @@ bool IscCameraControl::DeviceOptionIsImplemented(const IscCameraInfo option_name
 		return false;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return false;
+	}
+
 	bool ret = isc_sdk_control_->DeviceOptionIsImplemented(option_name);
 
 	return ret;
@@ -595,6 +599,10 @@ bool IscCameraControl::DeviceOptionIsImplemented(const IscCameraInfo option_name
 bool IscCameraControl::DeviceOptionIsReadable(const IscCameraInfo option_name)
 {
 	if (isc_sdk_control_ == nullptr) {
+		return false;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
 		return false;
 	}
 
@@ -616,6 +624,10 @@ bool IscCameraControl::DeviceOptionIsWritable(const IscCameraInfo option_name)
 		return false;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return false;
+	}
+
 	bool ret = isc_sdk_control_->DeviceOptionIsWritable(option_name);
 
 	return ret;
@@ -633,6 +645,10 @@ int IscCameraControl::IscCameraControl::DeviceGetOptionMin(const IscCameraInfo o
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
@@ -657,6 +673,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraInfo option_name, int* v
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -677,6 +697,10 @@ int IscCameraControl::DeviceGetOptionInc(const IscCameraInfo option_name, int* v
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionInc(option_name, value);
@@ -701,6 +725,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraInfo option_name, int* valu
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -721,6 +749,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraInfo option_name, const int
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -745,6 +777,10 @@ int IscCameraControl::DeviceGetOptionMin(const IscCameraInfo option_name, float*
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -765,6 +801,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraInfo option_name, float*
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
@@ -789,6 +829,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraInfo option_name, float* va
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -809,6 +853,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraInfo option_name, const flo
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -833,6 +881,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraInfo option_name, bool* val
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -853,6 +905,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraInfo option_name, const boo
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -878,6 +934,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraInfo option_name, char* val
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value, max_length);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -898,6 +958,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraInfo option_name, const cha
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -922,6 +986,10 @@ int IscCameraControl::DeviceGetOptionMin(const IscCameraInfo option_name, uint64
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -942,6 +1010,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraInfo option_name, uint64
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
@@ -966,6 +1038,10 @@ int IscCameraControl::DeviceGetOptionInc(const IscCameraInfo option_name, uint64
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionInc(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -988,6 +1064,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraInfo option_name, uint64_t*
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1008,6 +1088,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraInfo option_name, const uin
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -1034,6 +1118,10 @@ bool IscCameraControl::DeviceOptionIsImplemented(const IscCameraParameter option
 		return false;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return false;
+	}
+
 	bool ret = isc_sdk_control_->DeviceOptionIsImplemented(option_name);
 
 	return ret;
@@ -1049,6 +1137,10 @@ bool IscCameraControl::DeviceOptionIsImplemented(const IscCameraParameter option
 bool IscCameraControl::DeviceOptionIsReadable(const IscCameraParameter option_name)
 {
 	if (isc_sdk_control_ == nullptr) {
+		return false;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
 		return false;
 	}
 
@@ -1070,6 +1162,10 @@ bool IscCameraControl::DeviceOptionIsWritable(const IscCameraParameter option_na
 		return false;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return false;
+	}
+
 	bool ret = isc_sdk_control_->DeviceOptionIsWritable(option_name);
 
 	return ret;
@@ -1087,6 +1183,10 @@ int IscCameraControl::DeviceGetOptionMin(const IscCameraParameter option_name, i
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
@@ -1111,6 +1211,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraParameter option_name, i
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1131,6 +1235,10 @@ int IscCameraControl::DeviceGetOptionInc(const IscCameraParameter option_name, i
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionInc(option_name, value);
@@ -1155,6 +1263,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, int*
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1175,6 +1287,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -1199,6 +1315,10 @@ int IscCameraControl::DeviceGetOptionMin(const IscCameraParameter option_name, f
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1219,6 +1339,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraParameter option_name, f
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
@@ -1243,6 +1367,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, floa
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1265,6 +1393,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1285,6 +1417,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, bool
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = DPC_E_OK;
@@ -1318,6 +1454,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = DPC_E_OK;
@@ -1362,6 +1502,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, char
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value, max_length);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1382,6 +1526,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -1406,6 +1554,10 @@ int IscCameraControl::DeviceGetOptionMin(const IscCameraParameter option_name, u
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionMin(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1426,6 +1578,10 @@ int IscCameraControl::DeviceGetOptionMax(const IscCameraParameter option_name, u
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOptionMax(option_name, value);
@@ -1450,6 +1606,10 @@ int IscCameraControl::DeviceGetOptionInc(const IscCameraParameter option_name, u
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOptionInc(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1470,6 +1630,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, uint
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
@@ -1494,6 +1658,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1516,6 +1684,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, IscS
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, value);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1536,6 +1708,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, cons
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, value);
@@ -1563,6 +1739,10 @@ int IscCameraControl::DeviceGetOption(const IscCameraParameter option_name, unsi
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
 	}
 
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
+	}
+
 	int ret = isc_sdk_control_->DeviceGetOption(option_name, write_value, write_size, read_value, read_size);
 	if (ret != DPC_E_OK) {
 		return ret;
@@ -1584,6 +1764,10 @@ int IscCameraControl::DeviceSetOption(const IscCameraParameter option_name, unsi
 {
 	if (isc_sdk_control_ == nullptr) {
 		return CAMCONTROL_E_INVALID_DEVICEHANDLE;
+	}
+
+	if (!isc_camera_control_config_.enabled_camera) {
+		return DPC_E_OK;
 	}
 
 	int ret = isc_sdk_control_->DeviceSetOption(option_name, write_value, write_size);

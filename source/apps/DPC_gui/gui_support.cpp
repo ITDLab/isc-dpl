@@ -228,6 +228,7 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 
 		if (is_record) {
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_record_mode = IscRecordMode::kRecordOn;
+			isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOn;
 		}
 		else {
 			isc_control->isc_start_mode.isc_grab_start_mode.isc_record_mode = IscRecordMode::kRecordOff;

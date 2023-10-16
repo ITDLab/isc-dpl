@@ -184,23 +184,56 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
         }
     }
 
-    // Width and height are available even if the camera is disabled
+    // Width and height
     int max_width = 0, max_height = 0;
-    int ret = isc_camera_control_->DeviceGetOption(IscCameraInfo::kWidthMax, &max_width);
-    if (ret != DPC_E_OK) {
-        return ret;
+    if (isc_camera_control_config.enabled_camera) {
+        int ret = isc_camera_control_->DeviceGetOption(IscCameraInfo::kWidthMax, &max_width);
+        if (ret != DPC_E_OK) {
+            return ret;
+        }
+        ret = isc_camera_control_->DeviceGetOption(IscCameraInfo::kHeightMax, &max_height);
+        if (ret != DPC_E_OK) {
+            return ret;
+        }
     }
-    ret = isc_camera_control_->DeviceGetOption(IscCameraInfo::kHeightMax, &max_height);
-    if (ret != DPC_E_OK) {
-        return ret;
+    else {
+        switch (isc_camera_control_config.isc_camera_model) {
+        case IscCameraModel::kVM:
+            max_width = 720;
+            max_height = 480;
+            break;
+        case IscCameraModel::kXC:
+            max_width = 1280;
+            max_height = 720;
+            break;
+        case IscCameraModel::k4K:
+            max_width = 3840;
+            max_height = 1920;
+            break;
+        case IscCameraModel::k4KA:
+            max_width = 3840;
+            max_height = 1920;
+            break;
+        case IscCameraModel::k4KJ:
+            max_width = 3840;
+            max_height = 1920;
+            break;
+        case IscCameraModel::kUnknown:
+            max_width = 3840;
+            max_height = 1920;
+            break;
+        default:
+            max_width = 3840;
+            max_height = 1920;
+            break;
+        }
     }
-
     memset(&temp_isc_grab_start_mode_, 0, sizeof(temp_isc_grab_start_mode_));
 
     // get Buffer
     isc_image_info_ring_buffer_ = new IscImageInfoRingBuffer;
     int max_buffer_count = 0;
-    ret = isc_camera_control_->GetRecommendedBufferCount(&max_buffer_count);
+    int ret = isc_camera_control_->GetRecommendedBufferCount(&max_buffer_count);
     if (ret != DPC_E_OK) {
         return ret;
     }
@@ -424,7 +457,7 @@ int IscMainControlImpl::RecieveDataProcCamera()
                         QueryPerformanceCounter(&elp_now);
                         double elaped_time = (DWORD)((elp_now.QuadPart - elp_before.QuadPart) * 1000 / freq_for_performance_counter.QuadPart);
                         TCHAR msg[128] = {};
-                        _stprintf_s(msg, _T("[IscMainControlImpl::RecieveDataProcCamera][INFO]RecieveDataProcCamera tact time=%.1f(ms)\n"), elaped_time);
+                        _stprintf_s(msg, _T("[INFO][IscMainControlImpl::RecieveDataProcCamera]RecieveDataProcCamera tact time=%.1f(ms)\n"), elaped_time);
                         OutputDebugString(msg);
                         QueryPerformanceCounter(&elp_before);
                     }

@@ -131,10 +131,10 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ****
 ## Manuals
 ****
-[DPC_gui操作説明書](./docs/DPC_gui操作説明書.pdf)  
-[isc-dplモジュール説明書](./docs/ISC_DPLモジュール説明書.pdf)  
-[データ処理ライブラリ説明書](./docs/説明書A.pdf)  
-[セルフキャリブレーションライブラリ説明書](./docs/説明書B.pdf)  
+[DPC_gui操作説明書](./docs/DPC_gui_Operation_Manual.pdf)  
+[isc-dplモジュール説明書](./docs/isc-dpl_Manual.pdf)  
+[データ処理ライブラリ説明書](./docs/Library_Manual-A.pdf)  
+[セルフキャリブレーションライブラリ説明書](./docs/Library_Manual-B.pdf)  
 [IscDpl API Manual](https://itdlab.github.io/isc-dpl-docs/index.html)  
 
 ****

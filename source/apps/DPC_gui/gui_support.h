@@ -99,10 +99,10 @@ struct IscFeatureRequest {
 	DisplayModeDepth display_mode_depth;
 
 	bool is_disparity;
-	bool is_base_image;
-	bool is_base_image_correct;
-	bool is_compare_image;
-	bool is_compare_image_correct;
+	bool is_mono_s0_image;
+	bool is_mono_s0_image_correct;
+	bool is_mono_s1_image;
+	bool is_mono_s1_image_correct;
 	bool is_color_image;
 	bool is_color_image_correct;
 	bool is_dpl_stereo_matching;

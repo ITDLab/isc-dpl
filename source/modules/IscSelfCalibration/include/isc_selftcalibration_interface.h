@@ -47,16 +47,6 @@ public:
 	 */
 	int Terminate();
 
-	/** @brief get the configuration of the specified module.
-		@return 0, if successful.
-	 */
-	int GetParameter(IscCameraControlConfiguration* isc_camera_control_configuration);
-
-	/** @brief sets a parameter to the specified module.
-		@return 0, if successful.
-	 */
-	int SetParameter(IscCameraControlConfiguration* isc_camera_control_configuration, const bool is_update_file);
-
 	/** @brief gets the name of the parameter file for the specified module.
 		@return 0, if successful.
 	 */

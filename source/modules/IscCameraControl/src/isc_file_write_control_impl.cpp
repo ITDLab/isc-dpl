@@ -359,10 +359,10 @@ int IscFileWriteControlImpl::Start(const IscCameraSpecificParameter* camera_spec
 	case IscGrabMode::kBeforeCorrect:
 		file_write_information_.raw_file_hedaer.grab_mode = 3;
 		break;
-	case IscGrabMode::kBayerBase:
+	case IscGrabMode::kBayerS0:
 		file_write_information_.raw_file_hedaer.grab_mode = 4;
 		break;
-	case IscGrabMode::kBayerCompare:
+	case IscGrabMode::kBayerS1:
 		file_write_information_.raw_file_hedaer.grab_mode = 5;
 		break;
 	default:

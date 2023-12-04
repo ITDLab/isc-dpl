@@ -495,7 +495,7 @@ int IscStereoMatchingInterface::GetParameter(IscDataProcModuleParameter* isc_dat
     // *** Note the maximum number of parameter_sets ***
 
     isc_data_proc_module_parameter->module_index = 0;
-    swprintf_s(isc_data_proc_module_parameter->module_name, L"Stereo Matching\n");
+    swprintf_s(isc_data_proc_module_parameter->module_name, L"S/W Stereo Matching\n");
 
     int index = 0;
 
@@ -698,10 +698,10 @@ int IscStereoMatchingInterface::GetDisparity(IscImageInfo* isc_image_Info, IscDa
     IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
-    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
+    unsigned char* s0_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* s1_image = isc_image_Info->frame_data[fd_index].p2.image;
 
-    StereoMatching::matching(bade_image, compare_image);
+    StereoMatching::matching(s0_image, s1_image);
 
     // (2) get disparity
 
@@ -749,10 +749,10 @@ int IscStereoMatchingInterface::GetBlockDisparity(IscImageInfo* isc_image_Info, 
     }
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
-    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
+    unsigned char* s0_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* s1_image = isc_image_Info->frame_data[fd_index].p2.image;
 
-    StereoMatching::matching(bade_image, compare_image);
+    StereoMatching::matching(s0_image, s1_image);
 
     // (2) get stereo disparity
 

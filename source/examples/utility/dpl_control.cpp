@@ -101,10 +101,10 @@ bool DplControl::Initialize(const wchar_t* module_path, const int camera_model)
         printf("[INFO]Set Shutter Control Mode:Single\n");
 
         // set auto calib off
-        isc_dpl_->DeviceSetOption(IscCameraParameter::kAdjustAuto, false);
-        printf("[INFO]Set Auto Adjust:Off\n");
+        isc_dpl_->DeviceSetOption(IscCameraParameter::kAutoCalibration, false);
+        printf("[INFO]Set Auto Calibration:Off\n");
 
-        // set selft calibration
+        // set software selft calibration
         //isc_dpl_->DeviceSetOption(IscCameraParameter::kSelfCalibration, true);
         //printf("[INFO]Set Self-Calibration:on\n");
 

@@ -59,7 +59,7 @@
 
 
 constexpr int kISC_DPL_MODULE_COUNT = 3;
-const wchar_t kISC_DPL_MODULE_NAME[kISC_DPL_MODULE_COUNT][32] = { L"Stereo Matching", L"Frame Decoder", L"Disparity Filter" };
+const wchar_t kISC_DPL_MODULE_NAME[kISC_DPL_MODULE_COUNT][32] = { L"S/W Stereo Matching", L"Frame Decoder", L"Disparity Filter" };
 
 /**
  * constructor

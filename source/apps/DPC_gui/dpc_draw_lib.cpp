@@ -259,18 +259,18 @@ bool DpcDrawLib::InitializeImageDataSet(ImageDataSet* image_data_set)
 {
 
 	image_data_set->valid = false;
-	image_data_set->mode = DpcDrawLib::ImageDrawMode::kBase;
+	image_data_set->mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 
 	for (int j = 0; j < 2; j++) {
-		image_data_set->image_data_list[j].image_base.width = 0;
-		image_data_set->image_data_list[j].image_base.height = 0;
-		image_data_set->image_data_list[j].image_base.channel_count = 0;
-		image_data_set->image_data_list[j].image_base.buffer = new unsigned char[max_width_ * max_height_];
+		image_data_set->image_data_list[j].image_mono_s0.width = 0;
+		image_data_set->image_data_list[j].image_mono_s0.height = 0;
+		image_data_set->image_data_list[j].image_mono_s0.channel_count = 0;
+		image_data_set->image_data_list[j].image_mono_s0.buffer = new unsigned char[max_width_ * max_height_];
 
-		image_data_set->image_data_list[j].image_compare.width = 0;
-		image_data_set->image_data_list[j].image_compare.height = 0;
-		image_data_set->image_data_list[j].image_compare.channel_count = 0;
-		image_data_set->image_data_list[j].image_compare.buffer = new unsigned char[max_width_ * max_height_];
+		image_data_set->image_data_list[j].image_mono_s1.width = 0;
+		image_data_set->image_data_list[j].image_mono_s1.height = 0;
+		image_data_set->image_data_list[j].image_mono_s1.channel_count = 0;
+		image_data_set->image_data_list[j].image_mono_s1.buffer = new unsigned char[max_width_ * max_height_];
 
 		image_data_set->image_data_list[j].depth.width = 0;
 		image_data_set->image_data_list[j].depth.height = 0;
@@ -297,20 +297,20 @@ bool DpcDrawLib::InitializeImageDataSet(ImageDataSet* image_data_set)
 bool DpcDrawLib::ReleaseImageDataSet(ImageDataSet* image_data_set)
 {
 	image_data_set->valid = false;
-	image_data_set->mode = DpcDrawLib::ImageDrawMode::kBase;
+	image_data_set->mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 
 	for (int j = 0; j < 2; j++) {
-		image_data_set->image_data_list[j].image_base.width = 0;
-		image_data_set->image_data_list[j].image_base.height = 0;
-		image_data_set->image_data_list[j].image_base.channel_count = 0;
-		delete[] image_data_set->image_data_list[j].image_base.buffer;
-		image_data_set->image_data_list[j].image_base.buffer = nullptr;
+		image_data_set->image_data_list[j].image_mono_s0.width = 0;
+		image_data_set->image_data_list[j].image_mono_s0.height = 0;
+		image_data_set->image_data_list[j].image_mono_s0.channel_count = 0;
+		delete[] image_data_set->image_data_list[j].image_mono_s0.buffer;
+		image_data_set->image_data_list[j].image_mono_s0.buffer = nullptr;
 
-		image_data_set->image_data_list[j].image_compare.width = 0;
-		image_data_set->image_data_list[j].image_compare.height = 0;
-		image_data_set->image_data_list[j].image_compare.channel_count = 0;
-		delete[] image_data_set->image_data_list[j].image_compare.buffer;
-		image_data_set->image_data_list[j].image_compare.buffer = nullptr;
+		image_data_set->image_data_list[j].image_mono_s1.width = 0;
+		image_data_set->image_data_list[j].image_mono_s1.height = 0;
+		image_data_set->image_data_list[j].image_mono_s1.channel_count = 0;
+		delete[] image_data_set->image_data_list[j].image_mono_s1.buffer;
+		image_data_set->image_data_list[j].image_mono_s1.buffer = nullptr;
 
 		image_data_set->image_data_list[j].depth.width = 0;
 		image_data_set->image_data_list[j].depth.height = 0;
@@ -484,25 +484,25 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 {
 
 	//enum class ImageDrawMode {
-	//							/**< image_data_list	[0]					[1]				*/
-	//	kBase,					/**< 0:					image_base							*/
-	//	kCompare,				/**< 1:					image_compare						*/
-	//	kDepth,					/**< 2:					depth								*/
-	//	kColor,					/**< 3:					image_color							*/
-	//	kBaseCompare,			/**< 4:					image_base,			image_compare	*/
-	//	kDepthBase,				/**< 5:					depth_data,			image_base		*/
-	//	kDepthColor,			/**< 6:					depth_data,			image_color		*/
-	//	kOverlapedDepthBase,	/**< 7:					depth_data,			image_base		*/
+	//								/**< image_data_list	[0]					[1]				*/
+	//	kMonoS0,					/**< 0:					image_mono_s0						*/
+	//	kMonoS1,					/**< 1:					image_mono_s1						*/
+	//	kDepth,						/**< 2:					depth								*/
+	//	kColor,						/**< 3:					image_color							*/
+	//	kMonoS0MonoS1,				/**< 4:					image_mono_s0,		image_mono_s1	*/
+	//	kDepthMonoS0,				/**< 5:					depth_data,			image_mono_s0	*/
+	//	kDepthColor,				/**< 6:					depth_data,			image_color		*/
+	//	kOverlapedDepthMonoS0,		/**< 7:					depth_data,			image_mono_s0	*/
 
-	//	kDplImage,				/**< 8:					image_dpl							*/
-	//	kDplImageBase,			/**< 9:					image_dpl,			image_base		*/
-	//	kDplImageColor,			/**< 10:				image_dpl,			image_color		*/
-	//	kDplDepth,				/**< 11:				depth_dpl							*/
-	//	kDplDepthBase,			/**< 12:				depth_dpl,			image_base		*/
-	//	kDplDepthColor,			/**< 13:				depth_dpl,			image_color		*/
-	//	kDplDepthDepth,			/**< 14:				depth_dpl,			depth			*/
-	//	kOverlapedDplDepthBase,	/**< 15:				depth_dpl,			image_base		*/
-	//	kUnknown = 99			/**< 99:				(error case)						*/
+	//	kDplImage,					/**< 8:					image_dpl							*/
+	//	kDplImageMonoS0,			/**< 9:					image_dpl,			image_mono_s0	*/
+	//	kDplImageColor,				/**< 10:				image_dpl,			image_color		*/
+	//	kDplDepth,					/**< 11:				depth_dpl							*/
+	//	kDplDepthMonoS0,			/**< 12:				depth_dpl,			image_mono_s0	*/
+	//	kDplDepthColor,				/**< 13:				depth_dpl,			image_color		*/
+	//	kDplDepthDepth,				/**< 14:				depth_dpl,			depth			*/
+	//	kOverlapedDplDepthMonoS0,	/**< 15:				depth_dpl,			image_mono_s0	*/
+	//	kUnknown = 99				/**< 99:				(error case)						*/
 	//};
 
 	double magnification = draw_parameter->magnification;
@@ -514,9 +514,9 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 	diaplay_information->mode = mode;
 
 	switch(mode){
-	case ImageDrawMode::kBase:
+	case ImageDrawMode::kMonoS0:
 		{
-			ImageData* image_data_left = &image_data_list_0->image_base;
+			ImageData* image_data_left = &image_data_list_0->image_mono_s0;
 			if (image_data_left->width == 0 || image_data_left->height == 0) {
 				return;
 			}
@@ -581,7 +581,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 1;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_left->width;
 				image_depth_data_set.image_data[0].height = image_data_left->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_left->channel_count;
@@ -596,9 +596,9 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 		
-	case ImageDrawMode::kCompare:
+	case ImageDrawMode::kMonoS1:
 		{
-			ImageData* image_data_right = &image_data_list_0->image_compare;
+			ImageData* image_data_right = &image_data_list_0->image_mono_s1;
 			if (image_data_right->width == 0 || image_data_right->height == 0) {
 				return;
 			}
@@ -663,7 +663,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 1;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("COMPARE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S1_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -828,10 +828,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kBaseCompare:
+		case ImageDrawMode::kMonoS0MonoS1:
 		{
-			ImageData* image_data_left = &image_data_list_0->image_base;
-			ImageData* image_data_right = &image_data_list_1->image_compare;
+			ImageData* image_data_left = &image_data_list_0->image_mono_s0;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s1;
 			if (image_data_left->width == 0 || image_data_left->height == 0) {
 				return;
 			}
@@ -953,14 +953,14 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_left->width;
 				image_depth_data_set.image_data[0].height = image_data_left->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_left->channel_count;
 				image_depth_data_set.image_data[0].is_rotate = true;
 				image_depth_data_set.image_data[0].buffer = image_data_left->buffer;
 
-				_stprintf_s(image_depth_data_set.image_data[1].id_string, _T("COMPARE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[1].id_string, _T("S1_IMAGE"));
 				image_depth_data_set.image_data[1].width = image_data_right->width;
 				image_depth_data_set.image_data[1].height = image_data_right->height;
 				image_depth_data_set.image_data[1].channel_count = image_data_right->channel_count;
@@ -975,10 +975,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kDepthBase:
+		case ImageDrawMode::kDepthMonoS0:
 		{
 			DepthData* depth_data = &image_data_list_0->depth;
-			ImageData* image_data_right = &image_data_list_1->image_base;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s0;
 			if (depth_data->width == 0 || depth_data->height == 0) {
 				return;
 			}
@@ -1077,7 +1077,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 				
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -1285,10 +1285,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kOverlapedDepthBase:
+		case ImageDrawMode::kOverlapedDepthMonoS0:
 		{
 			DepthData* depth_data = &image_data_list_0->depth;
-			ImageData* image_data_right = &image_data_list_1->image_base;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s0;
 			if (depth_data->width == 0 || depth_data->height == 0) {
 				return;
 			}
@@ -1385,7 +1385,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -1502,10 +1502,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kDplImageBase:
+		case ImageDrawMode::kDplImageMonoS0:
 		{
 			ImageData* image_dp_result = &image_data_list_0->image_dpl;
-			ImageData* image_data_right = &image_data_list_1->image_base;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s0;
 			if (image_dp_result->width == 0 || image_dp_result->height == 0) {
 				return;
 			}
@@ -1627,7 +1627,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -1871,10 +1871,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kDplDepthBase:
+		case ImageDrawMode::kDplDepthMonoS0:
 		{
 			DepthData* depth_dpresult = &image_data_list_0->depth_dpl;
-			ImageData* image_data_right = &image_data_list_1->image_base;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s0;
 			if (depth_dpresult->width == 0 || depth_dpresult->height == 0) {
 				return;
 			}
@@ -1973,7 +1973,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -2324,10 +2324,10 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 		}
 		break;
 
-		case ImageDrawMode::kOverlapedDplDepthBase:
+		case ImageDrawMode::kOverlapedDplDepthMonoS0:
 		{
 			DepthData* depth_dpresult = &image_data_list_0->depth_dpl;
-			ImageData* image_data_right = &image_data_list_1->image_base;
+			ImageData* image_data_right = &image_data_list_1->image_mono_s0;
 			if (depth_dpresult->width == 0 || depth_dpresult->height == 0) {
 				return;
 			}
@@ -2424,7 +2424,7 @@ void  DpcDrawLib::BuildBitmap(const int index, const ImageDrawMode mode, TextDat
 			if (draw_parameter->save_image_request) {
 				image_depth_data_set.image_datacount = 2;
 
-				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("BASE_IMAGE"));
+				_stprintf_s(image_depth_data_set.image_data[0].id_string, _T("S0_IMAGE"));
 				image_depth_data_set.image_data[0].width = image_data_right->width;
 				image_depth_data_set.image_data[0].height = image_data_right->height;
 				image_depth_data_set.image_data[0].channel_count = image_data_right->channel_count;
@@ -3214,11 +3214,11 @@ bool DpcDrawLib::ScreenPostionToDrawImagePosition(const POINT& screen_position, 
 	// The following uses fall through
 	switch (display_information_.mode) {
 	// single case
-	case ImageDrawMode::kBase:
-	case ImageDrawMode::kCompare:
+	case ImageDrawMode::kMonoS0:
+	case ImageDrawMode::kMonoS1:
 	case ImageDrawMode::kDepth:
 	case ImageDrawMode::kColor:
-	case ImageDrawMode::kOverlapedDepthBase:
+	case ImageDrawMode::kOverlapedDepthMonoS0:
 	case ImageDrawMode::kDplImage:
 	case ImageDrawMode::kDplDepth:
 	{
@@ -3228,12 +3228,12 @@ bool DpcDrawLib::ScreenPostionToDrawImagePosition(const POINT& screen_position, 
 	break;
 
 	// dual case
-	case ImageDrawMode::kBaseCompare:
-	case ImageDrawMode::kDepthBase:
+	case ImageDrawMode::kMonoS0MonoS1:
+	case ImageDrawMode::kDepthMonoS0:
 	case ImageDrawMode::kDepthColor:
-	case ImageDrawMode::kDplImageBase:
+	case ImageDrawMode::kDplImageMonoS0:
 	case ImageDrawMode::kDplImageColor:
-	case ImageDrawMode::kDplDepthBase:
+	case ImageDrawMode::kDplDepthMonoS0:
 	case ImageDrawMode::kDplDepthColor:
 	case ImageDrawMode::kDplDepthDepth:
 	{
@@ -3296,11 +3296,11 @@ bool DpcDrawLib::ScreenPostionToImagePosition(const POINT& screen_position, POIN
 	// The following uses fall through
 	switch (display_information_.mode) {
 	// single
-	case ImageDrawMode::kBase:
-	case ImageDrawMode::kCompare:
+	case ImageDrawMode::kMonoS0:
+	case ImageDrawMode::kMonoS1:
 	case ImageDrawMode::kDepth:
 	case ImageDrawMode::kColor:
-	case ImageDrawMode::kOverlapedDepthBase:
+	case ImageDrawMode::kOverlapedDepthMonoS0:
 	case ImageDrawMode::kDplImage:
 	case ImageDrawMode::kDplDepth:
 	{
@@ -3312,12 +3312,12 @@ bool DpcDrawLib::ScreenPostionToImagePosition(const POINT& screen_position, POIN
 	break;
 
 	// dual
-	case ImageDrawMode::kBaseCompare:
-	case ImageDrawMode::kDepthBase:
+	case ImageDrawMode::kMonoS0MonoS1:
+	case ImageDrawMode::kDepthMonoS0:
 	case ImageDrawMode::kDepthColor:
-	case ImageDrawMode::kDplImageBase:
+	case ImageDrawMode::kDplImageMonoS0:
 	case ImageDrawMode::kDplImageColor:
-	case ImageDrawMode::kDplDepthBase:
+	case ImageDrawMode::kDplDepthMonoS0:
 	case ImageDrawMode::kDplDepthColor:
 	case ImageDrawMode::kDplDepthDepth:
 	{
@@ -3383,11 +3383,11 @@ bool DpcDrawLib::ScreenPostionToDepthImagePosition(const POINT& screen_position,
 	// The following uses fall through
 	switch (display_information_.mode) {
 		// single
-	case ImageDrawMode::kBase:
-	case ImageDrawMode::kCompare:
+	case ImageDrawMode::kMonoS0:
+	case ImageDrawMode::kMonoS1:
 	case ImageDrawMode::kDepth:
 	case ImageDrawMode::kColor:
-	case ImageDrawMode::kOverlapedDepthBase:
+	case ImageDrawMode::kOverlapedDepthMonoS0:
 	case ImageDrawMode::kDplImage:
 	case ImageDrawMode::kDplDepth:
 	{
@@ -3398,12 +3398,12 @@ bool DpcDrawLib::ScreenPostionToDepthImagePosition(const POINT& screen_position,
 	break;
 
 	// dual
-	case ImageDrawMode::kBaseCompare:
-	case ImageDrawMode::kDepthBase:
+	case ImageDrawMode::kMonoS0MonoS1:
+	case ImageDrawMode::kDepthMonoS0:
 	case ImageDrawMode::kDepthColor:
-	case ImageDrawMode::kDplImageBase:
+	case ImageDrawMode::kDplImageMonoS0:
 	case ImageDrawMode::kDplImageColor:
-	case ImageDrawMode::kDplDepthBase:
+	case ImageDrawMode::kDplDepthMonoS0:
 	case ImageDrawMode::kDplDepthColor:
 	case ImageDrawMode::kDplDepthDepth:
 	{

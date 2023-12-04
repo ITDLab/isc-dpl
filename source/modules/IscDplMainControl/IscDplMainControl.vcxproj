@@ -25,6 +25,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="src\isc_main_control.cpp" />
     <ClCompile Include="src\isc_main_control_impl.cpp" />
+    <ClCompile Include="src\isc_measurement.cpp" />
     <ClCompile Include="src\isc_record_control.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -33,6 +34,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\isc_main_control.h" />
     <ClInclude Include="include\isc_main_control_impl.h" />
+    <ClInclude Include="include\isc_measurement.h" />
     <ClInclude Include="include\isc_record_control.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />

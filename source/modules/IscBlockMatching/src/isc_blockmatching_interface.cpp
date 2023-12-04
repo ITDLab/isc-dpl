@@ -770,10 +770,10 @@ int IscBlockMatchingInterface::GetDisparity(IscImageInfo* isc_image_Info, IscDat
     IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
-    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
+    unsigned char* s0_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* s1_image = isc_image_Info->frame_data[fd_index].p2.image;
 
-    BlockMatching::matching(bade_image, compare_image);
+    BlockMatching::matching(s0_image, s1_image);
 
     // (2) get disparity
 
@@ -821,10 +821,10 @@ int IscBlockMatchingInterface::GetBlockDisparity(IscImageInfo* isc_image_Info, I
     }
 
     // (1) matching
-    unsigned char* bade_image = isc_image_Info->frame_data[fd_index].p1.image;
-    unsigned char* compare_image = isc_image_Info->frame_data[fd_index].p2.image;
+    unsigned char* s0_image = isc_image_Info->frame_data[fd_index].p1.image;
+    unsigned char* s1_image = isc_image_Info->frame_data[fd_index].p2.image;
 
-    BlockMatching::matching(bade_image, compare_image);
+    BlockMatching::matching(s0_image, s1_image);
 
     // (2) get block disparity
 

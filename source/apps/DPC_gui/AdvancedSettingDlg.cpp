@@ -88,10 +88,17 @@ AdvancedSettingDlg::AdvancedSettingDlg(CWnd* pParent /*=nullptr*/)
 	memset(dpc_parameter_file_name_, 0, sizeof(dpc_parameter_file_name_));
 	dpl_gui_configuration_ = nullptr;
 	isc_dpl_ = nullptr;
+
+	opensourecinfo_dlg_ = new OpenSourceInfoDlg(this);
+	opensourecinfo_dlg_->Create(IDD_DIALOG5, this);
+
 }
 
 AdvancedSettingDlg::~AdvancedSettingDlg()
 {
+	delete opensourecinfo_dlg_;
+	opensourecinfo_dlg_ = nullptr;
+
 }
 
 void AdvancedSettingDlg::DoDataExchange(CDataExchange* pDX)
@@ -412,15 +419,10 @@ void AdvancedSettingDlg::OnBnClickedButton5()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
-	opensourecinfo_dlg_ = new OpenSourceInfoDlg(this);
-	opensourecinfo_dlg_->Create(IDD_DIALOG5, this);
-
-	opensourecinfo_dlg_->DoModal();
-	//opensourecinfo_dlg_->ShowWindow(SW_SHOW);
-
-	delete opensourecinfo_dlg_;
-	opensourecinfo_dlg_ = nullptr;
-
+	if (opensourecinfo_dlg_ != nullptr) {
+		//opensourecinfo_dlg_->DoModal();
+		opensourecinfo_dlg_->ShowWindow(SW_SHOW);
+	}
 }
 
 

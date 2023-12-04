@@ -33,25 +33,25 @@ public:
 	void GetDisplayMag(double* mag) const;
 
 	enum class ImageDrawMode {
-								/**< image_data_list	[0]					[1]				*/
-		kBase,					/**< 0:					image_base							*/
-		kCompare,				/**< 1:					image_compare						*/
-		kDepth,					/**< 2:					depth								*/
-		kColor,					/**< 3:					image_color							*/
-		kBaseCompare,			/**< 4:					image_base,			image_compare	*/
-		kDepthBase,				/**< 5:					depth_data,			image_base		*/
-		kDepthColor,			/**< 6:					depth_data,			image_color		*/
-		kOverlapedDepthBase,	/**< 7:					depth_data,			image_base		*/
+									/**< image_data_list	[0]					[1]				*/
+		kMonoS0,					/**< 0:					image_mono_s0						*/
+		kMonoS1,					/**< 1:					image_mono_s1						*/
+		kDepth,						/**< 2:					depth								*/
+		kColor,						/**< 3:					image_color							*/
+		kMonoS0MonoS1,				/**< 4:					image_mono_s0,		image_mono_s1	*/
+		kDepthMonoS0,				/**< 5:					depth_data,			image_mono_s0	*/
+		kDepthColor,				/**< 6:					depth_data,			image_color		*/
+		kOverlapedDepthMonoS0,		/**< 7:					depth_data,			image_mono_s0	*/
 
-		kDplImage,				/**< 8:					image_dpl							*/
-		kDplImageBase,			/**< 9:					image_dpl,			image_base		*/
-		kDplImageColor,			/**< 10:				image_dpl,			image_color		*/
-		kDplDepth,				/**< 11:				depth_dpl							*/
-		kDplDepthBase,			/**< 12:				depth_dpl,			image_base		*/
-		kDplDepthColor,			/**< 13:				depth_dpl,			image_color		*/
-		kDplDepthDepth,			/**< 14:				depth_dpl,			depth			*/
-		kOverlapedDplDepthBase,	/**< 15:				depth_dpl,			image_base		*/
-		kUnknown=99				/**< 99:				(error case)						*/
+		kDplImage,					/**< 8:					image_dpl							*/
+		kDplImageMonoS0,			/**< 9:					image_dpl,			image_mono_s0	*/
+		kDplImageColor,				/**< 10:				image_dpl,			image_color		*/
+		kDplDepth,					/**< 11:				depth_dpl							*/
+		kDplDepthMonoS0,			/**< 12:				depth_dpl,			image_mono_s0	*/
+		kDplDepthColor,				/**< 13:				depth_dpl,			image_color		*/
+		kDplDepthDepth,				/**< 14:				depth_dpl,			depth			*/
+		kOverlapedDplDepthMonoS0,	/**< 15:				depth_dpl,			image_mono_s0	*/
+		kUnknown=99					/**< 99:				(error case)						*/
 	};
 
 	struct ImageData {
@@ -84,8 +84,8 @@ public:
 	};
 
 	struct ImageDataList {
-		ImageData	image_base;		/**< image on the base camera */
-		ImageData	image_compare;	/**< image on the comapre camera */
+		ImageData	image_mono_s0;	/**< image on the mono_s0 camera */
+		ImageData	image_mono_s1;	/**< image on the mono_s1 camera */
 		DepthData	depth;			/**< disparity data */
 		ImageData	image_color;	/**< color image */
 		ImageData	image_dpl;		/**< image of data process result */

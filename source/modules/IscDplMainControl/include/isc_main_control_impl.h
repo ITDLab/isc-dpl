@@ -384,6 +384,7 @@ private:
 	IscDataProcessingControl* isc_data_processing_control_;
 
 	IscImageInfoRingBuffer* isc_image_info_ring_buffer_;
+	IscMeasurement* isc_measurement_;
 
 	IscGrabStartMode temp_isc_grab_start_mode_;
 	IscDataProcStartMode temp_isc_dataproc_start_mode_;

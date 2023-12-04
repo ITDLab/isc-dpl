@@ -269,6 +269,7 @@ BEGIN_MESSAGE_MAP(CDPCguiDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK16, &CDPCguiDlg::OnBnClickedCheck16)
 	ON_CBN_SELCHANGE(IDC_COMBO1, &CDPCguiDlg::OnCbnSelchangeCombo1)
 	ON_CBN_SELCHANGE(IDC_COMBO3, &CDPCguiDlg::OnCbnSelchangeCombo3)
+	ON_BN_CLICKED(IDC_CHECK17, &CDPCguiDlg::OnBnClickedCheck17)
 END_MESSAGE_MAP()
 
 
@@ -1337,15 +1338,15 @@ void CDPCguiDlg::OnBnClickedButton2()
 			break;
 		}
 
-		isc_feature_request.is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_disparity				= ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image			= ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image			= ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image				= ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image_correct		= ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_stereo_matching		= ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_disparity_filter		= ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
 		if (isc_feature_request.is_dpl_stereo_matching || isc_feature_request.is_dpl_disparity_filter) {
 			isc_feature_request.is_dpl_frame_decoder = true;
 		}
@@ -1415,15 +1416,15 @@ void CDPCguiDlg::OnBnClickedButton3()
 			break;
 		}
 
-		isc_feature_request.is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_disparity				= ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image			= ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image			= ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image				= ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image_correct		= ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_stereo_matching		= ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_disparity_filter		= ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
 		if (isc_feature_request.is_dpl_stereo_matching || isc_feature_request.is_dpl_disparity_filter) {
 			isc_feature_request.is_dpl_frame_decoder = true;
 		}
@@ -1444,7 +1445,7 @@ void CDPCguiDlg::OnBnClickedButton4()
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
 	// run forcae correction calibration
-	int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kAdjustForce, true);
+	int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kManualCalibration, true);
 	if (ret != DPC_E_OK) {
 		TCHAR msg[64] = {};
 		_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
@@ -1568,12 +1569,12 @@ void CDPCguiDlg::OnBnClickedButton6()
 			break;
 
 		case(4):
-			// IscGrabMode::kBayerBase:
+			// IscGrabMode::kBayerS0:
 			is_header_valided = false;
 			break;
 
 		case(5):
-			//  IscGrabMode::kBayerCompare:
+			//  IscGrabMode::kBayerS1:
 			is_header_valided = false;
 			break;
 		default:
@@ -1605,15 +1606,15 @@ void CDPCguiDlg::OnBnClickedButton6()
 		isc_control_.camera_parameter.dinf = raw_file_headaer.d_inf;
 		isc_control_.camera_parameter.setup_angle = 0.0F;
 
-		isc_feature_request.is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
-		isc_feature_request.is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_disparity				= ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image			= ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s0_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image			= ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_mono_s1_image_correct	= ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image				= ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_color_image_correct		= ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_stereo_matching		= ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
+		isc_feature_request.is_dpl_disparity_filter		= ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
 		if (isc_feature_request.is_dpl_stereo_matching || isc_feature_request.is_dpl_disparity_filter) {
 			isc_feature_request.is_dpl_frame_decoder = true;
 		}
@@ -1684,10 +1685,10 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 	}
 
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -1697,20 +1698,20 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 	if (display_mode_display == DisplayModeDisplay::kSingle) {
 		if (is_disparity) {
 			// 他はOffとする
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 		}
-		else if (is_base_image) {
+		else if (is_mono_s0_image) {
 			// 他はOffとする
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 		}
-		else if (is_compare_image) {
+		else if (is_mono_s1_image) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
@@ -1725,23 +1726,23 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 		}
 		else {
 			// 1つはOnとする
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 		}
 	}
 	else if (display_mode_display == DisplayModeDisplay::kDual) {
 		if (is_disparity) {
-			if (is_base_image) {
+			if (is_mono_s0_image) {
 				// 他はOffとする
-				((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+				((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 				((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 				((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 				((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 			}
-			else if (is_compare_image) {
+			else if (is_mono_s1_image) {
 				// この設定はできない
-				((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+				((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 			}
 			else if (is_color_image) {
 				// 他はOffとする
@@ -1752,11 +1753,11 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 			}
 			else {
 				// Onとする
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 			}
 		}
-		else if (is_base_image) {
-			if (is_compare_image) {
+		else if (is_mono_s0_image) {
+			if (is_mono_s1_image) {
 				((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 				((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 				((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
@@ -1771,23 +1772,23 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 				((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);		// disparity data
 			}
 		}
-		else if (is_compare_image) {
+		else if (is_mono_s1_image) {
 			if (is_color_image) {
 				// この設定はできない
 				((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 				((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 				((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 			}
 			else if (is_dpl_stereo_matching || is_dpl_disparity_filter) {
 				// この設定はできない
 				((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 				((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 			}
 			else {
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);		// mono s0 image
 			}
 		}
 		else if (is_color_image) {
@@ -1798,20 +1799,20 @@ void CDPCguiDlg::OnCbnSelchangeCombo1()
 			}
 		}
 		else if (is_dpl_stereo_matching || is_dpl_disparity_filter) {
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);			// base image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);			// mono s0 image
 		}
 		else {
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);			// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);			// base image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);			// mono s0 image
 		}
 	}
 	else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 		((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);				// disparity data
-		((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);				// base image
-		((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);				// base image correct
+		((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);				// mono s0 image
+		((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);				// mono s0 image correct
 
 		// 他はOffとする
-		((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);			// compare image
+		((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);			// mono s1 image
 		((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);			// color image
 		((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);			// block matching data
 		((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);			// frame decoder data
@@ -1832,10 +1833,10 @@ void CDPCguiDlg::OnBnClickedCheck1()
 
 	// click disparity
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -1860,23 +1861,23 @@ void CDPCguiDlg::OnBnClickedCheck1()
 		// check
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 		}
 		else if (display_mode_display == DisplayModeDisplay::kDual) {
 			// 以下は不許可
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 
 			// どれかがOnであること
-			if (is_base_image || is_color_image || is_dpl_disparity_filter) {
-				if (is_base_image) {
-					if (!is_base_image_correct) {
+			if (is_mono_s0_image || is_color_image || is_dpl_disparity_filter) {
+				if (is_mono_s0_image) {
+					if (!is_mono_s0_image_correct) {
 						// 自動でON
-						((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// base image correct
+						((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// mono s0 image correct
 					}
 					// 他はOffとする
 					((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
@@ -1891,24 +1892,24 @@ void CDPCguiDlg::OnBnClickedCheck1()
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
-				((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// base image correct
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
+				((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// mono s0 image correct
 			}
 		}
 		else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 			// 以下は不許可
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
-			((CButton*)GetDlgItem(IDC_CHECK6))->SetCheck(BST_UNCHECKED);	// compare image correct
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
+			((CButton*)GetDlgItem(IDC_CHECK6))->SetCheck(BST_UNCHECKED);	// mono s1 image correct
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 
 			// Onであること
-			if (is_base_image && is_base_image_correct) {
+			if (is_mono_s0_image && is_mono_s0_image_correct) {
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
-				((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// base image correct
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
+				((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// mono s0 image correct
 			}
 		}
 	}
@@ -1923,16 +1924,16 @@ void CDPCguiDlg::OnBnClickedCheck2()
 
 	// click base image
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
 
-	if (is_base_image) {
+	if (is_mono_s0_image) {
 		// 0: double 1: single 2:overlap
 		DisplayModeDisplay display_mode_display = DisplayModeDisplay::kSingle;
 		int index = ((CComboBox*)GetDlgItem(IDC_COMBO1))->GetCurSel();
@@ -1952,7 +1953,7 @@ void CDPCguiDlg::OnBnClickedCheck2()
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// comapre image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
@@ -1962,14 +1963,14 @@ void CDPCguiDlg::OnBnClickedCheck2()
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 
 			// どれかがOnであること
-			if (is_disparity || is_compare_image || is_dpl_stereo_matching || is_dpl_disparity_filter) {
+			if (is_disparity || is_mono_s1_image || is_dpl_stereo_matching || is_dpl_disparity_filter) {
 				if (is_disparity) {
 					// 他はOffとする
-					((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// comapre image
+					((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 					((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 					((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 				}
-				else if (is_compare_image) {
+				else if (is_mono_s1_image) {
 					// 他はOffとする
 					((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 					((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
@@ -1982,7 +1983,7 @@ void CDPCguiDlg::OnBnClickedCheck2()
 		}
 		else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 			// 以下は不許可
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// comapre image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 
 			// どれかがOnであること
@@ -1992,14 +1993,14 @@ void CDPCguiDlg::OnBnClickedCheck2()
 					((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 					((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 					// 自動でON
-					((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);		// base image correct
+					((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);		// mono s0 image correct
 				}
 				else if (is_dpl_stereo_matching || is_dpl_disparity_filter) {
 				}
 				else {
 					// 自動でON
 					((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);	// disparity data
-					((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// base image correct
+					((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// mono s0 image correct
 				}
 			}
 		}
@@ -2015,10 +2016,10 @@ void CDPCguiDlg::OnBnClickedCheck5()
 
 	// click base image correct
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2034,18 +2035,18 @@ void CDPCguiDlg::OnBnClickedCheck3()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
-	// click compare image
+	// click matching image
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
 
-	if (is_compare_image) {
+	if (is_mono_s1_image) {
 		// 0: double 1: single 2:overlap
 		DisplayModeDisplay display_mode_display = DisplayModeDisplay::kSingle;
 		int index = ((CComboBox*)GetDlgItem(IDC_COMBO1))->GetCurSel();
@@ -2065,7 +2066,7 @@ void CDPCguiDlg::OnBnClickedCheck3()
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
@@ -2078,20 +2079,20 @@ void CDPCguiDlg::OnBnClickedCheck3()
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 
 			// どれかがOnであること
-			if (is_base_image) {
+			if (is_mono_s0_image) {
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
 			}
 		}
 		else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 			// 不許可
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 
 			// 自動でON
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// base image correct
+			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);	// mono s0 image correct
 		}
 	}
 
@@ -2103,12 +2104,12 @@ void CDPCguiDlg::OnBnClickedCheck6()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
-	// click comapre image correct
+	// click matching image correct
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2126,10 +2127,10 @@ void CDPCguiDlg::OnBnClickedCheck4()
 
 	// click color image
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2155,15 +2156,15 @@ void CDPCguiDlg::OnBnClickedCheck4()
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);	// block matching data
 			((CButton*)GetDlgItem(IDC_CHECK15))->SetCheck(BST_UNCHECKED);	// frame decoder data
 		}
 		else if (display_mode_display == DisplayModeDisplay::kDual) {
 			// 以下は不許可
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 
 			// どれかがOnであること
 			if (is_disparity || is_dpl_stereo_matching || is_dpl_disparity_filter) {
@@ -2186,7 +2187,7 @@ void CDPCguiDlg::OnBnClickedCheck4()
 
 			// 自動でON
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);		// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);		// base image correct
+			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);		// mono s0 image correct
 		}
 	}
 
@@ -2200,10 +2201,10 @@ void CDPCguiDlg::OnBnClickedCheck7()
 
 	// click color image correct
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2221,10 +2222,10 @@ void CDPCguiDlg::OnBnClickedCheck16()
 
 	// click stereo matching (<= block matching)
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2250,34 +2251,34 @@ void CDPCguiDlg::OnBnClickedCheck16()
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 		}
 		else if (display_mode_display == DisplayModeDisplay::kDual) {
 			// 以下は不許可
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 
 			// どれかがOnであること
-			if (is_base_image || is_color_image) {
-				if (is_base_image) {
+			if (is_mono_s0_image || is_color_image) {
+				if (is_mono_s0_image) {
 					// こちらはOFFとする
 					((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 				}
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
 			}
 		}
 		else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 			// Onであること
-			if (is_base_image) {
+			if (is_mono_s0_image) {
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
 			}
 		}
 	}
@@ -2295,10 +2296,10 @@ void CDPCguiDlg::OnBnClickedCheck15()
 
 	// click disparity filter
 	bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	bool is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -2324,13 +2325,13 @@ void CDPCguiDlg::OnBnClickedCheck15()
 		if (display_mode_display == DisplayModeDisplay::kSingle) {
 			// 他はOffとする
 			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);	// disparity data
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// base image
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);	// mono s0 image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);	// color image
 		}
 		else if (display_mode_display == DisplayModeDisplay::kDual) {
 			// 以下は不許可
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// compare image
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);	// mono s1 image
 
 			// どれかがOnであること
 			if (is_disparity || is_dpl_stereo_matching) {
@@ -2340,16 +2341,16 @@ void CDPCguiDlg::OnBnClickedCheck15()
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
 			}
 		}
 		else if (display_mode_display == DisplayModeDisplay::kOverlapped) {
 			// Onであること
-			if (is_base_image) {
+			if (is_mono_s0_image) {
 			}
 			else {
 				// 自動でON
-				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// base image
+				((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);	// mono s0 image
 			}
 		}
 	}
@@ -2358,6 +2359,35 @@ void CDPCguiDlg::OnBnClickedCheck15()
 	OnCbnSelchangeCombo3();
 
 	return;
+}
+
+
+void CDPCguiDlg::OnBnClickedCheck17()
+{
+	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	// setup SelfCalibration
+	bool is_self_calibration = ((CButton*)GetDlgItem(IDC_CHECK17))->GetCheck() == BST_CHECKED ? true : false;
+
+	if (is_self_calibration) {
+		// on
+		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kSelfCalibration, true);
+		if (ret != DPC_E_OK) {
+			TCHAR msg[64] = {};
+			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+			MessageBox(msg, _T("CDPCguiDlg::OnBnClickedCheck17()"), MB_ICONERROR);
+		}
+	}
+	else {
+		// off
+		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kSelfCalibration, false);
+		if (ret != DPC_E_OK) {
+			TCHAR msg[64] = {};
+			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+			MessageBox(msg, _T("CDPCguiDlg::OnBnClickedCheck17()"), MB_ICONERROR);
+		}
+	}
+
 }
 
 
@@ -2485,11 +2515,11 @@ void CDPCguiDlg::OnBnClickedCheck8()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
 
-	// click auto-adjust
+	// click auto-calibration
 	int checked = ((CButton*)GetDlgItem(IDC_CHECK8))->GetCheck();
 
 	if (checked == BST_CHECKED) {
-		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kAdjustAuto, true);
+		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kAutoCalibration, true);
 		if (ret != DPC_E_OK) {
 			TCHAR msg[64] = {};
 			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
@@ -2497,7 +2527,7 @@ void CDPCguiDlg::OnBnClickedCheck8()
 		}
 	}
 	else {
-		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kAdjustAuto, false);
+		int ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kAutoCalibration, false);
 		if (ret != DPC_E_OK) {
 			TCHAR msg[64] = {};
 			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
@@ -2863,7 +2893,7 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 		(GetDlgItem(IDC_BUTTON2))->EnableWindow(FALSE);
 		// record
 		(GetDlgItem(IDC_BUTTON3))->EnableWindow(FALSE);
-		// auto adjustment force adjustment
+		// auto calibration manual calibration
 		(GetDlgItem(IDC_BUTTON4))->EnableWindow(FALSE);
 		// IDC_BUTTON7 save image
 		(GetDlgItem(IDC_BUTTON7))->EnableWindow(FALSE);
@@ -2887,9 +2917,9 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 	// IDC_CHECK5   Base Image Correct
 	// 常に有効
 
-	// IDC_CHECK3   Compare Image
+	// IDC_CHECK3   Matching Image
 	// 常に有効
-	// IDC_CHECK6   Compare Image Correct
+	// IDC_CHECK6   Matching Image Correct
 	// 常に有効
 
 	// IDC_CHECK4   Color Image
@@ -3103,13 +3133,13 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 		(GetDlgItem(IDC_CHECK10))->EnableWindow(FALSE);
 	}
 
-	// IDC_CHECK8   Adjust Auto
-	is_enabled = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kAdjustAuto);
+	// IDC_CHECK8   Auto calibration
+	is_enabled = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kAutoCalibration);
 	if (is_enabled) {
 		(GetDlgItem(IDC_CHECK8))->EnableWindow(TRUE);
 
 		bool current_value = false;
-		int ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kAdjustAuto, &current_value);
+		int ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kAutoCalibration, &current_value);
 		if (current_value) {
 			((CButton*)GetDlgItem(IDC_CHECK8))->SetCheck(BST_CHECKED);
 		}
@@ -3121,8 +3151,8 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 		(GetDlgItem(IDC_CHECK8))->EnableWindow(FALSE);
 	}
 
-	// IDC_BUTTON4  Force Adjust Run
-	is_enabled = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kAdjustForce);
+	// IDC_BUTTON4  Manual calibration Run
+	is_enabled = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kManualCalibration);
 	if (is_enabled) {
 		(GetDlgItem(IDC_BUTTON4))->EnableWindow(TRUE);
 	}
@@ -3130,7 +3160,7 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 		(GetDlgItem(IDC_BUTTON4))->EnableWindow(FALSE);
 	}
 
-	// IDC_BUTTON4 auto adjustment force adjustment
+	// IDC_BUTTON4 Manual calibration
 	// It is only available during image capture
 	(GetDlgItem(IDC_BUTTON4))->EnableWindow(FALSE);
 
@@ -3235,7 +3265,7 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 		// IDC_COMBO2 draw distance mode
 		(GetDlgItem(IDC_COMBO2))->EnableWindow(FALSE);
 
-		// IDC_BUTTON4 auto adjustment force adjustment
+		// IDC_BUTTON4 Manual calibration
 		(GetDlgItem(IDC_BUTTON4))->EnableWindow(TRUE);
 
 		// IDC_BUTTON7 save image
@@ -3250,10 +3280,10 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 		// IDC_CHECK5   Base Image Correct
 		(GetDlgItem(IDC_CHECK5))->EnableWindow(FALSE);
 
-		// IDC_CHECK3   Compare Image
+		// IDC_CHECK3   Matching Image
 		(GetDlgItem(IDC_CHECK3))->EnableWindow(FALSE);
 
-		// IDC_CHECK6   Compare Image Correct
+		// IDC_CHECK6   Matching Image Correct
 		(GetDlgItem(IDC_CHECK6))->EnableWindow(FALSE);
 
 		// IDC_CHECK4   Color Image
@@ -3267,6 +3297,9 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 
 		// IDC_CHECK15  Data Processing Frame Decoder
 		(GetDlgItem(IDC_CHECK15))->EnableWindow(FALSE);
+
+		// IDC_CHECK17  Data Processing Frame Decoder
+		(GetDlgItem(IDC_CHECK17))->EnableWindow(FALSE);
 
 		// IDC_BUTTON5 Adcanced Setting
 		(GetDlgItem(IDC_BUTTON5))->EnableWindow(FALSE);
@@ -3301,7 +3334,7 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 		// IDC_COMBO2 draw distance mode
 		(GetDlgItem(IDC_COMBO2))->EnableWindow(TRUE);
 
-		// IDC_BUTTON4 auto adjustment force adjustment
+		// IDC_BUTTON4 Manual calibration
 		(GetDlgItem(IDC_BUTTON4))->EnableWindow(FALSE);
 
 		// IDC_BUTTON7 save image
@@ -3316,10 +3349,10 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 		// IDC_CHECK5   Base Image Correct
 		(GetDlgItem(IDC_CHECK5))->EnableWindow(TRUE);
 
-		// IDC_CHECK3   Compare Image
+		// IDC_CHECK3   Matching Image
 		(GetDlgItem(IDC_CHECK3))->EnableWindow(TRUE);
 
-		// IDC_CHECK6   Compare Image Correct
+		// IDC_CHECK6   Matching Image Correct
 		(GetDlgItem(IDC_CHECK6))->EnableWindow(TRUE);
 
 		// IDC_CHECK4   Color Image
@@ -3350,6 +3383,9 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 			(GetDlgItem(IDC_CHECK16))->EnableWindow(FALSE);
 			(GetDlgItem(IDC_CHECK15))->EnableWindow(FALSE);
 		}
+
+		// IDC_CHECK17  Data Processing Frame Decoder
+		(GetDlgItem(IDC_CHECK17))->EnableWindow(TRUE);
 
 		// IDC_BUTTON5 Adcanced Setting
 		(GetDlgItem(IDC_BUTTON5))->EnableWindow(TRUE);
@@ -3483,10 +3519,10 @@ bool CDPCguiDlg::ImageDrawProc()
 	IscFeatureRequest isc_feature_request = {};
 
 	isc_feature_request.is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
-	isc_feature_request.is_base_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
-	isc_feature_request.is_base_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
-	isc_feature_request.is_compare_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
-	isc_feature_request.is_compare_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	isc_feature_request.is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	isc_feature_request.is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	isc_feature_request.is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	isc_feature_request.is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
 	isc_feature_request.is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
 	isc_feature_request.is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
 	isc_feature_request.is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
@@ -3927,6 +3963,11 @@ bool CDPCguiDlg::ImageDrawProc()
 		}
 
 		IscAreaDataStatistics isc_data_statistics = {};
+		double min_distance = 0, max_distance = 0;
+		draw_data_lib_->GetMinMaxDistance(&min_distance, &max_distance);
+		isc_data_statistics.min_distance = min_distance;
+		isc_data_statistics.max_distance = max_distance;
+
 		int get_success = isc_dpl_->GetAreaStatistics(roi_x, roi_y, roi_width, roi_height, isc_image_info, &isc_data_statistics);
 		if (get_success == DPC_E_OK) {
 			_stprintf_s(str, _T("%.3f"), isc_data_statistics.statistics_depth.average);
@@ -3973,18 +4014,18 @@ bool CDPCguiDlg::ImageDrawProc()
 	if (0) {	
 		// for example 
 		image_data_set_[0].valid = true;
-		image_data_set_[0].mode = DpcDrawLib::ImageDrawMode::kBase;
+		image_data_set_[0].mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 
-		image_data_set_[0].image_data_list[0].image_base.width = 752;
-		image_data_set_[0].image_data_list[0].image_base.height = 480;
-		image_data_set_[0].image_data_list[0].image_base.channel_count = 1;
-		memset(image_data_set_[0].image_data_list[0].image_base.buffer, 0, image_data_set_[0].image_data_list[0].image_base.width * image_data_set_[0].image_data_list[0].image_base.height);
+		image_data_set_[0].image_data_list[0].image_mono_s0.width = 752;
+		image_data_set_[0].image_data_list[0].image_mono_s0.height = 480;
+		image_data_set_[0].image_data_list[0].image_mono_s0.channel_count = 1;
+		memset(image_data_set_[0].image_data_list[0].image_mono_s0.buffer, 0, image_data_set_[0].image_data_list[0].image_mono_s0.width * image_data_set_[0].image_data_list[0].image_mono_s0.height);
 
-		for (int i = 0; i < image_data_set_[0].image_data_list[0].image_base.height; i++) {
-			unsigned char* dst = image_data_set_[0].image_data_list[0].image_base.buffer + (i * image_data_set_[0].image_data_list[0].image_base.width);
+		for (int i = 0; i < image_data_set_[0].image_data_list[0].image_mono_s0.height; i++) {
+			unsigned char* dst = image_data_set_[0].image_data_list[0].image_mono_s0.buffer + (i * image_data_set_[0].image_data_list[0].image_mono_s0.width);
 
 			unsigned char value = (i * 10) % 255;
-			memset(dst, value, image_data_set_[0].image_data_list[0].image_base.width);
+			memset(dst, value, image_data_set_[0].image_data_list[0].image_mono_s0.width);
 		}
 
 		CDC* cdc1 = GetDlgItem(IDC_PIC1)->GetDC();
@@ -4054,3 +4095,4 @@ bool CDPCguiDlg::SaveDPLparameterFileToImageFolder()
 
 	return true;
 }
+

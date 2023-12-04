@@ -628,6 +628,9 @@ int DpcImageWriter::WriteDepthToFileAsPCD(const TCHAR* file_name, const int widt
 	float b = (float)base_length;
 	pt_t pt(1.0, 1.0, 1.0, 1);
 
+	// Unity -> ROS
+	// Position: Unity(x,y,z) -> ROS(z,-x,y)
+
 	for (int i = 0; i < height; i++) {
 		
 		float* src_depth = mat_depth.ptr<float>(i);
@@ -635,36 +638,27 @@ int DpcImageWriter::WriteDepthToFileAsPCD(const TCHAR* file_name, const int widt
 		
 		for (int j = 0; j < width; j++) {
 			float value = src_depth[j] - (float)d_inf;
-			float x = 0;
-			float y = 0;
-			float z = 0;
+			float x = std::numeric_limits<float>::quiet_NaN();
+			float y = std::numeric_limits<float>::quiet_NaN();
+			float z = std::numeric_limits<float>::quiet_NaN();
 			unsigned int col = 0;
 
+			pt = pt_t(x, y, z, col);
+
 			if (value > 0) {
-				x = (b * (j - xc)) / value;
+				x = -1 * ((b * (j - xc)) / value);
 				y = (b * (yc - i)) / value;
 				z = (float)bf / value;
 				
-				col = 0;
-
 				if (z >= min_distance && z < max_distance) {
 					unsigned char b = src_image[j][0];
 					unsigned char g = src_image[j][1];
 					unsigned char r = src_image[j][2];
 					col = MAKE_RGB(r, g, b);
-				}
-				else {
-					x = 0;
-					y = 0;
-					z = 0;
-				}
 
+					pt = pt_t(x, y, z, col);
+				}
 			}
-
-			// Unity -> ROS
-			// Position: Unity(x,y,z) -> ROS(z,-x,y)
-			//pt = pt_t(z, -1 * x, y, col);	// ROS
-			pt = pt_t(x, y, z, col);		// Unity
 
 			pts.push_back(pt);
 		}
@@ -704,6 +698,7 @@ int DpcImageWriter::WriteDepthToFileAsPCD(const TCHAR* file_name, const int widt
 	fprintf(fp, "VERSION 0.7\nFIELDS x y z rgb\nSIZE 4 4 4 4\nTYPE F F F U\nCOUNT 1 1 1 1\n");
 	fprintf(fp, "WIDTH %d\nHEIGHT %d\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS %d\nDATA ascii\n", width, height, pts.size());
 
+	// 中身をASCIIで書き込み
 	for (int i = 0; i < pts.size(); i++) {
 		fprintf_s(fp, ("%.5f %.5f %.5f %d\n"), pts[i].x, pts[i].y, pts[i].z, pts[i].col);
 	}

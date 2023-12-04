@@ -377,8 +377,8 @@ private:
 
 	struct DecodeBuffer {
 		unsigned char* split_images[3];		/**< image buffer */
-		unsigned char* base_image;			/**< image buffer */
-		unsigned char* compare_image;		/**< image buffer */
+		unsigned char* s0_image;			/**< image buffer */
+		unsigned char* s1_image;			/**< image buffer */
 		unsigned char* disparity_image;		/**< image buffer */
 		unsigned char* mask_image;			/**< image buffer */
 		float* disparity;					/**< disparity buffer */

@@ -344,11 +344,11 @@ int IscFileReadControlImpl::GetGrabMode(IscGrabStartMode* isc_grab_start_mode)
 		break;
 
 	case 4:
-		isc_grab_start_mode->isc_grab_mode = IscGrabMode::kBayerBase;
+		isc_grab_start_mode->isc_grab_mode = IscGrabMode::kBayerS0;
 		break;
 
 	case 5:
-		isc_grab_start_mode->isc_grab_mode = IscGrabMode::kBayerCompare;
+		isc_grab_start_mode->isc_grab_mode = IscGrabMode::kBayerS1;
 		break;
 
 	default:
@@ -438,7 +438,7 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 		break;
 
 	case 4:
-		isc_grab_mode = IscGrabMode::kBayerBase;
+		isc_grab_mode = IscGrabMode::kBayerS0;
 		break;
 	}
 	isc_image_info->grab = isc_grab_mode;

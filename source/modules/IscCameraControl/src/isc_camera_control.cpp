@@ -68,6 +68,7 @@
 // Callback Control
 /*
 	IscSelfCalibrationにおいてカメラのRegistへ直接R/Wするための関数を提供する
+	実装の都合上、冗長な構成になっている
 */
 int CallbackGetCameraRegData(unsigned char* wbuf, unsigned char* rbuf, int write_size, int read_size);
 int CallbackSetCameraRegData(unsigned char* wbuf, int write_size);
@@ -556,7 +557,10 @@ int IscCameraControl::ImageHandler(IscImageInfoRingBuffer::BufferData* buffer_da
 
 	// self calibration
 	if (enabled_isc_selfcalibration_) {
-		isc_selfcalibration_interface_->ParallelizeSelfCalibration(&buffer_data->isc_image_info);
+		// check mode
+		if (buffer_data->isc_image_info.grab == IscGrabMode::kCorrect) {
+			int sc_result = isc_selfcalibration_interface_->ParallelizeSelfCalibration(&buffer_data->isc_image_info);
+		}
 	}
 
 	// set takt time

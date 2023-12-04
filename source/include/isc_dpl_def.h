@@ -59,6 +59,7 @@ struct IscAreaDataStatistics {
         float std_dev;                  /**< standard deviation */
         float average;                  /**< average value */
         float median;                   /**< median value */
+        float mode;                     /**< most frequent value */
     };
 
     struct Roi3D {
@@ -71,6 +72,9 @@ struct IscAreaDataStatistics {
     int y;                              /**< top left of region */
     int width;                          /**< width of region */
     int height;                         /**< height of region */
+
+    float min_distance;                 /**< Minimum display distance */
+    float max_distance;                 /**< Maximum display distance */
 
     Statistics statistics_depth;        /**< parallax stats */
     Statistics statistics_distance;     /**< distance statistics */

@@ -80,4 +80,5 @@ public:
 	bool SetupDialogItems(const bool is_start, const IscControl* isc_control);
 	bool SaveDPLparameterFileToImageFolder();
 
+	afx_msg void OnBnClickedCheck17();
 };

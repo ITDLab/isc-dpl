@@ -252,8 +252,8 @@ int XcSdkWrapper::Initialize()
 	for (int i = 0; i < 3; i++) {
 		decode_buffer_.split_images[i] = new unsigned char[frame_size];
 	}
-	decode_buffer_.base_image = new unsigned char[frame_size];
-	decode_buffer_.compare_image = new unsigned char[frame_size];
+	decode_buffer_.s0_image = new unsigned char[frame_size];
+	decode_buffer_.s1_image = new unsigned char[frame_size];
 	decode_buffer_.disparity_image = new unsigned char[frame_size];
 	decode_buffer_.mask_image = new unsigned char[frame_size];
 	decode_buffer_.disparity = new float[frame_size];
@@ -291,10 +291,10 @@ int XcSdkWrapper::Terminate()
 		delete[] decode_buffer_.split_images[i];
 		decode_buffer_.split_images[i] = nullptr;
 	}
-	delete[] decode_buffer_.base_image;
-	decode_buffer_.base_image = nullptr;
-	delete[] decode_buffer_.compare_image;
-	decode_buffer_.compare_image = nullptr;
+	delete[] decode_buffer_.s0_image;
+	decode_buffer_.s0_image = nullptr;
+	delete[] decode_buffer_.s1_image;
+	decode_buffer_.s1_image = nullptr;
 	delete[] decode_buffer_.disparity_image;
 	decode_buffer_.disparity_image = nullptr;
 	delete[] decode_buffer_.mask_image;
@@ -911,11 +911,11 @@ bool XcSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 	bool ret_value = false;
 
 	switch (option_name) {
-	case IscCameraParameter::kBaseImage:
+	case IscCameraParameter::kMonoS0Image:
 		ret_value = true;
 		break;
 
-	case IscCameraParameter::kCompareImage:
+	case IscCameraParameter::kMonoS1Image:
 		ret_value = true;
 		break;
 
@@ -979,11 +979,11 @@ bool XcSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 		ret_value = false;
 		break;
 
-	case IscCameraParameter::kAdjustAuto:
+	case IscCameraParameter::kAutoCalibration:
 		ret_value = true;
 		break;
 
-	case IscCameraParameter::kAdjustForce:
+	case IscCameraParameter::kManualCalibration:
 		ret_value = true;
 		break;
 
@@ -1353,7 +1353,7 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 	int get_value = 0;
 
 	switch (option_name) {
-	case IscCameraParameter::kAdjustAuto:
+	case IscCameraParameter::kAutoCalibration:
 		ret_value = getAutoCalibration(&get_value);
 		if (ret_value == ISC_OK) {
 			if ((get_value & AUTOCALIBRATION_STATUS_BIT_AUTO_ON) != 0) {
@@ -1369,7 +1369,7 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 		}
 		break;
 
-	case IscCameraParameter::kAdjustForce:
+	case IscCameraParameter::kManualCalibration:
 		ret_value = getAutoCalibration(&get_value);
 		if (ret_value == ISC_OK) {
 			if ((get_value & AUTOCALIBRATION_STATUS_BIT_MANUAL_RUNNING) != 0) {
@@ -1418,7 +1418,7 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 	unsigned int set_value = 0;
 
 	switch (option_name) {
-	case IscCameraParameter::kAdjustAuto:
+	case IscCameraParameter::kAutoCalibration:
 		if (value) {
 			set_value = AUTOCALIBRATION_COMMAND_AUTO_ON;
 		}
@@ -1434,7 +1434,7 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		}
 		break;
 
-	case IscCameraParameter::kAdjustForce:
+	case IscCameraParameter::kManualCalibration:
 		if (value) {
 			set_value = AUTOCALIBRATION_COMMAND_MANUAL_START;
 
@@ -1764,11 +1764,11 @@ int XcSdkWrapper::Start(const IscGrabStartMode* isc_grab_start_mode)
 		start_mode = 4;
 		break;
 
-	case IscGrabMode::kBayerBase:
+	case IscGrabMode::kBayerS0:
 		return CAMCONTROL_E_INVALID_REQUEST;
 		break;
 
-	case IscGrabMode::kBayerCompare:
+	case IscGrabMode::kBayerS1:
 		return CAMCONTROL_E_INVALID_REQUEST;
 		break;
 
@@ -2745,8 +2745,8 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
  * @param[in] width image width.
  * @param[in] height image height.
  * @param[in] raw_data Raw data from camera.
- * @param[in,out] image1 base image / disparity.
- * @param[in,out] image2 compare image / mask data.
+ * @param[in,out] image1 monochrome sensor-0 image / disparity.
+ * @param[in,out] image2 monochrome sensor-1 image / mask data.
  * @param[in,out] image3 disparity.
  * @return 0 if successful.
  */

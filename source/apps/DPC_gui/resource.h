@@ -175,6 +175,7 @@
 #define IDC_STATIC73                    1172
 #define IDC_STATIC74                    1173
 #define IDC_STATIC_MODULE_NAME_3        1174
+#define IDC_CHECK17                     1175
 
 // Next default values for new objects
 // 
@@ -182,7 +183,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1175
+#define _APS_NEXT_CONTROL_VALUE         1176
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

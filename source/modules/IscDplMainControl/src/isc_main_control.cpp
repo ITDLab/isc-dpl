@@ -52,6 +52,7 @@
 #include "isc_stereomatching_interface.h"
 #include "isc_disparityfilter_interface.h"
 #include "isc_data_processing_control.h"
+#include "isc_measurement.h"
 #include "isc_main_control_impl.h"
 
 #include "isc_main_control.h"

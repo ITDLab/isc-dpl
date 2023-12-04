@@ -52,6 +52,7 @@
 #include "isc_stereomatching_interface.h"
 #include "isc_disparityfilter_interface.h"
 #include "isc_data_processing_control.h"
+#include "isc_measurement.h"
 
 #include "isc_main_control_impl.h"
 
@@ -81,6 +82,7 @@ IscMainControlImpl::IscMainControlImpl():
     isc_camera_control_(nullptr),
     isc_data_processing_control_(nullptr),
     isc_image_info_ring_buffer_(nullptr),
+    isc_measurement_(nullptr),
     temp_isc_grab_start_mode_(),
     temp_isc_dataproc_start_mode_(),
     work_buffers_(),
@@ -274,6 +276,10 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
     isc_data_processing_control_ = new IscDataProcessingControl;
     isc_data_processing_control_->Initialize(&isc_data_proc_module_configuration);
 
+    // mesurement library
+    isc_measurement_ = new IscMeasurement;
+    isc_measurement_->Initialize(max_width, max_height);
+
     // Create Thread for camera
     thread_control_camera_.terminate_request = 0;
     thread_control_camera_.terminate_done = 0;
@@ -352,6 +358,12 @@ int IscMainControlImpl::Terminate()
     }
     work_buffers_.max_width = 0;
     work_buffers_.max_height = 0;
+
+    if (isc_measurement_ != nullptr) {
+        isc_measurement_->Terminate();
+        delete isc_measurement_;
+        isc_measurement_ = nullptr;
+    }
 
     if (isc_data_processing_control_ != nullptr) {
         isc_data_processing_control_->Terminate();
@@ -1838,82 +1850,10 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
 int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImageInfo* isc_image_info, float* disparity, float* depth)
 {
 
-    if (isc_image_info == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if (disparity == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if (depth == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
-
-    int width = isc_image_info->frame_data[fd_index].depth.width;
-    int height = isc_image_info->frame_data[fd_index].depth.height;
-
-    /*
-        視差の取り込みが無い取り込みモードであれば、width/heightが0であるため、下記でエラーとなる
-    
-    */
-
-    if ((x < 0) || (x >= width)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if ((y < 0) || (y >= height)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    /*
-        視差は、4x4のBlockで算出されており、それを展開し画像サイズとしている
-        展開時に、MaskによるOn/Offにより、視差のない部分が発生しいる
-        
-        ユーザーが画面上で選択した座標は厳密ではいため、Block内に視差がれば、そこが選択れたものとして値を計算する
-    */
-
-    int x_s = (int)(((double)x / 4.0) * 4);
-    int x_e = x_s + 4;
-
-    int y_s = (int)(((double)y / 4.0) * 4);
-    int y_e = y_s + 4;
-
-    float depth_array[16] = {};
-    int index = 0;
-    for (int i = y_s; i < y_e; i++) {
-        float* src = isc_image_info->frame_data[fd_index].depth.image + (i * width);
-
-        for (int j = x_s; j < x_e; j++) {
-            depth_array[index] = *(src + j);
-            index++;
-        }
-    }
-    
-    if (index == 0) {
-        *disparity = 0;
-        *depth = 0;
-    }
-    else {
-        float block_disparity = 0.0f;
-        for (auto value : depth_array) {
-            if (value > 0) {
-                // 有効な視差
-                block_disparity = value;
-                break;
-            }
-        }
-
-        if (block_disparity > isc_image_info->camera_specific_parameter.d_inf) {
-            *disparity = block_disparity;
-            *depth = isc_image_info->camera_specific_parameter.bf / (block_disparity - isc_image_info->camera_specific_parameter.d_inf);
-        }
-        else {
-            *disparity = 0;
-            *depth = 0;
-        }
+    int ret = isc_measurement_->GetPositionDepth(x, y, isc_image_info, disparity, depth);
+    if (ret != DPC_E_OK) {
+        // faild
+        return ret;
     }
 
     return DPC_E_OK;
@@ -1933,89 +1873,14 @@ int IscMainControlImpl::GetPositionDepth(const int x, const int y, const IscImag
  */
 int IscMainControlImpl::GetPosition3D(const int x, const int y, const IscImageInfo* isc_image_info, float* x_d, float* y_d, float* z_d)
 {
-    if (isc_image_info == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
 
-    if (x_d == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if (y_d == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if (z_d == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    float disparity = 0.0f;
-    float depth = 0.0f;
-    int ret = GetPositionDepth(x, y, isc_image_info, &disparity, &depth);
-
+    int ret = isc_measurement_->GetPosition3D(x, y, isc_image_info, x_d, y_d, z_d);
     if (ret != DPC_E_OK) {
+        // faild
         return ret;
     }
 
-    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
-    int width = isc_image_info->frame_data[fd_index].depth.width;
-    int height = isc_image_info->frame_data[fd_index].depth.height;
-
-    if (disparity > isc_image_info->camera_specific_parameter.d_inf) {
-        float bd = isc_image_info->camera_specific_parameter.base_length / disparity;
-
-        *x_d = (float)(x - width / 2) * bd;
-        *y_d = (float)(height / 2 - y) * bd;
-        *z_d = depth;
-    }
-    else {
-        *x_d = 0;
-        *y_d = 0;
-        *z_d = 0;
-    }
-
     return DPC_E_OK;
-}
-
-/**
- * 中央値を取得します
- *
- * @param[in] input_org 入力配列
- * @retval 中央値
- * @note 失敗時には、0を戻します
- */
-float MedianMat(cv::Mat& input_org) {
-
-    std::vector<float> vec_from_mat;
-
-    for (int i = 0; i < input_org.rows; i++) {
-        float* src = input_org.ptr<float>(i);
-
-        for (int j = 0; j < input_org.cols; j++) {
-            if (*src > 1) {
-                vec_from_mat.push_back(*src);
-            }
-            src++;
-        }
-    }
-
-    if (vec_from_mat.size() == 0) {
-        return 0.0F;
-    }
-
-    //Input = Input.reshape(0, 1); // spread Input Mat to single row
-    //Input.copyTo(vec_from_mat); // Copy Input Mat to vector vec_from_mat    
-
-    // sort vec_from_mat
-    std::sort(vec_from_mat.begin(), vec_from_mat.end());
-
-    // in case of even-numbered matrix
-    if (vec_from_mat.size() % 2 == 0) { 
-        return (vec_from_mat[vec_from_mat.size() / 2 - 1] + vec_from_mat[vec_from_mat.size() / 2]) / 2; 
-    } 
-    
-    // odd-number of elements in matrix
-    return vec_from_mat[(vec_from_mat.size() - 1) / 2]; 
 }
 
 /**
@@ -2032,200 +1897,11 @@ float MedianMat(cv::Mat& input_org) {
  */
 int IscMainControlImpl::GetAreaStatistics(const int x, const int y, const int width, const int height, const IscImageInfo* isc_image_info, IscAreaDataStatistics* isc_data_statistics)
 {
-    
-    if (isc_image_info == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
+    int ret = isc_measurement_->GetAreaStatistics(x, y, width, height, isc_image_info, isc_data_statistics);
+    if (ret != DPC_E_OK) {
+        // faild
+        return ret;
     }
-
-    if (isc_data_statistics == nullptr) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    memset(isc_data_statistics, 0, sizeof(IscAreaDataStatistics));
-
-    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
-
-    int image_width = isc_image_info->frame_data[fd_index].depth.width;
-    int image_height = isc_image_info->frame_data[fd_index].depth.height;
-
-    if ((x < 0) || (x >= image_width)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if ((y < 0) || (y >= image_height)) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    cv::Rect roi = {};
-    roi.x = x;
-    roi.y = y;
-    roi.width = x + width < image_width ? width : image_width - (x + width) - 1;
-    roi.height = y + height < image_height ? height : image_height - (y + height) - 1;
-
-    if (roi.width < 0) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    if (roi.height < 0) {
-        return ISCDPL_E_INVALID_PARAMETER;
-    }
-
-    cv::Mat src_disparity(image_height, image_width, CV_32F, isc_image_info->frame_data[fd_index].depth.image);
-    cv::Mat roi_depth = src_disparity(roi);
-
-    // 視差の平均を計算
-
-    const float valid_minimum = isc_image_info->camera_specific_parameter.d_inf;
-
-    float sum_of_depth = 0;
-    float max_of_depth = 0, min_of_depth = 999;
-
-    unsigned int sum_of_depth_count = 0;
-    for (int i = 0; i < roi_depth.rows; i++) {
-        float* src = roi_depth.ptr<float>(i);
-
-        for (int j = 0; j < roi_depth.cols; j++) {
-            if (*src > valid_minimum) {
-                sum_of_depth += *src;
-                sum_of_depth_count++;
-
-                if (*src > max_of_depth) {
-                    max_of_depth = *src;
-                }
-                if (*src < min_of_depth) {
-                    min_of_depth = *src;
-                }
-            }
-            src++;
-        }
-    }
-
-    float average_of_depth = 0;
-    if (sum_of_depth_count != 0) {
-        average_of_depth = sum_of_depth / (float)sum_of_depth_count;
-    }
-
-    // 中央値を計算
-    float median_of_depth = 0;
-    if (sum_of_depth_count != 0) {
-        median_of_depth = MedianMat(roi_depth);
-    }
-
-    // 視差の標準偏差を計算
-    float std_dev_of_depth = 0;
-    if (sum_of_depth_count != 0) {
-
-        float sum_of_mean_diff = 0;
-        unsigned int sum_of_mean_diff_count = 0;
-        for (int i = 0; i < roi_depth.rows; i++) {
-            float* src = roi_depth.ptr<float>(i);
-
-            for (int j = 0; j < roi_depth.cols; j++) {
-                if (*src > valid_minimum) {
-                    sum_of_mean_diff += ((*src - average_of_depth) * (*src - average_of_depth));
-                    sum_of_mean_diff_count++;
-                }
-                src++;
-            }
-        }
-        std_dev_of_depth = sqrt(sum_of_mean_diff / sum_of_mean_diff_count);
-    }
-
-    isc_data_statistics->x = x;
-    isc_data_statistics->y = x;
-    isc_data_statistics->width = roi_depth.cols;
-    isc_data_statistics->height = roi_depth.rows;
-
-    isc_data_statistics->statistics_depth.max_value = max_of_depth;
-    isc_data_statistics->statistics_depth.min_value = min_of_depth;
-    isc_data_statistics->statistics_depth.std_dev = std_dev_of_depth;
-    isc_data_statistics->statistics_depth.average = average_of_depth;
-    isc_data_statistics->statistics_depth.median = median_of_depth;
-
-    float d_inf = isc_image_info->camera_specific_parameter.d_inf;
-    float bf = isc_image_info->camera_specific_parameter.bf;
-    float base_length = isc_image_info->camera_specific_parameter.base_length;
-    if (average_of_depth > d_inf) {
-        float bd = base_length / (average_of_depth - d_inf);
-        isc_data_statistics->roi_3d.width = bd * isc_data_statistics->width;
-        isc_data_statistics->roi_3d.height = bd * isc_data_statistics->height;
-        isc_data_statistics->roi_3d.distance = bf / (average_of_depth - d_inf);
-    }
-    else {
-        isc_data_statistics->roi_3d.width = 0;
-        isc_data_statistics->roi_3d.height = 0;
-        isc_data_statistics->roi_3d.distance = 0;
-    }
-
-    // convert to distance
-    float sum_of_distance = 0;
-    float max_of_distance = 0, min_of_distance = 99999;
-    unsigned int sum_of_distance_count = 0;
-
-    cv::Mat src_distance(roi_depth.rows, roi_depth.cols, CV_32F, work_buffers_.depth_buffer[0]);
-
-    for (int i = 0; i < roi_depth.rows; i++) {
-        float* src = roi_depth.ptr<float>(i);
-        float* dst = src_distance.ptr<float>(i);
-
-        for (int j = 0; j < roi_depth.cols; j++) {
-            if (*src > valid_minimum) {
-
-                float distance = bf / (*src - d_inf);
-                *dst = distance;
-
-                sum_of_distance += distance;
-                sum_of_distance_count++;
-
-                if (distance > max_of_distance) {
-                    max_of_distance = distance;
-                }
-                if (distance < min_of_distance) {
-                    min_of_distance = *src;
-                }
-            }
-            else {
-                *dst = 0;
-            }
-            src++;
-            dst++;
-        }
-    }
-
-    float average_of_distance = 0;
-    if (sum_of_distance_count != 0) {
-        average_of_distance = sum_of_distance / (float)sum_of_distance_count;
-    }
-
-    float median_of_distance = 0;
-    if (sum_of_distance_count != 0) {
-        median_of_distance = MedianMat(src_distance);
-    }
-
-    float std_dev_of_distance = 0;
-    if (sum_of_distance_count != 0) {
-
-        float sum_of_mean_diff = 0;
-        unsigned int sum_of_mean_diff_count = 0;
-        for (int i = 0; i < src_distance.rows; i++) {
-            float* src = src_distance.ptr<float>(i);
-
-            for (int j = 0; j < src_distance.cols; j++) {
-                if (*src > 0) {
-                    sum_of_mean_diff += ((*src - average_of_distance) * (*src - average_of_distance));
-                    sum_of_mean_diff_count++;
-                }
-                src++;
-            }
-        }
-        std_dev_of_distance = sqrt(sum_of_mean_diff / sum_of_mean_diff_count);
-    }
-
-    isc_data_statistics->statistics_distance.max_value = max_of_distance;
-    isc_data_statistics->statistics_distance.min_value = min_of_distance;
-    isc_data_statistics->statistics_distance.std_dev = std_dev_of_distance;
-    isc_data_statistics->statistics_distance.average = average_of_distance;
-    isc_data_statistics->statistics_distance.median = median_of_distance;
 
     return DPC_E_OK;
 }

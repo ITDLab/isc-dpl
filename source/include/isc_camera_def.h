@@ -84,8 +84,8 @@ enum class IscCameraInfo {
  *  @brief This is a camera control parameter 
  */
 enum class IscCameraParameter {
-    kBaseImage,                 /**< [for implementation inquiries] Providing base image data */
-    kCompareImage,              /**< [for implementation inquiries] Providing compare image data */
+    kMonoS0Image,               /**< [for implementation inquiries] Providing monochrome sensor-0 image data */
+    kMonoS1Image,               /**< [for implementation inquiries] Providing monochrome sensor-1 image data */
     kDepthData,                 /**< [for implementation inquiries] Providing depth data */
     kColorImage,                /**< [for implementation inquiries] Providing color data */
     kColorImageCorrect,         /**< [for implementation inquiries] Providing collected color data */
@@ -101,8 +101,8 @@ enum class IscCameraParameter {
     kGain,                      /**< [int] Gain setting */
     kHrMode,                    /**< [bool] High Resolution setting */
     kHdrMode,                   /**< [bool] Sensor HDR mode setting */
-    kAdjustAuto,                /**< [bool] Automatic adjustment valid */
-    kAdjustForce,               /**< [bool] Automatic adjustment forced execution */
+    kAutoCalibration,           /**< [bool] Automatic calibration valid */
+    kManualCalibration,         /**< [bool] Automatic Calibration forced execution */
     kOcclusionRemoval,          /**< [int] Sets the occlusion removal value */
     kPeculiarRemoval,           /**< [bool] Settings to remove peculiarity */
     kSelfCalibration,           /**< [bool] Software Calibration(selft calibration) valid */
@@ -137,8 +137,8 @@ enum class IscGrabMode {
     kParallax = 1,          /**< 視差モード(補正後画像+視差画像) */
     kCorrect,               /**< 補正後画像モード */
     kBeforeCorrect,         /**< 補正前画像モード(原画像) */
-    kBayerBase,             /**< 補正前Bayer画像モード(原画像) */
-    kBayerCompare           /**< 補正前Bayer画像モード(原画像)(Compare Camera) */
+    kBayerS0,               /**< 補正前Bayer画像モード(原画像)(Sensor-0 Camera) */
+    kBayerS1                /**< 補正前Bayer画像モード(原画像)(Sensor-1 Camera) */
 };
 
 /** @enum  IscGrabColorMode

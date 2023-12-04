@@ -122,10 +122,10 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 
 		// mode
 		const bool is_disparity				= isc_feature_request->is_disparity;
-		const bool is_base_image			= isc_feature_request->is_base_image;
-		const bool is_base_image_correct	= isc_feature_request->is_base_image_correct;
-		const bool is_compare_image			= isc_feature_request->is_compare_image;
-		const bool is_compare_image_correct	= isc_feature_request->is_compare_image_correct;
+		const bool is_mono_s0_image			= isc_feature_request->is_mono_s0_image;
+		const bool is_mono_s0_image_correct	= isc_feature_request->is_mono_s0_image_correct;
+		const bool is_mono_s1_image			= isc_feature_request->is_mono_s1_image;
+		const bool is_mono_s1_image_correct	= isc_feature_request->is_mono_s1_image_correct;
 		const bool is_color_image			= isc_feature_request->is_color_image;
 		const bool is_color_image_correct	= isc_feature_request->is_color_image_correct;
 		const bool is_dpl_stereo_matching	= isc_feature_request->is_dpl_stereo_matching;
@@ -188,8 +188,8 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 					}
 				}
 			}
-			else if (is_base_image) {
-				if (is_base_image_correct) {
+			else if (is_mono_s0_image) {
+				if (is_mono_s0_image_correct) {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
@@ -200,8 +200,8 @@ bool SetupIscControlToStart(const bool is_start, const bool is_record, const boo
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
 				}
 			}
-			else if (is_compare_image) {
-				if (is_compare_image_correct) {
+			else if (is_mono_s1_image) {
+				if (is_mono_s1_image_correct) {
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
 					isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
@@ -291,12 +291,12 @@ bool GetGrabModeString(IscImageInfo* isc_image_info, TCHAR* grab_mmode_string, i
 		_stprintf_s(grab_mmode_string, maxkength, _T("Before Correct"));
 		break;
 
-	case IscGrabMode::kBayerBase:
-		_stprintf_s(grab_mmode_string, maxkength, _T("bayer"));
+	case IscGrabMode::kBayerS0:
+		_stprintf_s(grab_mmode_string, maxkength, _T("Bayer(0)"));
 		break;
 
-	case IscGrabMode::kBayerCompare:
-		_stprintf_s(grab_mmode_string, maxkength, _T("Bayer(C)"));
+	case IscGrabMode::kBayerS1:
+		_stprintf_s(grab_mmode_string, maxkength, _T("Bayer(1)"));
 		break;
 
 	default:
@@ -310,32 +310,32 @@ bool GetGrabModeString(IscImageInfo* isc_image_info, TCHAR* grab_mmode_string, i
 DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, IscControl* isc_control)
 {
 	//enum class ImageDrawMode {
-	//							/**< image_data_list	[0]					[1]				*/
-	//	kBase,					/**< 0:					image_base							*/
-	//	kCompare,				/**< 1:					image_compare						*/
-	//	kDepth,					/**< 2:					depth								*/
-	//	kColor,					/**< 3:					image_color							*/
-	//	kBaseCompare,			/**< 4:					image_base,			image_compare	*/
-	//	kDepthBase,				/**< 5:					depth_data,			image_base		*/
-	//	kDepthColor,			/**< 6:					depth_data,			image_color		*/
-	//	kOverlapedDepthBase,	/**< 7:					depth_data,			image_base		*/
+	//								/**< image_data_list	[0]					[1]				*/
+	//	kMonoS0,					/**< 0:					image_mono_s0						*/
+	//	kMonoS1,					/**< 1:					image_mono_s1						*/
+	//	kDepth,						/**< 2:					depth								*/
+	//	kColor,						/**< 3:					image_color							*/
+	//	kMonoS0MonoS1,				/**< 4:					image_mono_s0,		image_mono_s1	*/
+	//	kDepthMonoS0,				/**< 5:					depth_data,			image_mono_s0	*/
+	//	kDepthColor,				/**< 6:					depth_data,			image_color		*/
+	//	kOverlapedDepthMonoS0,		/**< 7:					depth_data,			image_mono_s0	*/
 
-	//	kDplImage,				/**< 8:					image_dpl							*/
-	//	kDplImageBase,			/**< 9:					image_dpl,			image_base		*/
-	//	kDplImageColor,			/**< 10:				image_dpl,			image_color		*/
-	//	kDplDepth,				/**< 11:				depth_dpl							*/
-	//	kDplDepthBase,			/**< 12:				depth_dpl,			image_base		*/
-	//	kDplDepthColor,			/**< 13:				depth_dpl,			image_color		*/
-	//	kDplDepthDepth,			/**< 14:				depth_dpl,			depth			*/
-	//	kOverlapedDplDepthBase,	/**< 15:				depth_dpl,			image_base		*/
-	//	kUnknown = 99			/**< 99:				(error case)						*/
+	//	kDplImage,					/**< 8:					image_dpl							*/
+	//	kDplImageMonoS0,			/**< 9:					image_dpl,			image_mono_s0	*/
+	//	kDplImageColor,				/**< 10:				image_dpl,			image_color		*/
+	//	kDplDepth,					/**< 11:				depth_dpl							*/
+	//	kDplDepthMonoS0,			/**< 12:				depth_dpl,			image_mono_s0	*/
+	//	kDplDepthColor,				/**< 13:				depth_dpl,			image_color		*/
+	//	kDplDepthDepth,				/**< 14:				depth_dpl,			depth			*/
+	//	kOverlapedDplDepthMonoS0,	/**< 15:				depth_dpl,			image_mono_s0	*/
+	//	kUnknown = 99				/**< 99:				(error case)						*/
 	//};
 
 	const bool is_disparity = isc_feature_request->is_disparity;
-	const bool is_base_image = isc_feature_request->is_base_image;
-	const bool is_base_image_correct = isc_feature_request->is_base_image_correct;
-	const bool is_compare_image = isc_feature_request->is_compare_image;
-	const bool is_compare_image_correct = isc_feature_request->is_compare_image_correct;
+	const bool is_mono_s0_image = isc_feature_request->is_mono_s0_image;
+	const bool is_mono_s0_image_correct = isc_feature_request->is_mono_s0_image_correct;
+	const bool is_mono_s1_image = isc_feature_request->is_mono_s1_image;
+	const bool is_mono_s1_image_correct = isc_feature_request->is_mono_s1_image_correct;
 	const bool is_color_image = isc_feature_request->is_color_image;
 	const bool is_color_image_correct = isc_feature_request->is_color_image_correct;
 	const bool is_dpl_stereo_matching = isc_feature_request->is_dpl_stereo_matching;
@@ -356,11 +356,11 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
 				mode = DpcDrawLib::ImageDrawMode::kDplDepth;
 			}
-			else if (is_base_image) {
-				mode = DpcDrawLib::ImageDrawMode::kBase;
+			else if (is_mono_s0_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 			}
-			else if (is_compare_image) {
-				mode = DpcDrawLib::ImageDrawMode::kCompare;
+			else if (is_mono_s1_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS1;
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
@@ -373,42 +373,42 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 			else if (is_disparity) {
 				mode = DpcDrawLib::ImageDrawMode::kDepth;
 			}
-			else if (is_base_image) {
-				mode = DpcDrawLib::ImageDrawMode::kBase;
+			else if (is_mono_s0_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 			}
-			else if (is_compare_image) {
-				mode = DpcDrawLib::ImageDrawMode::kCompare;
+			else if (is_mono_s1_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS1;
 			}
 			else if (is_color_image) {
 				mode = DpcDrawLib::ImageDrawMode::kColor;
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kBeforeCorrect) {
-			if (is_base_image) {
-				mode = DpcDrawLib::ImageDrawMode::kBase;
+			if (is_mono_s0_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 			}
-			else if (is_compare_image) {
-				mode = DpcDrawLib::ImageDrawMode::kCompare;
+			else if (is_mono_s1_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS1;
 			}
 		}
 	}
 	else if (isc_control->draw_settings.diaplay_mode == DisplayModeDisplay::kDual) {
 		if (isc_grab_mode == IscGrabMode::kCorrect) {
 			if (is_dpl_stereo_matching) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kDplDepthMonoS0;
 				}
 				else if (is_color_image) {
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthColor;
 				}
 			}
 			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kDplDepthMonoS0;
 				}
 			}
-			else if (is_base_image && is_compare_image) {
-				mode = DpcDrawLib::ImageDrawMode::kBaseCompare;
+			else if (is_mono_s0_image && is_mono_s1_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS0MonoS1;
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
@@ -420,7 +420,7 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 					mode = DpcDrawLib::ImageDrawMode::kDplDepthDepth;
 				}
 				else {
-					mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
+					mode = DpcDrawLib::ImageDrawMode::kDplDepthMonoS0;
 				}
 			}
 			else if (is_disparity) {
@@ -428,38 +428,38 @@ DpcDrawLib::ImageDrawMode GetDrawMode(IscFeatureRequest* isc_feature_request, Is
 					mode = DpcDrawLib::ImageDrawMode::kDepthColor;
 				}
 				else {
-					mode = DpcDrawLib::ImageDrawMode::kDepthBase;
+					mode = DpcDrawLib::ImageDrawMode::kDepthMonoS0;
 				}
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kBeforeCorrect) {
-			if (is_base_image) {
-				mode = DpcDrawLib::ImageDrawMode::kBaseCompare;
+			if (is_mono_s0_image) {
+				mode = DpcDrawLib::ImageDrawMode::kMonoS0MonoS1;
 			}
 		}
 	}
 	else if (isc_control->draw_settings.diaplay_mode == DisplayModeDisplay::kOverlapped) {
 		if (isc_grab_mode == IscGrabMode::kCorrect) {
 			if (is_dpl_stereo_matching) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthMonoS0;
 				}
 			}
 			else if (is_dpl_stereo_matching && is_dpl_disparity_filter) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthMonoS0;
 				}
 			}
 		}
 		else if (isc_grab_mode == IscGrabMode::kParallax) {
 			if (is_dpl_stereo_matching) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthMonoS0;
 				}
 			}
 			else if (is_disparity) {
-				if (is_base_image) {
-					mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthBase;
+				if (is_mono_s0_image) {
+					mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthMonoS0;
 				}
 			}
 		}
@@ -475,16 +475,16 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 
 	for (int i = 0; i < 2; i++) {
 		image_data_set[0]->valid = false;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 
 		for (int j = 0; j < 2; j++) {
-			image_data_set[0]->image_data_list[j].image_base.width = 0;
-			image_data_set[0]->image_data_list[j].image_base.height = 0;
-			image_data_set[0]->image_data_list[j].image_base.channel_count = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s0.width = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s0.height = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s0.channel_count = 0;
 
-			image_data_set[0]->image_data_list[j].image_compare.width = 0;
-			image_data_set[0]->image_data_list[j].image_compare.height = 0;
-			image_data_set[0]->image_data_list[j].image_compare.channel_count = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s1.width = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s1.height = 0;
+			image_data_set[0]->image_data_list[j].image_mono_s1.channel_count = 0;
 
 			image_data_set[0]->image_data_list[j].depth.width = 0;
 			image_data_set[0]->image_data_list[j].depth.height = 0;
@@ -514,35 +514,35 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kUnknown;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
-		memset(image_data_set[0]->image_data_list[0].image_base.buffer, 64, cp_size);
+		image_data_set[0]->image_data_list[0].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[0].image_mono_s0.width * image_data_set[0]->image_data_list[0].image_mono_s0.height;
+		memset(image_data_set[0]->image_data_list[0].image_mono_s0.buffer, 64, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kBase:
-		// base image
+	case DpcDrawLib::ImageDrawMode::kMonoS0:
+		// mono sensor-0 image
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kMonoS0;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[0].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[0].image_mono_s0.width * image_data_set[0]->image_data_list[0].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[0].image_mono_s0.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kCompare:
-		// compare image
+	case DpcDrawLib::ImageDrawMode::kMonoS1:
+		// mono sensor-1 image
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kCompare;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kMonoS1;
 
-		image_data_set[0]->image_data_list[0].image_compare.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
-		image_data_set[0]->image_data_list[0].image_compare.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
-		image_data_set[0]->image_data_list[0].image_compare.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
-		cp_size = image_data_set[0]->image_data_list[0].image_compare.width * image_data_set[0]->image_data_list[0].image_compare.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_compare.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
+		image_data_set[0]->image_data_list[0].image_mono_s1.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
+		image_data_set[0]->image_data_list[0].image_mono_s1.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
+		image_data_set[0]->image_data_list[0].image_mono_s1.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
+		cp_size = image_data_set[0]->image_data_list[0].image_mono_s1.width * image_data_set[0]->image_data_list[0].image_mono_s1.height;
+		memcpy(image_data_set[0]->image_data_list[0].image_mono_s1.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDepth:
@@ -568,39 +568,39 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[0].image_color.buffer, isc_control->isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kBaseCompare:
-		// base image,compare image
+	case DpcDrawLib::ImageDrawMode::kMonoS0MonoS1:
+		// mono sensor-0 image,mono sensor-1 image
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kBaseCompare;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kMonoS0MonoS1;
 
-		image_data_set[0]->image_data_list[0].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[0].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[0].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[0].image_base.width * image_data_set[0]->image_data_list[0].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[0].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[0].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[0].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[0].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[0].image_mono_s0.width * image_data_set[0]->image_data_list[0].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[0].image_mono_s0.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_compare.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
-		image_data_set[0]->image_data_list[1].image_compare.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
-		image_data_set[0]->image_data_list[1].image_compare.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_compare.width * image_data_set[0]->image_data_list[1].image_compare.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_compare.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s1.width = isc_control->isc_image_info.frame_data[fd_index].p2.width;
+		image_data_set[0]->image_data_list[1].image_mono_s1.height = isc_control->isc_image_info.frame_data[fd_index].p2.height;
+		image_data_set[0]->image_data_list[1].image_mono_s1.channel_count = isc_control->isc_image_info.frame_data[fd_index].p2.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s1.width * image_data_set[0]->image_data_list[1].image_mono_s1.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s1.buffer, isc_control->isc_image_info.frame_data[fd_index].p2.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kDepthBase:
-		// depth data,base image
+	case DpcDrawLib::ImageDrawMode::kDepthMonoS0:
+		// depth data,mono sensor-0 image
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthMonoS0;
 
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
 		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s0.width * image_data_set[0]->image_data_list[1].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s0.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDepthColor:
@@ -620,21 +620,21 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[1].image_color.buffer, isc_control->isc_image_info.frame_data[fd_index].color.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kOverlapedDepthBase:
-		// over lapped depth data,base image
+	case DpcDrawLib::ImageDrawMode::kOverlapedDepthMonoS0:
+		// over lapped depth data,mono sensor-0 image
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthMonoS0;
 
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
 		memcpy(image_data_set[0]->image_data_list[0].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s0.width * image_data_set[0]->image_data_list[1].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s0.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplImage:
@@ -654,11 +654,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kDplImageBase:
-		// data processing result image,base image
+	case DpcDrawLib::ImageDrawMode::kDplImageMonoS0:
+		// data processing result image,mono sensor-0 image
 		*is_dpresult_mode = true;
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplImageBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplImageMonoS0;
 
 		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
 			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
@@ -670,11 +670,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[0].image_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 
 		fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_mono_s0.channel_count = isc_control->isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s0.width * image_data_set[0]->image_data_list[1].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s0.buffer, isc_control->isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplImageColor:
@@ -716,11 +716,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kDplDepthBase:
-		//  data processing result depth, base image
+	case DpcDrawLib::ImageDrawMode::kDplDepthMonoS0:
+		//  data processing result depth, mono sensor-0 image
 		*is_dpresult_mode = true;
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepthBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDplDepthMonoS0;
 
 		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
 			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
@@ -730,11 +730,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
 		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s0.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_mono_s0.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_mono_s0.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s0.width * image_data_set[0]->image_data_list[1].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s0.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	case DpcDrawLib::ImageDrawMode::kDplDepthColor:
@@ -779,11 +779,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[1].depth.buffer, isc_control->isc_image_info.frame_data[fd_index].depth.image, cp_size);
 		break;
 
-	case DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase:
+	case DpcDrawLib::ImageDrawMode::kOverlapedDplDepthMonoS0:
 		// over lapped data processing result depth
 		*is_dpresult_mode = true;
 		image_data_set[0]->valid = true;
-		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthBase;
+		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDplDepthMonoS0;
 
 		if ((shutter_mode == IscShutterMode::kDoubleShutter)) {
 			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
@@ -793,11 +793,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		cp_size = image_data_set[0]->image_data_list[0].depth_dpl.width * image_data_set[0]->image_data_list[0].depth_dpl.height * sizeof(float);
 		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
-		image_data_set[0]->image_data_list[1].image_base.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
-		image_data_set[0]->image_data_list[1].image_base.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
-		image_data_set[0]->image_data_list[1].image_base.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
-		cp_size = image_data_set[0]->image_data_list[1].image_base.width * image_data_set[0]->image_data_list[1].image_base.height;
-		memcpy(image_data_set[0]->image_data_list[1].image_base.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
+		image_data_set[0]->image_data_list[1].image_mono_s0.width = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width;
+		image_data_set[0]->image_data_list[1].image_mono_s0.height = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height;
+		image_data_set[0]->image_data_list[1].image_mono_s0.channel_count = isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.channel_count;
+		cp_size = image_data_set[0]->image_data_list[1].image_mono_s0.width * image_data_set[0]->image_data_list[1].image_mono_s0.height;
+		memcpy(image_data_set[0]->image_data_list[1].image_mono_s0.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image, cp_size);
 		break;
 
 	}

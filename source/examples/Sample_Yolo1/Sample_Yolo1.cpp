@@ -646,7 +646,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 			camera_status = false;
 		}
 
-		cv::Mat mat_base_image_scale_flip;
+		cv::Mat mat_s0_image_scale_flip;
 		if (camera_status) {
 			bool is_color_exists = false;
 			if (image_state->color_mode == 1) {
@@ -659,31 +659,31 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 			if (is_color_exists) {
 				// color image
-				cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_index].color.height, image_state->isc_image_Info.frame_data[fd_index].color.width, CV_8UC3, image_state->isc_image_Info.frame_data[fd_index].color.image);
+				cv::Mat mat_s0_image(image_state->isc_image_Info.frame_data[fd_index].color.height, image_state->isc_image_Info.frame_data[fd_index].color.width, CV_8UC3, image_state->isc_image_Info.frame_data[fd_index].color.image);
 
 				double ratio = 1.0 / (double)display_scale;
-				cv::Mat mat_base_image_scale;
-				cv::resize(mat_base_image, mat_base_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
+				cv::Mat mat_s0_image_scale;
+				cv::resize(mat_s0_image, mat_s0_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
 
-				cv::flip(mat_base_image_scale, mat_base_image_scale_flip, -1);
+				cv::flip(mat_s0_image_scale, mat_s0_image_scale_flip, -1);
 
-				cv::imshow("Base Image", mat_base_image_scale_flip);
+				cv::imshow("Base Image", mat_s0_image_scale_flip);
 			}
 			else {
 				// base image
-				cv::Mat mat_base_image(image_state->isc_image_Info.frame_data[fd_index].p1.height, image_state->isc_image_Info.frame_data[fd_index].p1.width, CV_8U, image_state->isc_image_Info.frame_data[fd_index].p1.image);
+				cv::Mat mat_s0_image(image_state->isc_image_Info.frame_data[fd_index].p1.height, image_state->isc_image_Info.frame_data[fd_index].p1.width, CV_8U, image_state->isc_image_Info.frame_data[fd_index].p1.image);
 
 				double ratio = 1.0 / (double)display_scale;
-				cv::Mat mat_base_image_scale;
-				cv::resize(mat_base_image, mat_base_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
+				cv::Mat mat_s0_image_scale;
+				cv::resize(mat_s0_image, mat_s0_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
 
-				cv::Mat mat_base_image_scale_flip_temp;
-				cv::flip(mat_base_image_scale, mat_base_image_scale_flip_temp, -1);
+				cv::Mat mat_s0_image_scale_flip_temp;
+				cv::flip(mat_s0_image_scale, mat_s0_image_scale_flip_temp, -1);
 
-				cv::Mat mat_base_image_color;
-				cv::cvtColor(mat_base_image_scale_flip_temp, mat_base_image_scale_flip, cv::COLOR_GRAY2RGB);
+				cv::Mat mat_s0_image_color;
+				cv::cvtColor(mat_s0_image_scale_flip_temp, mat_s0_image_scale_flip, cv::COLOR_GRAY2RGB);
 
-				cv::imshow("Base Image", mat_base_image_scale_flip);
+				cv::imshow("Base Image", mat_s0_image_scale_flip);
 			}
 		}
 
@@ -742,34 +742,34 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		if (data_proc_status) {
 			if (is_color_exists) {
 				// color image
-				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height,
+				cv::Mat mat_s0_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.height,
 										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.width,
 										CV_8UC3,
 										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].color.image);
 
 				double ratio = 1.0 / (double)display_scale;
-				cv::Mat mat_base_image_scale;
-				cv::resize(mat_base_image, mat_base_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
+				cv::Mat mat_s0_image_scale;
+				cv::resize(mat_s0_image, mat_s0_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
 
-				cv::flip(mat_base_image_scale, mat_data_proc_image_scale_flip, -1);
+				cv::flip(mat_s0_image_scale, mat_data_proc_image_scale_flip, -1);
 
 			}
 			else {
 				// base image
-				cv::Mat mat_base_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height,
+				cv::Mat mat_s0_image(	image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.height,
 										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.width,
 										CV_8U,
 										image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].p1.image);
 
 				double ratio = 1.0 / (double)display_scale;
-				cv::Mat mat_base_image_scale;
-				cv::resize(mat_base_image, mat_base_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
+				cv::Mat mat_s0_image_scale;
+				cv::resize(mat_s0_image, mat_s0_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
 
-				cv::Mat mat_base_image_scale_flip_temp;
-				cv::flip(mat_base_image_scale, mat_base_image_scale_flip_temp, -1);
+				cv::Mat mat_s0_image_scale_flip_temp;
+				cv::flip(mat_s0_image_scale, mat_s0_image_scale_flip_temp, -1);
 
-				cv::Mat mat_base_image_color;
-				cv::cvtColor(mat_base_image_scale_flip_temp, mat_data_proc_image_scale_flip, cv::COLOR_GRAY2RGB);
+				cv::Mat mat_s0_image_color;
+				cv::cvtColor(mat_s0_image_scale_flip_temp, mat_data_proc_image_scale_flip, cv::COLOR_GRAY2RGB);
 			}
 
 			// Yolo

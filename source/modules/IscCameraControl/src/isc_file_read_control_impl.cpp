@@ -597,10 +597,10 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 		int width = file_read_information_.raw_file_header.max_width;
 		int height = file_read_information_.raw_file_header.max_height;
 
-		isc_image_info->frame_data[frame_data_index].raw.width = width;
+		isc_image_info->frame_data[frame_data_index].raw.width = width * 2;
 		isc_image_info->frame_data[frame_data_index].raw.height = height;
 		isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
-		size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+		size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height;
 		memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
 
 		IscGrabColorMode raw_color_mode = IscGrabColorMode::kColorOFF;
@@ -621,26 +621,26 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 
 		if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
 			// mono
-			isc_image_info->frame_data[frame_data_index].raw.width = width;
+			isc_image_info->frame_data[frame_data_index].raw.width = width * 2;
 			isc_image_info->frame_data[frame_data_index].raw.height = height;
 			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
-			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height;
 			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
 		}
 		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
 			// mono
-			isc_image_info->frame_data[frame_data_index].raw.width = width;
+			isc_image_info->frame_data[frame_data_index].raw.width = width * 2;
 			isc_image_info->frame_data[frame_data_index].raw.height = height;
 			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
-			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height * 2;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height;
 			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
 		}
 		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
 			// color
-			isc_image_info->frame_data[frame_data_index].raw_color.width = width;
+			isc_image_info->frame_data[frame_data_index].raw_color.width = width * 2;
 			isc_image_info->frame_data[frame_data_index].raw_color.height = height;
 			isc_image_info->frame_data[frame_data_index].raw_color.channel_count = 1;
-			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw_color.width * isc_image_info->frame_data[frame_data_index].raw_color.height * 2;
+			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw_color.width * isc_image_info->frame_data[frame_data_index].raw_color.height;
 			memcpy(isc_image_info->frame_data[frame_data_index].raw_color.image, raw_read_data_.buffer, cp_size);
 
 			// this raw data is color;

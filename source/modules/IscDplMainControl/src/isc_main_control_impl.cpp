@@ -464,6 +464,15 @@ int IscMainControlImpl::RecieveDataProcCamera()
                 int camera_result = isc_camera_control_->GetData(&buffer_data->isc_image_info);
 
                 if (camera_result == DPC_E_OK) {
+
+                    {
+                        int fn = buffer_data->isc_image_info.frame_data[0].frameNo;
+                        char msg[128] = {};
+                        sprintf_s(msg, "[IscMainControlImpl::RecieveDataProcCamera] GetData(frame)=%d\n", fn);
+
+                        OutputDebugStringA(msg);
+                    }
+
                     // I have data from the camera
                     if (show_elaped_time) {
                         QueryPerformanceCounter(&elp_now);
@@ -477,7 +486,11 @@ int IscMainControlImpl::RecieveDataProcCamera()
                     // start data processing
                     int dpc_result = isc_data_processing_control_->Run(&buffer_data->isc_image_info);
 
-                    image_status = 1;
+                    if (dpc_result == DPC_E_OK) {
+                        image_status = 1;
+                    }
+
+
                 }// if (camera_result == DPC_E_OK) {
                 else {
                     // no data from camera
@@ -1469,18 +1482,7 @@ int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
         return ISCDPL_E_INVALID_HANDLE;
     }
 
-    // setup data processing
-    const IscDataProcStartMode* isc_dataproc_start_mode = &isc_start_mode->isc_dataproc_start_mode;
-    temp_isc_dataproc_start_mode_.enabled_stereo_matching = isc_dataproc_start_mode->enabled_stereo_matching;
-    temp_isc_dataproc_start_mode_.enabled_frame_decoder = isc_dataproc_start_mode->enabled_frame_decoder;
-    temp_isc_dataproc_start_mode_.enabled_disparity_filter = isc_dataproc_start_mode->enabled_disparity_filter;
-
-    int ret = isc_data_processing_control_->Start(isc_dataproc_start_mode);
-    if (ret != DPC_E_OK) {
-        return ret;
-    }
-
-    // setup camera
+    // setup camera conditions
     const IscGrabStartMode* isc_grab_start_mode = &isc_start_mode->isc_grab_start_mode;
     temp_isc_grab_start_mode_.isc_grab_mode = isc_grab_start_mode->isc_grab_mode;
     temp_isc_grab_start_mode_.isc_grab_color_mode = isc_grab_start_mode->isc_grab_color_mode;
@@ -1495,6 +1497,13 @@ int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
     temp_isc_grab_start_mode_.isc_play_mode_parameter.interval = isc_grab_start_mode->isc_play_mode_parameter.interval;
     swprintf_s(temp_isc_grab_start_mode_.isc_play_mode_parameter.play_file_name, L"%s", isc_grab_start_mode->isc_play_mode_parameter.play_file_name);
 
+    // setup data processing
+    const IscDataProcStartMode* isc_dataproc_start_mode = &isc_start_mode->isc_dataproc_start_mode;
+    temp_isc_dataproc_start_mode_.enabled_stereo_matching = isc_dataproc_start_mode->enabled_stereo_matching;
+    temp_isc_dataproc_start_mode_.enabled_frame_decoder = isc_dataproc_start_mode->enabled_frame_decoder;
+    temp_isc_dataproc_start_mode_.enabled_disparity_filter = isc_dataproc_start_mode->enabled_disparity_filter;
+
+    // clear buffer
     isc_image_info_ring_buffer_->Clear();
     if (temp_isc_grab_start_mode_.isc_play_mode == IscPlayMode::kPlayOn) {
         // process all data in order
@@ -1503,6 +1512,8 @@ int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
     else {
         isc_image_info_ring_buffer_->SetMode(true, true);
     }
+
+    int ret = DPC_E_OK;
 
     // setup Occlusion, Peculiar
     if (ipc_dpl_configuration_.enabled_camera) {
@@ -1532,6 +1543,13 @@ int IscMainControlImpl::Start(const IscStartMode* isc_start_mode)
         }
     }
 
+    // start dpc
+    ret = isc_data_processing_control_->Start(isc_grab_start_mode, isc_dataproc_start_mode);
+    if (ret != DPC_E_OK) {
+        return ret;
+    }
+
+    // start camera
     ret = isc_camera_control_->Start(&temp_isc_grab_start_mode_);
     if (ret != DPC_E_OK) {
         return ret;
@@ -1665,6 +1683,14 @@ int IscMainControlImpl::GetCameraData(IscImageInfo* isc_image_Info)
 
     // copy data to result
     int ret = CopyIscImageInfo(isc_image_Info, &buffer_data->isc_image_info);
+
+    {
+        int fn = isc_image_Info->frame_data[0].frameNo;
+        char msg[128] = {};
+        sprintf_s(msg, "[IscMainControlImpl::GetCameraData] GetGetBuffer(frame)=%d\n", fn);
+
+        OutputDebugStringA(msg);
+    }
 
     isc_image_info_ring_buffer_->DoneGetBuffer(get_index);
 

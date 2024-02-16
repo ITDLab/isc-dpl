@@ -971,8 +971,17 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				else {
 					// Played to end of file
 					ULONGLONG time = GetTickCount64();
-					if ((time - isc_control_.time_to_event) > (ULONGLONG)1000) {
+#ifdef _DEBUG
+					const ULONGLONG play_time_out = (ULONGLONG)2000;
+#else
+					const ULONGLONG play_time_out = (ULONGLONG)1000;
+#endif
+					if ((time - isc_control_.time_to_event) > play_time_out) {
 						isc_control_.main_state = MainStateState::kPlayStop;
+
+						TCHAR msg[128] = {};
+						_stprintf_s(msg, _T("[INFO]Play time out! stop it\n"));
+						OutputDebugString(msg);
 					}
 				}
 			}
@@ -3447,8 +3456,21 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 	if (isc_control_.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching ||
 		isc_control_.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter) {
 
+		// camera images
+		DPL_RESULT dpl_result = isc_dpl_->GetCameraData(&isc_control_.isc_image_info);
+		if (dpl_result != DPC_E_OK) {
+			return false;
+		}
+
+		// throw away previous data
+		if (isc_control_.isc_start_mode.isc_grab_start_mode.isc_grab_mode != isc_control_.isc_image_info.grab) {
+			return false;
+		}
+
+		isc_control_.is_isc_image_info_valid = true;
+
 		// deta processing result
-		DPL_RESULT dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
+		dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
 		if (dpl_result == DPC_E_OK) {
 			isc_control_.is_data_proc_result_valid = true;
 		}
@@ -3460,6 +3482,7 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 		if (isc_control_.isc_start_mode.isc_grab_start_mode.isc_grab_mode != isc_control_.isc_data_proc_result_data.isc_image_info.grab) {
 			return false;
 		}
+
 	}
 	else {
 		// camera images

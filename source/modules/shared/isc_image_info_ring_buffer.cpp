@@ -177,6 +177,52 @@ int IscImageInfoRingBuffer::Clear()
 	memset(buff_raw_,			0, buffer_count_ * one_frame_size * 2 * max_fd_count);
 	memset(buff_raw_color_,		0, buffer_count_ * one_frame_size * 2 * max_fd_count);
 
+	for (int i = 0; i < buffer_count_; i++) {
+		buffer_data_[i].inedx = i;
+		buffer_data_[i].state = 0;
+		buffer_data_[i].time = 0;
+
+		buffer_data_[i].isc_image_info.grab = IscGrabMode::kParallax;
+		buffer_data_[i].isc_image_info.color_grab_mode = IscGrabColorMode::kColorOFF;
+		buffer_data_[i].isc_image_info.shutter_mode = IscShutterMode::kManualShutter;
+		buffer_data_[i].isc_image_info.camera_specific_parameter.d_inf = 0;
+		buffer_data_[i].isc_image_info.camera_specific_parameter.bf = 0;
+		buffer_data_[i].isc_image_info.camera_specific_parameter.base_length = 0;
+		buffer_data_[i].isc_image_info.camera_specific_parameter.dz = 0;
+
+		for (int j = 0; j < max_fd_count; j++) {
+			buffer_data_[i].isc_image_info.frame_data[j].camera_status.error_code = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].camera_status.data_receive_tact_time = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].frameNo = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].gain = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].exposure = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].p1.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].p1.height = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].p1.channel_count = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].p2.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].p2.height = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].p2.channel_count = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].color.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].color.height = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].color.channel_count = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].depth.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].depth.height = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].raw.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].raw.height = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].raw.channel_count = 0;
+
+			buffer_data_[i].isc_image_info.frame_data[j].raw_color.width = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].raw_color.height = 0;
+			buffer_data_[i].isc_image_info.frame_data[j].raw_color.channel_count = 0;
+		}
+	}
+
 	return 0;
 }
 

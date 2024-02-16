@@ -1998,6 +1998,14 @@ int IscCameraControl::GetData(IscImageInfo* isc_image_info)
 		ret = GetDataLiveCamera(isc_image_info);
 	}
 
+	if (ret == DPC_E_OK) {
+		int fn = isc_image_info->frame_data[0].frameNo;
+		char msg[128] = {};
+		sprintf_s(msg, "[IscCameraControl::GetData] GetData(frame)=%d\n", fn);
+
+		OutputDebugStringA(msg);
+	}
+
 	return ret;
 }
 

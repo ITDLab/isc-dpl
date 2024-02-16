@@ -76,7 +76,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
       - source\modules\IscFrameDecoder\src\isc_framedecoder_interface.cpp  
       - source\modules\IscDisparityFilter\src\isc_disparityfilter_interface.cpp  
       - source\modules\IscStereoMatching\src\isc_stereomatching_interface.cpp  
-	    - source\modules\IscSelfCalibration\src\isc_selftcalibration_interface.cpp
+      - source\modules\IscSelfCalibration\src\isc_selftcalibration_interface.cpp  
       - source\modules\VmSdkWrapper\src\vm_sdk_wrapper.cpp  
       - source\modules\XcSdkWrapper\src\xc_sdk_wrapper.cpp  
       - source\modules\K4aSdkWrapper\src\k4a_sdk_wrapper.cpp  

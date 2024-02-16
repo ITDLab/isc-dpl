@@ -50,7 +50,7 @@ public:
 	/** @brief it will start processing.
 		@return 0, if successful.
 	 */
-	int Start(const IscDataProcStartMode* isc_dataproc_start_mode);
+	int Start(const IscGrabStartMode* isc_grab_start_mode, const IscDataProcStartMode* isc_dataproc_start_mode);
 
 	/** @brief stop processing.
 		@return 0, if successful.
@@ -129,6 +129,7 @@ private:
 
 	IscDataProcModuleConfiguration isc_data_proc_module_configuration_;
 
+	IscGrabStartMode isc_grab_start_mode_;
 	IscDataProcStartMode isc_dataproc_start_mode_;
 
 	IscImageInfoRingBuffer* isc_image_info_ring_buffer_;

@@ -68,6 +68,7 @@ const wchar_t kISC_DPL_MODULE_NAME[kISC_DPL_MODULE_COUNT][32] = { L"S/W Stereo M
 IscDataProcessingControl::IscDataProcessingControl():
     measure_time_(nullptr),
 	isc_data_proc_module_configuration_(),
+    isc_grab_start_mode_(),
     isc_dataproc_start_mode_(),
     isc_image_info_ring_buffer_(nullptr),
     isc_dataproc_resultdata_ring_buffer_(nullptr),
@@ -271,12 +272,15 @@ int IscDataProcessingControl::Terminate()
 /**
  * 処理を開始するための準備を行います.
  *
+ * @param[in] isc_grab_start_mode 動作モードを設定します
  * @param[in] isc_dataproc_start_mode 動作モードを設定します
  * @retval 0 成功
  * @retval other 失敗
  */
-int IscDataProcessingControl::Start(const IscDataProcStartMode* isc_dataproc_start_mode)
+int IscDataProcessingControl::Start(const IscGrabStartMode* isc_grab_start_mode, const IscDataProcStartMode* isc_dataproc_start_mode)
 {
+
+    isc_grab_start_mode_.isc_play_mode = isc_grab_start_mode->isc_play_mode;
 
     isc_dataproc_start_mode_.enabled_stereo_matching = isc_dataproc_start_mode->enabled_stereo_matching;
     isc_dataproc_start_mode_.enabled_frame_decoder = isc_dataproc_start_mode->enabled_frame_decoder;
@@ -890,6 +894,12 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
                     memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.image, src_isc_image_info->frame_data[i].raw_color.image, cp_size);
                 }
             }
+
+            {
+                char debug_msg[256] = {};
+                sprintf_s(debug_msg, "[IscDataProcessingControl::GetDataProcModuleData] get dp_proc data fn=%d\n", src_isc_image_info->frame_data[0].frameNo);
+                OutputDebugStringA(debug_msg);
+            }
         }
 
         isc_dataproc_resultdata_ring_buffer_->DoneGetBuffer(get_index);
@@ -924,6 +934,10 @@ int IscDataProcessingControl::Run(IscImageInfo* isc_image_info)
         }
 
         int mode = 1;
+        if (isc_grab_start_mode_.isc_play_mode == IscPlayMode::kPlayOn) {
+            // 全てのデータを処理します
+            mode = 1;
+        }
 
         if (mode == 0) {
             // sync mode
@@ -1166,6 +1180,12 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
             //char error_msg[256] = {};
             //sprintf_s(error_msg, "[ERROR] IscDataProcessingControl::AsyncRun ReleaseSemaphore failed(%d)\n", last_error);
             //OutputDebugStringA(error_msg);
+        }
+
+        {
+            char debug_msg[256] = {};
+            sprintf_s(debug_msg, "[IscDataProcessingControl::AsyncRun] start dp_proc fn=%d\n", isc_image_info->frame_data[0].frameNo);
+            OutputDebugStringA(debug_msg);
         }
     }
 

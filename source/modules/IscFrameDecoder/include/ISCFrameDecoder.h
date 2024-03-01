@@ -44,6 +44,11 @@ public:
 	 */
 	static void setFrameDecoderParameter(int crstthr, int grdcrct);
 
+	/** @brief set camera matching  parameters.
+		@return none.
+	 */
+	static void setCameraMatchingParameter(int mtchgt, int mtcwdt);
+
 	/** @brief set the upper and lower limits of parallax.
 		@return none.
 	 */
@@ -60,10 +65,25 @@ public:
 	static void decodeFrameData(int imghgt, int imgwdt, unsigned char* pfrmdat,
 		unsigned char* prgtimg, unsigned char* plftimg);
 
+	/** @brief split frame data into image data.
+		@return none.
+	 */
+	static void decodeFrameData(int imghgt, int imgwdt, unsigned char* pfrmdat,
+		unsigned short* prgtimg, unsigned short* plftimg);
+
 	/** @brief Decode disparity encoded data, perform disparity averaging and completion processing.
 		@return none.
 	 */
-	static void getDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, unsigned char* pdspenc,
+	static void getDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, unsigned char* pdspenc, int frmgain,
+		int* pblkhgt, int* pblkwdt, int* pmtchgt, int* pmtcwdt,
+		int* pblkofsx, int* pblkofsy, int* pdepth, int* pshdwdt,
+		unsigned char* pdspimg, float* ppxldsp, float* pblkdsp, int *pblkval, int *pblkcrst);
+
+	/** @brief Decode disparity encoded data, perform disparity averaging and completion processing.
+		@return none.
+	 */
+	static void getDisparityData(int imghgt, int imgwdt,
+		unsigned short* prgtimg, unsigned short* pdspenc, int frmgain,
 		int* pblkhgt, int* pblkwdt, int* pmtchgt, int* pmtcwdt,
 		int* pblkofsx, int* pblkofsy, int* pdepth, int* pshdwdt,
 		unsigned char* pdspimg, float* ppxldsp, float* pblkdsp, int *pblkval, int *pblkcrst);
@@ -85,7 +105,16 @@ private:
 	/** @brief Decode parallax encoded data.
 		@return none.
 	 */
-	static void decodeDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, unsigned char* pSrcImage,
+	static void decodeDisparityData(int imghgt, int imgwdt, unsigned char* prgtimg, 
+		unsigned char* pSrcImage, int frmgain,
+		unsigned char* pDispImage, float* pTempParallax, float* pBlockDepth,
+		int* pblkval, int* pblkcrst);
+
+	/** @brief Decode parallax encoded data.
+		@return none.
+	 */
+	static void decodeDisparityDataFor4K(int imghgt, int imgwdt, unsigned short* prgtimg,
+		unsigned short* pSrcImage, int frmgain,
 		unsigned char* pDispImage, float* pTempParallax, float* pBlockDepth,
 		int* pblkval, int* pblkcrst);
 
@@ -93,8 +122,8 @@ private:
 		@return none.
 	 */
 	static void decodeDoubleDisparityData(int imghgt, int imgwdt,
-		unsigned char* pimghigh, unsigned char* penchigh,
-		unsigned char* pimglow, unsigned char* penclow,
+		unsigned char* pimghigh, unsigned char* penchigh, int gainhigh,
+		unsigned char* pimglow, unsigned char* penclow, int gainlow,
 		unsigned char* pbldimg, unsigned char* pdspimg, float* ppxldsp, float* pblkdsp,
 		int* pblkval, int* pblkcrst);
 

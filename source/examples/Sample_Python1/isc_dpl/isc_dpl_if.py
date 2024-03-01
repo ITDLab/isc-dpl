@@ -27,8 +27,8 @@ class IscGrabMode(IntEnum) :
     kParallax = 1       #/**< 視差モード(補正後画像+視差画像) */
     kCorrect = 2        #/**< 補正後画像モード */
     kBeforeCorrect = 3  #/**< 補正前画像モード(原画像) */
-    kBayerBase = 4      #/**< 補正前Bayer画像モード(原画像) */
-    kBayerCompare = 5   #/**< 補正前Bayer画像モード(原画像)(Compare Camera) */
+    kBayerS0 = 4        #/**< 補正前Bayer画像モード(原画像) */
+    kBayerS1 = 5        #/**< 補正前Bayer画像モード(原画像)(Compare Camera) */
 
 # /** @enum  IscGrabColorMode
 #  *  @brief This is a color mode on/off 
@@ -48,12 +48,10 @@ class IscGetModeRaw(IntEnum) :
 #  *  @brief This is the request to get the color image
 #  */
 class IscGetModeColor(IntEnum) :
-    kYuv = 0            #/**< output yuv */
-    kBayer = 1          #/**< bayer output */
-    kBGR = 2            #/**< yuv(bayer) -> bgr */
-    kCorrect = 3        #/**< yuv(bayer) -> bgr -> correct */
-    kAwb = 4            #/**< yuv(bayer) -> bgr -> correct -> auto white balance */
-    kAwbNoCorrect = 5   #/**< yuv(bayer) -> bgr -> auto white balance */
+    kBGR = 0            #/**< yuv(bayer) -> bgr */
+    kCorrect = 1        #/**< yuv(bayer) -> bgr -> correct */
+    kAwb = 2            #/**< yuv(bayer) -> bgr -> correct -> auto white balance */
+    kAwbNoCorrect = 3   #/**< yuv(bayer) -> bgr -> auto white balance */
 
 # /** @enum  IscRecordMode
 #  *  @brief This is the request to save the image
@@ -89,8 +87,8 @@ class IscCameraInfo(IntEnum) :
 #  *  @brief This is a camera control parameter 
 #  */
 class IscCameraParameter(IntEnum) :
-    kBaseImage=0                #/**< [for implementation inquiries] Providing base image data */
-    kCompareImage=1             #/**< [for implementation inquiries] Providing compare image data */
+    kMonoS0Image=0                #/**< [for implementation inquiries] Providing base image data */
+    kMonoS1Image=1             #/**< [for implementation inquiries] Providing compare image data */
     kDepthData=2                #/**< [for implementation inquiries] Providing depth data */
     kColorImage=3               #/**< [for implementation inquiries] Providing color data */
     kColorImageCorrect=4        #/**< [for implementation inquiries] Providing collected color data */
@@ -106,10 +104,13 @@ class IscCameraParameter(IntEnum) :
     kGain=14                    #/**< [int] Gain setting */
     kHrMode=15                  #/**< [bool] High Resolution setting */
     kHdrMode=16                 #/**< [bool] Sensor HDR mode setting */
-    kAdjustAuto=17              #/**< [bool] Automatic adjustment valid */
-    kAdjustForce=18             #/**< [bool] Automatic adjustment forced execution */
+    kAutoCalibration=17         #/**< [bool] Automatic adjustment valid */
+    kManualCalibration=18       #/**< [bool] Automatic adjustment forced execution */
     kOcclusionRemoval=19        #/**< [int] Sets the occlusion removal value */
     kPeculiarRemoval=20         #/**< [bool] Settings to remove peculiarity */
+    kSelfCalibration=21         #/**< [bool] Software Calibration(selft calibration) valid */
+    kGenericRead=22             #/**< [uc*, uc*, int,int ] General purpose loading */
+    kGenericWrite=23            #/**< [uc*, int ] General purpose writing */
 
 # /** @enum  IscShutterMode
 #  *  @brief This is a shutter control mode 
@@ -200,8 +201,6 @@ class FrameData (Structure):
                 ("depth", DepthType),               #/**< 視差 */
                 ("raw", ImageType),                 #/**< Camera RAW (展開以前のカメラデータ） */
                 ("raw_color", ImageType),           #/**< Camera RAW Color(展開以前のカメラデータ） */
-                ("bayer_base", ImageType),          #/**< Bayer */
-                ("bayer_compare", ImageType),       #/**< Bayer */
     ]
 
 class IscImageInfo (Structure):
@@ -273,8 +272,9 @@ class IscGrabStartMode (Structure):
 # */
 class IscDataProcStartMode (Structure):
     _fields_ = [
-                ("enabled_block_matching", c_bool), # bool enabled_block_matching;                /**< whether to use a soft stereo matching */
-                ("enabled_frame_decoder", c_bool)   # bool enabled_frame_decoder;                 /**< whether to use a frame decoder */
+                ("enabled_stereo_matching", c_bool),    # bool enabled_block_matching;                  /**< whether to use a soft stereo matching */
+                ("enabled_frame_decoder", c_bool) ,     # bool enabled_frame_decoder;                   /**< whether to use a frame decoder */
+                ("enabled_disparity_filter", c_bool)    # bool enabled_disparity_filter;                /**< whether to use a disparity filter */
     ]
 
 # /** @struct  IscStartMode
@@ -295,7 +295,8 @@ class Statistics (Structure):
                 ("min_value", c_float),             #/**< minimum value */
                 ("std_dev", c_float),               #/**< standard deviation */
                 ("average", c_float),               #/**< average value */
-                ("median", c_float)                 #/**< median value */
+                ("median", c_float) ,               #/**< median value */
+                ("mode", c_float)                   #/**< most frequent value */
     ]
 
 class Roi3D (Structure):
@@ -311,6 +312,9 @@ class IscAreaDataStatistics (Structure):
                 ("y", c_int),                           #/**< top left of region */
                 ("width", c_int),                       #/**< width of region */
                 ("height", c_int),                      #/**< height of region */
+
+                ("min_distance", c_float) ,             #/**< Minimum display distance */
+                ("max_distance", c_float) ,             #/**< Maximum display distance */
 
                 ("statistics_depth", Statistics),       #/**< parallax stats */
                 ("statistics_distance", Statistics),    #/**< distance statistics */
@@ -789,6 +793,7 @@ class IscDplIf:
 
         # start mode initialize
         self.isc_start_mode = IscStartMode()
+
         self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kParallax
         self.isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode.kColorON
         self.isc_start_mode.isc_grab_start_mode.isc_get_mode.wait_time = c_int(100)
@@ -798,44 +803,50 @@ class IscDplIf:
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode = IscPlayMode.kPlayOff
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = c_int(16)
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name = u"c:/temp/dummy.dat"
-        self.isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = c_bool(False)
-        self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(False)
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
 
         # get camera parameter
-        self.base_length = c_float(0.0)
-        self.bf = c_float(0.0)
-        self.dinf = c_float(0.0)
-        self.width = c_int(0)
-        self.height = c_int(0)
+        ctypes_base_length = c_float(0.0)
+        ctypes_bf = c_float(0.0)
+        ctypes_dinf = c_float(0.0)
+        ctypes_width = c_int(0)
+        ctypes_height = c_int(0)
 
-        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kBaseLength, pointer(self.base_length));
+        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kBaseLength, pointer(ctypes_base_length));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionInfoFloat(kBaseLength) failed(0x{:08X})".format(ret))
             return 1
 
-        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kBF, pointer(self.bf));
+        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kBF, pointer(ctypes_bf));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionInfoFloat(kBF) failed(0x{:08X})".format(ret))
             return 1
 
-        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kDINF, pointer(self.dinf));
+        ret = self.DplDeviceGetOptionInfoFloat(IscCameraInfo.kDINF, pointer(ctypes_dinf));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionInfoFloat(kDINF) failed(0x{:08X})".format(ret))
             return 1
 
-        print("[INFO][IscDplIf]Base length={0:.4f},BF={1:.4f},DINF={2:.4f}".format(self.base_length.value, self.bf.value, self.dinf.value))
-
-        ret = self.DplDeviceGetOptionInfoInt(IscCameraInfo.kWidthMax, pointer(self.width));
+        ret = self.DplDeviceGetOptionInfoInt(IscCameraInfo.kWidthMax, pointer(ctypes_width));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionInfoInt(kWidthMax) failed(0x{:08X})".format(ret))
             return 1
 
-        ret = self.DplDeviceGetOptionInfoInt(IscCameraInfo.kHeightMax, pointer(self.height));
+        ret = self.DplDeviceGetOptionInfoInt(IscCameraInfo.kHeightMax, pointer(ctypes_height));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionInfoInt(kHeightMax) failed(0x{:08X})".format(ret))
             return 1
 
-        print("[INFO][IscDplIf]Width={0} Height={1}".format(self.width.value, self.height.value))
+        self.base_length = ctypes_base_length.value
+        self.bf = ctypes_bf.value
+        self.dinf = ctypes_dinf.value
+        self.width = ctypes_width.value
+        self.height = ctypes_height.value
+
+        print("[INFO][IscDplIf]Base length={0:.4f},BF={1:.4f},DINF={2:.4f}".format(self.base_length, self.bf, self.dinf))
+        print("[INFO][IscDplIf]Width={0} Height={1}".format(self.width, self.height))
 
         # set shutter mode to single shutter
         ret = self.DplDeviceSetOptionParaShMode(IscCameraParameter.kShutterMode, IscShutterMode.kSingleShutter);
@@ -843,33 +854,144 @@ class IscDplIf:
             print("[ERROR][IscDplIf]DplDeviceSetOptionParaShMode failed(0x{:08X})".format(ret))
             return 1
 
-        shutter_mode_current = c_int(0)
-        ret = self.DplDeviceGetOptionParaShMode(IscCameraParameter.kShutterMode, pointer(shutter_mode_current));
+        ctypes_shutter_mode_current = c_int(0)
+        ret = self.DplDeviceGetOptionParaShMode(IscCameraParameter.kShutterMode, pointer(ctypes_shutter_mode_current));
         if ret != 0:
             print("[ERROR][IscDplIf]DplDeviceGetOptionParaShMode failed(0x{:08X})".format(ret))
             return 1
 
-        print("[INFO][IscDplIf]Shutter mode={0}".format(shutter_mode_current.value))
+        print("[INFO][IscDplIf]Shutter mode={0}".format(ctypes_shutter_mode_current.value))
 
         # prepare dummy error image
-        image_size = self.width.value * self.height.value
+        image_size = self.width * self.height
 
         self.error_image_base = np.zeros(image_size, dtype=c_ubyte)
-        np.reshape(self.error_image_base, (self.height.value, self.width.value))
+        np.reshape(self.error_image_base, (self.height, self.width))
         self.error_image_base[:] = 0
 
         self.error_image_color = np.zeros(image_size * 3, dtype=c_ubyte)
-        np.reshape(self.error_image_color, (self.height.value, self.width.value, 3))
+        np.reshape(self.error_image_color, (self.height, self.width, 3))
         self.error_image_color[:] = 0
 
         self.error_data_depth = np.zeros(image_size, dtype=c_float)
-        np.reshape(self.error_data_depth, (self.height.value, self.width.value))
+        np.reshape(self.error_data_depth, (self.height, self.width))
         self.error_data_depth[:] = 0
 
         print("[INFO][IscDplIf]initialize was successful.")
 
         return 0
-    
+
+    def initialize_file_mode(self, file_name):
+
+        # load function from dll
+        ret = self.load_functions()
+        if ret != 0:
+            print("[ERROR][IscDplIf]load_functions failed(0x{:08X})".format(ret))
+            return 1
+        
+        print("[INFO][IscDplIf]load_functions was successful.")
+
+        # Initialize
+        self.isc_dpl_config = IscDplConfiguration()
+        self.isc_dpl_config.configuration_file_path = u"./"
+        self.isc_dpl_config.log_file_path = u"c:/temp"
+        self.isc_dpl_config.log_level = c_int(0)
+        self.isc_dpl_config.enabled_camera = c_bool(False)  # not use camera
+
+        # Temporary Camera Designation
+        self.isc_dpl_config.isc_camera_model = IscCameraModel.kXC
+
+        self.isc_dpl_config.save_image_path = u"c:/temp"
+        self.isc_dpl_config.load_image_path = u"c:/temp"
+        
+        self.isc_dpl_config.enabled_data_proc_module = c_bool(True)
+
+        ret = self.DplInitialize(self.isc_dpl_config)
+        if ret != 0:
+            print("[ERROR][IscDplIf]DplInitialize failed(0x{:08X})".format(ret))
+            return 1
+
+        # get image buffer
+        print("[INFO][IscDplIf]Initialize IscIamgeinfo")
+        self.isc_image_info = IscImageInfo()
+        ret = self.DplInitializeIscIamgeinfo(self.isc_image_info)
+        if ret != 0:
+            print("[ERROR][IscDplIf]DplInitializeIscIamgeinfo failed(0x{:08X})".format(ret))
+            return 1
+        
+        print("[INFO][IscDplIf]DplInitializeIscIamgeinfo was successful.")
+
+        # get data proc result buffer
+        print("[INFO][IscDplIf]Initialize IscDataProcResultData")
+        self.iscdataproc_result_data = IscDataProcResultData()
+        ret = self.DplInitializeIscDataProcResultData(self.iscdataproc_result_data)
+        if ret != 0:
+            print("[ERROR][IscDplIf]DplInitializeIscDataProcResultData failed(0x{:08X})".format(ret))
+            return 1
+        
+        print("[INFO][IscDplIf]DplInitializeIscDataProcResultData was successful.")
+
+        # start mode initialize
+        self.isc_start_mode = IscStartMode()
+
+        self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kParallax
+        self.isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode.kColorON
+        self.isc_start_mode.isc_grab_start_mode.isc_get_mode.wait_time = c_int(100)
+        self.isc_start_mode.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw.kRawOn
+        self.isc_start_mode.isc_grab_start_mode.isc_get_color_mode = IscGetModeColor.kAwb
+        self.isc_start_mode.isc_grab_start_mode.isc_record_mode = IscRecordMode.kRecordOff
+        self.isc_start_mode.isc_grab_start_mode.isc_play_mode = IscPlayMode.kPlayOn
+        self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = c_int(16)
+        self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name = file_name
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+        self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
+
+        # get parameter from file
+        self.isc_raw_file_header = IscRawFileHeader()
+        ret = self.DplGetFileInformation(self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, self.isc_raw_file_header)
+        if ret != 0:
+            print("[ERROR][IscDplIf]DplGetFileInformation failed(0x{:08X})".format(ret))
+            return 1
+
+        # file information
+        print("[INFO][IscDplIf]File information")
+        print("                camera model:{}".format(self.isc_raw_file_header.camera_model))
+        print("                max_width:{}".format(self.isc_raw_file_header.max_width))
+        print("                max_height:{}".format(self.isc_raw_file_header.max_height))
+        print("                Base length={0:.4f},BF={1:.4f},DINF={2:.4f}".format(self.isc_raw_file_header.base_length, self.isc_raw_file_header.bf, self.isc_raw_file_header.d_inf))
+        print("                grab_mode:{}".format(self.isc_raw_file_header.grab_mode))
+        print("                shutter_mode:{}".format(self.isc_raw_file_header.shutter_mode))
+        print("                color_mode:{}".format(self.isc_raw_file_header.color_mode))
+        print("                *If grab_mode=2, then the show parameter should be 1. If 0, no disparity is displayed")
+        
+        self.base_length = self.isc_raw_file_header.base_length
+        self.bf = self.isc_raw_file_header.bf
+        self.dinf = self.isc_raw_file_header.d_inf
+        self.width = self.isc_raw_file_header.max_width
+        self.height = self.isc_raw_file_header.max_height
+
+        print("[INFO][IscDplIf]Width={0} Height={1}".format(self.width, self.height))
+
+        # prepare dummy error image
+        image_size = self.width * self.height
+
+        self.error_image_base = np.zeros(image_size, dtype=c_ubyte)
+        np.reshape(self.error_image_base, (self.height, self.width))
+        self.error_image_base[:] = 0
+
+        self.error_image_color = np.zeros(image_size * 3, dtype=c_ubyte)
+        np.reshape(self.error_image_color, (self.height, self.width, 3))
+        self.error_image_color[:] = 0
+
+        self.error_data_depth = np.zeros(image_size, dtype=c_float)
+        np.reshape(self.error_data_depth, (self.height, self.width))
+        self.error_data_depth[:] = 0
+
+        print("[INFO][IscDplIf]initialize was successful.")
+
+        return 0
+        
     def terminate(self):
 
         ret = self.DplReleaeIscDataProcResultData(self.iscdataproc_result_data)
@@ -903,17 +1025,33 @@ class IscDplIf:
     def get_dinf(self):
         return self.dinf
 
-    def start(self, run_mode):
+    def start(self, disparity_mode, show_mode):
         # start grab
         print("[INFO][IscDplIf]start")
 
         # reset mode
-        if run_mode == 0:
+        if disparity_mode == 0:
             # camera disparity
             self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kParallax
-        elif run_mode == 1:
+
+            if show_mode == 0:
+                # Use disparity from the camera
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(False)
+            else:
+                # Use software matching disparity
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
+
+        elif disparity_mode == 1:
             # data processing disparity
             self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kCorrect
+            # Use software matching disparity
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(True)
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
 
         self.isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode.kColorON
         self.isc_start_mode.isc_grab_start_mode.isc_get_mode.wait_time = c_int(100)
@@ -923,8 +1061,47 @@ class IscDplIf:
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode = IscPlayMode.kPlayOff
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.interval = c_int(16)
         self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name = u"c:/temp/dummy.dat"
-        self.isc_start_mode.isc_dataproc_start_mode.enabled_block_matching = c_bool(True)
-        self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+
+        ret = self.DplStart(self.isc_start_mode)
+        # Error check
+        if ret != 0:
+            print("[ERROR][IscDplIf]start failed(0x{:08X})".format(ret))
+            return -1
+
+        return 0
+
+    def start_file_mode(self, show_mode, play_file_name):
+        # start grab
+        print("[INFO][IscDplIf]start file mode")
+        print("[INFO][IscDplIf]file name:{}".format(self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name))
+
+        # set up start mode from file header information
+        if self.isc_raw_file_header.grab_mode == 1:
+            self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kParallax
+
+            if show_mode == 0:
+                # Use disparity from the camera
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(False)
+            else:
+                # Use software matching disparity
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(False)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+                self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
+
+        elif self.isc_raw_file_header.grab_mode == 2:
+            self.isc_start_mode.isc_grab_start_mode.isc_grab_mode = IscGrabMode.kCorrect
+            
+            # Use software matching disparity
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_stereo_matching = c_bool(True)
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_frame_decoder = c_bool(True)
+            self.isc_start_mode.isc_dataproc_start_mode.enabled_disparity_filter = c_bool(True)
+
+        if self.isc_raw_file_header.color_mode == 1:
+            self.isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode.kColorON
+        else:        
+            self.isc_start_mode.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode.kColorOFF
 
         ret = self.DplStart(self.isc_start_mode)
         # Error check

@@ -97,6 +97,6 @@ private:
 
 	bool GetDatFileSize(TCHAR* file_name, unsigned __int64* file_size);
 
-	int ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode);
+	int ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const bool init, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode);
 
 };

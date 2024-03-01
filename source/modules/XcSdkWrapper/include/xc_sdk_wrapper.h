@@ -387,6 +387,45 @@ private:
 	};
 	DecodeBuffer decode_buffer_;
 
+	// correct table
+	// Header Total 128 byte
+	struct CCPD_Header {
+		char mark[4];
+		int version;
+		int header_size;
+		int data_size;
+		int height;
+		int width;
+		int depth;
+		int table_count;
+		int table_size;
+		char serial_number[32];
+		int reserve[15];
+	};
+
+	// Table
+	struct Configration {
+		int width, height;
+		char serial_number[32];
+	};
+
+	struct ColorCorrectTable {
+		float*** correct_table;
+		float* temp_correct_table;
+	};
+
+	struct ColorCorrectTableData {
+		char option_file_name[_MAX_PATH];
+		bool is_load;
+		char table_file_name[_MAX_PATH];
+
+		Configration configuration;
+		CCPD_Header ccpd_header;
+		ColorCorrectTable color_correct_table;
+	};
+
+	ColorCorrectTableData correct_table_data_;
+
 	/** @brief Split RAW data.
 		@return 0, if successful.
 	*/
@@ -441,6 +480,32 @@ private:
 		@return 0, if successful.
 	*/
 	int GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscImageInfo* isc_image_info);
+
+	/** @brief get rgb from YUV data.
+		@return 0, if successful.
+	*/
+	int YuvToRGB(const int width, const int height, unsigned char* yuv_data, unsigned char* bgr_image, int dwSize);
+
+	/** @brief apply correct table.
+		@return 0, if successful.
+	*/
+	int ApplyCorrectTabeToBgrImage(const int width, const int height, unsigned char* bgr_image, unsigned char* corrected_bgr_image);
+
+	/** @brief apply auto white balance table.
+		@return 0, if successful.
+	*/
+	int ApplyAutoWhiteBalanceToBgrImage(const int width, const int height, unsigned char* bgr_image, unsigned char* awb_bgr_image);
+
+
+	/** @brief read correct table fromfile.
+		@return 0, if successful.
+	*/
+	int ReadCorrectTableFile(char* file_name, Configration* config, ColorCorrectTable* color_correct_table);
+
+	/** @brief correct image.
+		@return 0, if successful.
+	*/
+	int CorrectRGBImage(const int width, const int height, float*** correc_table, const unsigned char* input_image, unsigned char* output_image);
 
 };// class XCSDKWRAPPER_API XcSdkWrapper
 

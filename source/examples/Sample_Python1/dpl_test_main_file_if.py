@@ -15,13 +15,12 @@ def main():
 
     arg_parser = argparse.ArgumentParser(
                     prog='dpl_test_main', 
-                    usage='dpl_test_main camera[0:1] disparity[0:1] show[0:1]',
+                    usage='dpl_test_main file show[0:1]',
                     description='Here is a sample of how to use the DPL',
                     epilog='end of help.',
                     add_help=True,)
     
-    arg_parser.add_argument("camera", type=int, help="0:VM 1:XC")
-    arg_parser.add_argument("disparity", type=int, help="0:Disparity from camera 1:Disparity from software matching(Force show=1)")
+    arg_parser.add_argument("file", help="file name for play")
     arg_parser.add_argument("show", type=int, help="0:Show camera results 1:Show the results of data processing")
 
     args = arg_parser.parse_args()
@@ -31,44 +30,16 @@ def main():
     print("[INFO]Current Folder:", path)
     print("")
 
-    print("[INFO]camera=", args.camera)
-    print("[INFO]disparity=", args.disparity)
+    print("[INFO]file=", args.file)
     print("[INFO]show=", args.show)
 
-    camera = args.camera
-    if camera == 0:
-        print("[INFO]camera=VM")
-    elif camera == 1:
-        print("[INFO]camera=XC")
-    else:
-        print("[ERROR]Invalid camera specified.")
-        return -1
-
-    disparity_mode = args.disparity
-    if disparity_mode == 0:
-        print("[INFO]disparity from camera")
-        # この場合は、表示を選択できます
-        show_mode = args.show
-    elif disparity_mode == 1:
-        print("[INFO]disparity from software matching")
-        # In this case, display_mode is 1
-        show_mode = 1
-    else:
-        print("[ERROR]Invalid disparity mode specified.")
-        return -1
-
-    if show_mode == 0:
-        print("[INFO]show camera results")
-    elif show_mode == 1:
-        print("[INFO]show the results of data processing")
-    else:
-        print("[ERROR]Invalid display mode specified.")
-        return -1
+    play_file_name = args.file
+    show_mode = args.show
 
     # Initialize dpl
     print("[INFO]Initialize isc_dpl_if")
     isc_dpl_if = IscDplIf()
-    ret = isc_dpl_if.initialize(camera)
+    ret = isc_dpl_if.initialize_file_mode(play_file_name)
     if ret != 0:
         print("[ERROR]isc_dpl_interface Initialize faild ret=0x{:08X}".format(ret))
         return -1
@@ -76,7 +47,7 @@ def main():
     print("[INFO]isc_dpl_if Initialize successful")
 
     # start grab
-    ret = isc_dpl_if.start(disparity_mode, show_mode)
+    ret = isc_dpl_if.start_file_mode(show_mode, play_file_name)
     if ret != 0:
         print("[ERROR]isc_dpl_if start faild ret=0x{:08X}".format(ret))
         return -1

@@ -41,6 +41,14 @@ dpl_test>.venv\Scripts\activate.bat
 例）
 (.venv) dpl_test>　ここに　DLL及び設定ファイルをコピーします
 
+注意：
+依存する幾つかのdllについて、Pythonの実行ファイルの場所へコピーが必要な場合があります。
+その場合は、SDKの提供するファイルを、Python.exeのある場所へコピーしてください
+ファイルは、以下です。
+
+　VM:ISCLibvm.dll　ISCSDKLibvm200.dll
+　XC:ISCLibxc.dll　ISCSDKLibxc.dll
+
 ６．実行
 例）
 (.venv) dpl_test>python dpl_test_main.py 1 1

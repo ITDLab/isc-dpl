@@ -442,6 +442,7 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 		break;
 	}
 	isc_image_info->grab = isc_grab_mode;
+	isc_image_info->color_grab_mode = isc_grab_color_mode;
 
 	IscShutterMode isc_shutter_mode = IscShutterMode::kManualShutter;
 	switch (file_read_information_.raw_file_header.shutter_mode) {
@@ -463,10 +464,11 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 
 	if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
 		const bool specify_mode = false;
+		const bool init_request = true;
 		const IscGrabColorMode requested_color_mode = IscGrabColorMode::kColorOFF;
 		IscGrabColorMode obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-		int ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
+		int ret = ReadOneRawData(isc_image_info, specify_mode, init_request, requested_color_mode, &obtained_color_mode);
 		
 		if (ret != DPC_E_OK) {
 			return ret;
@@ -475,10 +477,11 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 	else if (isc_grab_color_mode == IscGrabColorMode::kColorON) {
 		// 1st data
 		bool specify_mode = false;
+		bool init_request = true;
 		IscGrabColorMode requested_color_mode = IscGrabColorMode::kColorOFF;
 		IscGrabColorMode obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-		int ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
+		int ret = ReadOneRawData(isc_image_info, specify_mode, init_request, requested_color_mode, &obtained_color_mode);
 
 		if (ret != DPC_E_OK) {
 			return ret;
@@ -492,9 +495,10 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 			requested_color_mode = IscGrabColorMode::kColorOFF;
 		}
 		specify_mode = true;
+		init_request = false;
 		obtained_color_mode = IscGrabColorMode::kColorOFF;
 
-		ret = ReadOneRawData(isc_image_info, specify_mode, requested_color_mode, &obtained_color_mode);
+		ret = ReadOneRawData(isc_image_info, specify_mode, init_request, requested_color_mode, &obtained_color_mode);
 
 		if (ret != DPC_E_OK) {
 			return ret;
@@ -518,7 +522,7 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
  * @retval 0 成功
  * @retval other 失敗
  */
-int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode)
+int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const bool init, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode)
 {
 	// read from file
 	DWORD bytes_to_read = sizeof(raw_read_data_.isc_raw_data_header);
@@ -549,31 +553,34 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 	file_read_information_.total_read_size += readed_size;
 
 	const int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
-	isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
-	isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
-	isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
 
-	isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
-	isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time = 0;
+	if (init) {
+		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
+		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
+		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
 
-	isc_image_info->frame_data[frame_data_index].p1.width = 0;
-	isc_image_info->frame_data[frame_data_index].p1.height = 0;
-	isc_image_info->frame_data[frame_data_index].p1.channel_count = 0;
+		isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
+		isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time = 0;
 
-	isc_image_info->frame_data[frame_data_index].p2.width = 0;
-	isc_image_info->frame_data[frame_data_index].p2.height = 0;
-	isc_image_info->frame_data[frame_data_index].p2.channel_count = 0;
+		isc_image_info->frame_data[frame_data_index].p1.width = 0;
+		isc_image_info->frame_data[frame_data_index].p1.height = 0;
+		isc_image_info->frame_data[frame_data_index].p1.channel_count = 0;
 
-	isc_image_info->frame_data[frame_data_index].color.width = 0;
-	isc_image_info->frame_data[frame_data_index].color.height = 0;
-	isc_image_info->frame_data[frame_data_index].color.channel_count = 0;
+		isc_image_info->frame_data[frame_data_index].p2.width = 0;
+		isc_image_info->frame_data[frame_data_index].p2.height = 0;
+		isc_image_info->frame_data[frame_data_index].p2.channel_count = 0;
 
-	isc_image_info->frame_data[frame_data_index].depth.width = 0;
-	isc_image_info->frame_data[frame_data_index].depth.height = 0;
+		isc_image_info->frame_data[frame_data_index].color.width = 0;
+		isc_image_info->frame_data[frame_data_index].color.height = 0;
+		isc_image_info->frame_data[frame_data_index].color.channel_count = 0;
 
-	isc_image_info->frame_data[frame_data_index].raw.width = 0;
-	isc_image_info->frame_data[frame_data_index].raw.height = 0;
-	isc_image_info->frame_data[frame_data_index].raw.channel_count = 0;
+		isc_image_info->frame_data[frame_data_index].depth.width = 0;
+		isc_image_info->frame_data[frame_data_index].depth.height = 0;
+
+		isc_image_info->frame_data[frame_data_index].raw.width = 0;
+		isc_image_info->frame_data[frame_data_index].raw.height = 0;
+		isc_image_info->frame_data[frame_data_index].raw.channel_count = 0;
+	}
 
 	// decode
 	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_header.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;
@@ -609,10 +616,11 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 		if (ret != DPC_E_OK) {
 			return CAMCONTROL_E_READ_FILE_FAILED;
 		}
+		*obtained_color_mode = IscGrabColorMode::kColorOFF;
 	}
 	else if (file_read_information_.raw_file_header.camera_model == 1) {
 		IscCameraModel isc_camera_model = IscCameraModel::kXC;
-		IscGetModeColor isc_get_color_mode = IscGetModeColor::kAwbNoCorrect;
+		IscGetModeColor isc_get_color_mode = isc_grab_start_mode_.isc_get_color_mode;// IscGetModeColor::kAwbNoCorrect;
 
 		int width = file_read_information_.raw_file_header.max_width;
 		int height = file_read_information_.raw_file_header.max_height;
@@ -626,14 +634,18 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
 			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height;
 			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
+
+			*obtained_color_mode = IscGrabColorMode::kColorOFF;
 		}
-		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
+		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 1)) {
 			// mono
 			isc_image_info->frame_data[frame_data_index].raw.width = width * 2;
 			isc_image_info->frame_data[frame_data_index].raw.height = height;
 			isc_image_info->frame_data[frame_data_index].raw.channel_count = 1;
 			size_t cp_size = isc_image_info->frame_data[frame_data_index].raw.width * isc_image_info->frame_data[frame_data_index].raw.height;
 			memcpy(isc_image_info->frame_data[frame_data_index].raw.image, raw_read_data_.buffer, cp_size);
+
+			*obtained_color_mode = IscGrabColorMode::kColorOFF;
 		}
 		else if ((isc_grab_color_mode == IscGrabColorMode::kColorON) && (raw_read_data_.isc_raw_data_header.type == 2)) {
 			// color
@@ -645,6 +657,7 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 
 			// this raw data is color;
 			raw_color_mode = IscGrabColorMode::kColorON;
+			*obtained_color_mode = IscGrabColorMode::kColorON;
 		}
 		else {
 			// error

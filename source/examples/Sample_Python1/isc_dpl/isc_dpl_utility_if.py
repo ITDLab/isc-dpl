@@ -111,9 +111,9 @@ class IscDplUtilityIf:
         self.dpliscutility_parameter.max_width = width
         self.dpliscutility_parameter.max_height = height
 
-        base_length_d = base_length.value
-        d_inf_d = d_inf.value
-        bf_d = bf.value
+        base_length_d = base_length
+        d_inf_d = d_inf
+        bf_d = bf
         self.dpliscutility_parameter.base_length = c_double(base_length_d)
         self.dpliscutility_parameter.d_inf = c_double(d_inf_d)
         self.dpliscutility_parameter.bf = c_double(bf_d)

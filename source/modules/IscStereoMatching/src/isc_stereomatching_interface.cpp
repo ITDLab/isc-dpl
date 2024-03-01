@@ -76,14 +76,26 @@ IscStereoMatchingInterface::IscStereoMatchingInterface():
     stereo_matching_parameters_.matching_parameter.mtcwdt = 7;   // VM:6
     stereo_matching_parameters_.matching_parameter.blkofsx = 2;  // VM:2
     stereo_matching_parameters_.matching_parameter.blkofsy = 2;  // VM:2
-    stereo_matching_parameters_.matching_parameter.crstthr = 40; // VM:45
+    stereo_matching_parameters_.matching_parameter.crstthr = 50; // VM:45
 	stereo_matching_parameters_.matching_parameter.grdcrct = 0;	 // VM:0
+    stereo_matching_parameters_.matching_parameter.rmvdup = 0;	 // VM:0
+    stereo_matching_parameters_.matching_parameter.minbrtrt = 70;	 // VM:70
+
+    stereo_matching_parameters_.extension_matching_parameter.extmtc = 1;        
+    stereo_matching_parameters_.extension_matching_parameter.extlim = 10;   // VM:10
+    stereo_matching_parameters_.extension_matching_parameter.extcnf = 20;   // VM:20
 
     stereo_matching_parameters_.back_matching_parameter.enb = 1;
     stereo_matching_parameters_.back_matching_parameter.bkevlwdt = 1;    // VM:1
     stereo_matching_parameters_.back_matching_parameter.bkevlrng = 3;    // VM:3
-    stereo_matching_parameters_.back_matching_parameter.bkvldrt = 30;    // VM:30
-    stereo_matching_parameters_.back_matching_parameter.bkzrrt = 60;     // VM:60
+    stereo_matching_parameters_.back_matching_parameter.bkvldrt = 20;    // VM:20
+    stereo_matching_parameters_.back_matching_parameter.bkzrrt = 60;     // VM:80
+
+    stereo_matching_parameters_.neighbor_matching_parameter.enb = 1;
+    stereo_matching_parameters_.neighbor_matching_parameter.neibrot = 0.08; // VM:0.08
+    stereo_matching_parameters_.neighbor_matching_parameter.neibvsft = 0.1; // VM:0.1
+    stereo_matching_parameters_.neighbor_matching_parameter.neibhsft = 0.5; // VM:0.5
+    stereo_matching_parameters_.neighbor_matching_parameter.neibrng = 8;    // VM:8
 
 }	
 
@@ -244,6 +256,22 @@ int IscStereoMatchingInterface::LoadParameterFromFile(const wchar_t* file_name, 
     GetPrivateProfileString(L"MATCHING", L"grdcrct", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     stereo_matching_parameters->matching_parameter.grdcrct = _wtoi(returned_string);
 
+    GetPrivateProfileString(L"MATCHING", L"rmvdup", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->matching_parameter.rmvdup = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"MATCHING", L"minbrtrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->matching_parameter.minbrtrt = _wtoi(returned_string);
+
+    // ExtensionMatchingParameter
+    GetPrivateProfileString(L"EXT_MATCHING", L"extmtc", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->extension_matching_parameter.extmtc = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EXT_MATCHING", L"extlim", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->extension_matching_parameter.extlim = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EXT_MATCHING", L"extcnf", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->extension_matching_parameter.extcnf = _wtoi(returned_string);
+
     // BackMatchingParameter
     GetPrivateProfileString(L"BACKMATCHING", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     stereo_matching_parameters->back_matching_parameter.enb = _wtoi(returned_string);
@@ -259,6 +287,22 @@ int IscStereoMatchingInterface::LoadParameterFromFile(const wchar_t* file_name, 
 
     GetPrivateProfileString(L"BACKMATCHING", L"bkzrrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     stereo_matching_parameters->back_matching_parameter.bkzrrt = _wtoi(returned_string);
+
+    // NeighborMatchingParameter
+    GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->neighbor_matching_parameter.enb = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrot", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->neighbor_matching_parameter.neibrot = _wtof(returned_string);
+
+    GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"neibvsft", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->neighbor_matching_parameter.neibvsft = _wtof(returned_string);
+
+    GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"neibhsft", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->neighbor_matching_parameter.neibhsft = _wtof(returned_string);
+
+    GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrng", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->neighbor_matching_parameter.neibrng = _wtof(returned_string);
 
     return DPC_E_OK;
 }
@@ -313,6 +357,22 @@ int IscStereoMatchingInterface::SaveParameterToFile(const wchar_t* file_name, co
     swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.grdcrct);
     WritePrivateProfileString(L"MATCHING", L"grdcrct", string, file_name);
 
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.rmvdup);
+    WritePrivateProfileString(L"MATCHING", L"rmvdup", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->matching_parameter.minbrtrt);
+    WritePrivateProfileString(L"MATCHING", L"minbrtrt", string, file_name);
+
+    // ExtensionMatchingParameter
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->extension_matching_parameter.extmtc);
+    WritePrivateProfileString(L"EXT_MATCHING", L"extmtc", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->extension_matching_parameter.extlim);
+    WritePrivateProfileString(L"EXT_MATCHING", L"extlim", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->extension_matching_parameter.extcnf);
+    WritePrivateProfileString(L"EXT_MATCHING", L"extcnf", string, file_name);
+
     // BackMatchingParameter
     swprintf_s(string, L"%d", (int)stereo_matching_parameters->back_matching_parameter.enb);
     WritePrivateProfileString(L"BACKMATCHING", L"enb", string, file_name);
@@ -328,6 +388,22 @@ int IscStereoMatchingInterface::SaveParameterToFile(const wchar_t* file_name, co
 
     swprintf_s(string, L"%d", (int)stereo_matching_parameters->back_matching_parameter.bkzrrt);
     WritePrivateProfileString(L"BACKMATCHING", L"bkzrrt", string, file_name);
+
+    // NeighborMatchingParameter
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->neighbor_matching_parameter.enb);
+    WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"enb", string, file_name);
+
+    swprintf_s(string, L"%.3f", stereo_matching_parameters->neighbor_matching_parameter.neibrot);
+    WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrot", string, file_name);
+
+    swprintf_s(string, L"%.3f", stereo_matching_parameters->neighbor_matching_parameter.neibvsft);
+    WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"neibvsft", string, file_name);
+
+    swprintf_s(string, L"%.3f", stereo_matching_parameters->neighbor_matching_parameter.neibhsft);
+    WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"neibhsft", string, file_name);
+
+    swprintf_s(string, L"%.3f", stereo_matching_parameters->neighbor_matching_parameter.neibrng);
+    WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrng", string, file_name);
 
     return DPC_E_OK;
 }
@@ -354,7 +430,15 @@ int IscStereoMatchingInterface::SetParameterToStereoMatchingModule(const StereoM
         stereo_matching_parameters->matching_parameter.blkofsx,
         stereo_matching_parameters->matching_parameter.blkofsy,
         stereo_matching_parameters->matching_parameter.crstthr,
-        stereo_matching_parameters->matching_parameter.grdcrct
+        stereo_matching_parameters->matching_parameter.grdcrct,
+        stereo_matching_parameters->matching_parameter.rmvdup,
+        stereo_matching_parameters->matching_parameter.minbrtrt
+    );
+
+    StereoMatching::setExtensionMatchingParameter(
+        stereo_matching_parameters->extension_matching_parameter.extmtc,
+        stereo_matching_parameters->extension_matching_parameter.extlim,
+        stereo_matching_parameters->extension_matching_parameter.extcnf
     );
 
     StereoMatching::setBackMatchingParameter(
@@ -362,7 +446,16 @@ int IscStereoMatchingInterface::SetParameterToStereoMatchingModule(const StereoM
         stereo_matching_parameters->back_matching_parameter.bkevlwdt, 
         stereo_matching_parameters->back_matching_parameter.bkevlrng,
         stereo_matching_parameters->back_matching_parameter.bkvldrt,
-        stereo_matching_parameters->back_matching_parameter.bkzrrt);
+        stereo_matching_parameters->back_matching_parameter.bkzrrt
+    );
+
+    StereoMatching::setNeighborMatchingParameter(
+        stereo_matching_parameters->neighbor_matching_parameter.enb,
+        stereo_matching_parameters->neighbor_matching_parameter.neibrot,
+        stereo_matching_parameters->neighbor_matching_parameter.neibvsft,
+        stereo_matching_parameters->neighbor_matching_parameter.neibhsft,
+        stereo_matching_parameters->neighbor_matching_parameter.neibrng
+    );
 
     return DPC_E_OK;
 }
@@ -509,6 +602,13 @@ int IscStereoMatchingInterface::GetParameter(IscDataProcModuleParameter* isc_dat
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.blkofsy, L"blkofsy",  L"Matching", L"視差ブロック縦オフセット", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.crstthr, L"crstthr",  L"Matching", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.matching_parameter.grdcrct, L"grdcrct",  L"Matching", L"階調補正モードステータス 0:オフ 1:オン", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.matching_parameter.rmvdup,     L"rmvdup",      L"Matching", L"重複マッチング除去：0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.matching_parameter.minbrtrt,   L"minbrtrt",    L"Matching", L"マッチングブロック最低輝度比率(%)", &isc_data_proc_module_parameter->parameter_set[index++]);
+
+    // ExtensionMatchingParameter
+    MakeParameterSet(stereo_matching_parameters_.extension_matching_parameter.extmtc, L"extmtc", L"ExtensionMatching", L"拡張マッチング 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.extension_matching_parameter.extlim, L"extlim", L"ExtensionMatching", L"拡張マッチング探索制限幅", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.extension_matching_parameter.extcnf, L"extcnf", L"ExtensionMatching", L"拡張マッチング信頼限界", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     // BackMatchingParameter
     MakeParameterSet(stereo_matching_parameters_.back_matching_parameter.enb,        L"enb",         L"BackMatching", L"バックマッチング 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -516,6 +616,13 @@ int IscStereoMatchingInterface::GetParameter(IscDataProcModuleParameter* isc_dat
     MakeParameterSet(stereo_matching_parameters_.back_matching_parameter.bkevlrng,   L"bkevlrng",    L"BackMatching", L"バックマッチング視差評価視差値幅", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.back_matching_parameter.bkvldrt,    L"bkvldrt",     L"BackMatching", L"バックマッチング評価視差正当率（％）", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.back_matching_parameter.bkzrrt,     L"bkzrrt",      L"BackMatching", L"バックマッチング評価視差ゼロ率（％）", &isc_data_proc_module_parameter->parameter_set[index++]);
+
+    // NeighborMatchingParameter
+    MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.enb,       L"enb",         L"NeighborMatching", L"近傍マッチング 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibrot,   L"neibrot",     L"NeighborMatching", L"近傍マッチング回転角(度)", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibvsft,  L"neibvsft",    L"NeighborMatching", L"近傍マッチング垂直シフト", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibhsft,  L"neibhsft",    L"NeighborMatching", L"近傍マッチング水平シフト", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibrng,   L"neibrng",     L"NeighborMatching", L"近傍マッチング視差変化範囲", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     isc_data_proc_module_parameter->parameter_count = index;
 
@@ -601,6 +708,13 @@ int IscStereoMatchingInterface::SetParameter(IscDataProcModuleParameter* isc_dat
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.blkofsy);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.crstthr);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.grdcrct);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.rmvdup);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.matching_parameter.minbrtrt);
+
+    // ExtensionMatchingParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.extension_matching_parameter.extmtc);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.extension_matching_parameter.extlim);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.extension_matching_parameter.extcnf);
 
     // BackMatchingParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.back_matching_parameter.enb);
@@ -608,6 +722,13 @@ int IscStereoMatchingInterface::SetParameter(IscDataProcModuleParameter* isc_dat
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.back_matching_parameter.bkevlrng);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.back_matching_parameter.bkvldrt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.back_matching_parameter.bkzrrt);
+
+    // NeighborMatchingParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.enb);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibrot);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibvsft);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibhsft);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibrng);
 
     parameter_update_request_ = true;
 

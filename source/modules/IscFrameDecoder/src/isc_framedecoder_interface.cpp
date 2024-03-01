@@ -64,8 +64,11 @@ IscFramedecoderInterface::IscFramedecoderInterface():
     work_buffers_()
 {
     // defult for XC
-    frame_decoder_parameters_.decode_parameter.crstthr = 40;
-    frame_decoder_parameters_.decode_parameter.grdcrct = 0;
+    frame_decoder_parameters_.decode_parameter.crstthr = 50;    // VM:45
+    frame_decoder_parameters_.decode_parameter.grdcrct = 0;     // When grdcrct==1: crstthr=XC:15 VM:15
+
+    frame_decoder_parameters_.camera_matching_parameter.mtchgt = 4;
+    frame_decoder_parameters_.camera_matching_parameter.mtcwdt = 4;
 
     frame_decoder_parameters_.disparity_limitation_parameter.limit = 0;
     frame_decoder_parameters_.disparity_limitation_parameter.lower = 0;
@@ -186,6 +189,13 @@ int IscFramedecoderInterface::LoadParameterFromFile(const wchar_t* file_name, Fr
     GetPrivateProfileString(L"DECODE", L"grdcrct", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->decode_parameter.grdcrct = _wtoi(returned_string);
 
+    // CameraMatchingParameter
+    GetPrivateProfileString(L"CAMERA_MATCHING", L"mtchgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->camera_matching_parameter.mtchgt = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"CAMERA_MATCHING", L"mtcwdt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->camera_matching_parameter.mtcwdt = _wtoi(returned_string);
+
     // DisparityLimitationParameter
     GetPrivateProfileString(L"DISPARITY_LIMITATION", L"limit", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->disparity_limitation_parameter.limit = _wtoi(returned_string);
@@ -220,6 +230,13 @@ int IscFramedecoderInterface::SaveParameterToFile(const wchar_t* file_name, cons
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->decode_parameter.grdcrct);
     WritePrivateProfileString(L"DECODE", L"grdcrct", string, file_name);
 
+    // CameraMatchingParameter
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->camera_matching_parameter.mtchgt);
+    WritePrivateProfileString(L"CAMERA_MATCHING", L"mtchgt", string, file_name);
+
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->camera_matching_parameter.mtcwdt);
+    WritePrivateProfileString(L"CAMERA_MATCHING", L"mtcwdt", string, file_name);
+
     // DisparityLimitationParameter
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->disparity_limitation_parameter.limit);
     WritePrivateProfileString(L"DISPARITY_LIMITATION", L"limit", string, file_name);
@@ -246,6 +263,10 @@ int IscFramedecoderInterface::SetParameterToFrameDecoderModule(const FrameDecode
     ISCFrameDecoder::setFrameDecoderParameter(
          frame_decoder_parameters->decode_parameter.crstthr,
          frame_decoder_parameters->decode_parameter.grdcrct);
+
+    ISCFrameDecoder::setCameraMatchingParameter(
+        frame_decoder_parameters->camera_matching_parameter.mtchgt,
+        frame_decoder_parameters->camera_matching_parameter.mtcwdt);
 
     ISCFrameDecoder::setDisparityLimitation(
         frame_decoder_parameters->disparity_limitation_parameter.limit,
@@ -392,6 +413,10 @@ int IscFramedecoderInterface::Terminate()
     MakeParameterSet(frame_decoder_parameters_.decode_parameter.crstthr, L"crstthr", L"Decode", L"コントラスト閾値", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.decode_parameter.grdcrct, L"grdcrct", L"Decode", L"階調補正モードステータス 0:オフ 1:オン", &isc_data_proc_module_parameter->parameter_set[index++]);
 
+    // CameraMatchingParameter
+    MakeParameterSet(frame_decoder_parameters_.camera_matching_parameter.mtchgt, L"mtchgt", L"CameraMatching", L"マッチングブロック高さ", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.camera_matching_parameter.mtcwdt, L"mtcwdt", L"CameraMatching", L"マッチングブロック幅", &isc_data_proc_module_parameter->parameter_set[index++]);
+
     // DisparityLimitationParameter
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.limit, L"limit", L"DisparityLimitation", L"視差値の制限　0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.disparity_limitation_parameter.lower, L"lower", L"DisparityLimitation", L"視差値の下限", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -475,6 +500,10 @@ int IscFramedecoderInterface::Terminate()
     // DecodeParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.crstthr);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.decode_parameter.grdcrct);
+
+    // CameraMatchingParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.camera_matching_parameter.mtchgt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.camera_matching_parameter.mtcwdt);
 
     // DisparityLimitationParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.disparity_limitation_parameter.limit);
@@ -600,6 +629,7 @@ int IscFramedecoderInterface::Terminate()
     work_buffers_.buff_image[3].channel_count = 1;
     unsigned char* pdspimg = work_buffers_.buff_image[3].image;
 
+    int frmgain = isc_image_Info->frame_data[fd_index].gain;
     int* pblkhgt = &isc_block_disparity_data->blkhgt;
     int* pblkwdt = &isc_block_disparity_data->blkwdt;
     int* pmtchgt = &isc_block_disparity_data->mtchgt;
@@ -619,6 +649,7 @@ int IscFramedecoderInterface::Terminate()
         decode_width,   // 画像の幅
         prgtimg,        // 右（基準）画像データ 右下原点
         plftimg,        // 視差エンコードデータ
+        frmgain,        // 画像フレームのセンサーゲイン値
         pblkhgt,        // 視差ブロック高さ
         pblkwdt,        // 視差ブロック幅
         pmtchgt,        // マッチングブロック高さ

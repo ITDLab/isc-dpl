@@ -117,7 +117,7 @@ private:
 		int rndwgt;		/**< ブロックの重み（周辺） */
 	};
 
-	struct ComplementParameter {
+	struct InterpolateParameter {
 		int enb;		/**< 補完処理しない：0 する：1 */
 		double lowlmt;	/**< 視補完最小視差値 */
 		double slplmt;	/**< 補完幅の最大視差勾配 */
@@ -128,7 +128,7 @@ private:
 		double hlsz;	/**< 穴埋め幅 */
 	};
 
-	struct EdgeComplementParameter {
+	struct EdgeInterpolateParameter {
 		int edgcmp;		/**< エッジ補完 0:しない 1:する */
 		int minblks;	/**< エッジ線分上の最小視差ブロック数 */
 		double mincoef;	/**< エッジ視差の最小線形性指数（回帰線の決定係数） */
@@ -148,8 +148,8 @@ private:
 		DisparityLimitationParameter disparity_limitation_parameter;
 		AveragingParameter averaging_parameter;
 		AveragingBlockWeightParameter averaging_block_weight_parameter;
-		ComplementParameter complement_parameter;
-		EdgeComplementParameter edge_complement_parameter;
+		InterpolateParameter interpolate_parameter;
+		EdgeInterpolateParameter edge_interpolate_parameter;
 		HoughTransformParameter hough_transferm_parameter;
 	};
 

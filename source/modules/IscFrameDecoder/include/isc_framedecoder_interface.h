@@ -94,6 +94,11 @@ private:
 		int grdcrct;	/**< 階調補正モードステータス 0:オフ 1:オン */
 	};
 
+	struct CameraMatchingParameter {
+		int mtchgt;		/**< マッチングブロック高さ */
+		int mtcwdt;		/**< マッチングブロック幅 */
+	};
+
 	struct DisparityLimitationParameter {
 		int limit;		/**< 視差値の制限　0:しない 1:する */
 		int lower;		/**< 視差値の下限 */
@@ -102,6 +107,7 @@ private:
 
 	struct FrameDecoderParameters {
 		DisparityLimitationParameter disparity_limitation_parameter;
+		CameraMatchingParameter camera_matching_parameter;
 		DecodeParameter decode_parameter;
 	};
 

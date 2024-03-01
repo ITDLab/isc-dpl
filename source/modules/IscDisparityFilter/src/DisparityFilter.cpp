@@ -191,11 +191,11 @@ static int dispLowerLimit = 0;
 static int dispUpperLimit = 255 * MATCHING_SUBPIXEL_TIMES;
 
 /// <summary>
-/// 視差補完
+/// 視差補間
 /// </summary>
 
 /// <summary>
-/// 視差補完処理のための視差値
+/// 視差補間処理のための視差値
 /// </summary>
 /// <remarks>
 /// ブロック単位
@@ -203,7 +203,7 @@ static int dispUpperLimit = 255 * MATCHING_SUBPIXEL_TIMES;
 static int *blkcmp;
 
 /// <summary>
-/// 視差補完処理のための重み
+/// 視差補間処理のための重み
 /// </summary>
 /// <remarks>
 /// ブロック単位
@@ -211,47 +211,47 @@ static int *blkcmp;
 static int *wgtcmp;
 
 /// <summary>
-/// 視差を補完する
+/// 視差を補間する
 /// </summary>
-static int dispComplementDisparity = 0;
+static int dispInterpolateDisparity = 0;
 
 /// <summary>
-/// 視差を補完する最小視差値 
+/// 視差を補間する最小視差値 
 /// </summary>
-static double dispComplementLowLimit = 5;
+static double dispInterpolateLowLimit = 5;
 
 /// <summary>
-/// 視差の補完幅の最大視差勾配
+/// 視差の補間幅の最大視差勾配
 /// </summary>
-static double dispComplementSlopeLimit = 0.1;
+static double dispInterpolateSlopeLimit = 0.1;
 
 /// <summary>
-/// 視差を補完する画素幅の視差値倍率（内側）
+/// 視差を補間する画素幅の視差値倍率（内側）
 /// </summary>
-static double dispComplementRatioInside = 1.0;
+static double dispInterpolateRatioInside = 1.0;
 
 /// <summary>
-/// 視差を補完する画素幅の視差値倍率（周辺）
+/// 視差を補間する画素幅の視差値倍率（周辺）
 /// </summary>
-static double dispComplementRatioRound = 0.1;
+static double dispInterpolateRatioRound = 0.1;
 
 /// <summary>
-/// 視差を補完するコントラストの上限値
+/// 視差を補間するコントラストの上限値
 /// </summary>
 /// <remarks>
 /// コントラスト x 1000
 /// </remarks>
-static int dispComplementContrastLimit = 20;
+static int dispInterpolateContrastLimit = 50;
 
 /// <summary>
-/// 視差補完領域の穴埋め　0:しない 1:する
+/// 視差補間領域の穴埋め　0:しない 1:する
 /// </summary>
-static int dispComplementHoleFilling = 0;
+static int dispInterpolateHoleFilling = 0;
 
 /// <summary>
-/// 視差補完領域の穴埋め幅（画素数）
+/// 視差補間領域の穴埋め幅（画素数）
 /// </summary>
-static double dispComplementHoleSize = 8.0;
+static double dispInterpolateHoleSize = 8.0;
 
 
 /// <summary>
@@ -296,9 +296,9 @@ struct BNAD_THREAD_INFO {
 static BNAD_THREAD_INFO bandInfo[MAX_NUM_OF_BANDS];
 
 /// <summary>
-/// エッジ補完 0:しない 1:する
+/// エッジ補間 0:しない 1:する
 /// </summary>
-static int edgeLineComplement = 1;
+static int edgeLineInterpolate = 0;
 
 /// <summary>
 /// エッジ検出 Canny閾値1
@@ -336,19 +336,19 @@ static int edgeLineMinBlocks = 20;
 static double edgeLineMinLinearity = 20.0;
 
 /// <summary>
-/// エッジ線の視差ブロックの補完幅
+/// エッジ線の視差ブロックの補間幅
 /// </summary>
-static int edgeLineComplementWidth = 1;
+static int edgeLineInterpolateWidth = 1;
 
 /// <summary>
-/// 視差ブロックの補完幅の上限
+/// 視差ブロックの補間幅の上限
 /// </summary>
-static int edgeComplementWidthUpper = 0;
+static int edgeInterpolateWidthUpper = 0;
 
 /// <summary>
-/// 視差ブロックの補完幅の下限
+/// 視差ブロックの補間幅の下限
 /// </summary>
-static int edgeComplementWidthLower = 0;
+static int edgeInterpolateWidthLower = 0;
 
 
 // エッジ線の最大数
@@ -378,9 +378,9 @@ static int lineBlockValues[MaxLineLength];
 static int lineBlockWeight[MaxLineLength];
 
 /// <summary>
-/// エッジ線上の視差ブロックの補完値
+/// エッジ線上の視差ブロックの補間値
 /// </summary>
-static int lineBlockComplement[MaxLineLength];
+static int lineBlockInterpolate[MaxLineLength];
 
 /// <summary>
 /// エッジ線上の視差平均化移動積分幅（片側）
@@ -399,9 +399,9 @@ void DisparityFilter::initialize(int imghgt, int imgwdt)
 	average_disp = (float *)malloc(imghgt * imgwdt * sizeof(float));
 	// 特異点除去処理、視差平均化のための視差値コピー)
 	wrk = (int *)malloc(imghgt * imgwdt * sizeof(int));
-	// 視差補完処理のための視差値c
+	// 視差補間処理のための視差値c
 	blkcmp = (int *)malloc(imgwdt * sizeof(int));
-	// 視差補完処理のための重み
+	// 視差補間処理のための重み
 	wgtcmp = (int *)malloc(imgwdt * sizeof(int));
 
 
@@ -418,9 +418,9 @@ void DisparityFilter::finalize()
 	free(average_disp);
 	// 特異点除去処理、視差平均化のための視差値(block_disp[]からコピー)
 	free(wrk);
-	// 視差補完処理のための視差値c
+	// 視差補間処理のための視差値c
 	free(blkcmp);
-	// 視差補完処理のための重み
+	// 視差補間処理のための重み
 	free(wgtcmp);
 
 
@@ -508,71 +508,71 @@ void DisparityFilter::setAveragingBlockWeight(int cntwgt, int nrwgt, int rndwgt)
 
 
 /// <summary>
-/// 視差補完パラメータを設定する
+/// 視差補間パラメータを設定する
 /// </summary>
-/// <param name="enb">補完処理しない：0 する：1(IN)</param>
-/// <param name="lowlmt">補完最小視差値(IN)</param>
-/// <param name="slplmt">補完幅の最大視差勾配(IN)</param>
-/// <param name="insrt">補完画素幅の視差値倍率（内側）(IN)</param>
-/// <param name="rndrt">補完画素幅の視差値倍率（周辺）(IN)</param>
-/// <param name="crstlmt">補完ブロックのコントラスト上限値(IN)</param>
+/// <param name="enb">補間処理しない：0 する：1(IN)</param>
+/// <param name="lowlmt">補間最小視差値(IN)</param>
+/// <param name="slplmt">補間幅の最大視差勾配(IN)</param>
+/// <param name="insrt">補間画素幅の視差値倍率（内側）(IN)</param>
+/// <param name="rndrt">補間画素幅の視差値倍率（周辺）(IN)</param>
+/// <param name="crstlmt">補間ブロックのコントラスト上限値(IN)</param>
 /// <param name="hlfil">穴埋め処理しない：0 する：1 (IN)</param>
 /// <param name="hlsz">穴埋め幅 (IN)</param>
-void DisparityFilter::setComplementParameter(int enb, double lowlmt, double slplmt, 
+void DisparityFilter::setInterpolateParameter(int enb, double lowlmt, double slplmt,
 	double insrt, double rndrt, int crstlmt, int hlfil, double hlsz)
 {
 
-	// 視差を補完する
-	dispComplementDisparity = enb;
-	// 視差を補完する最小視差値
-	dispComplementLowLimit = lowlmt;
-	// 視差の補完幅の最大視差勾配
-	dispComplementSlopeLimit = slplmt;
+	// 視差を補間する
+	dispInterpolateDisparity = enb;
+	// 視差を補間する最小視差値
+	dispInterpolateLowLimit = lowlmt;
+	// 視差の補間幅の最大視差勾配
+	dispInterpolateSlopeLimit = slplmt;
 
-	// 視差を補完する画素幅の視差値倍率（内側）
-	dispComplementRatioInside = insrt;
-	// 視差を補完する画素幅の視差値倍率（周辺）
-	dispComplementRatioRound = rndrt;
+	// 視差を補間する画素幅の視差値倍率（内側）
+	dispInterpolateRatioInside = insrt;
+	// 視差を補間する画素幅の視差値倍率（周辺）
+	dispInterpolateRatioRound = rndrt;
 
-	// 補完ブロックのコントラスト上限値
-	dispComplementContrastLimit = crstlmt;
+	// 補間ブロックのコントラスト上限値
+	dispInterpolateContrastLimit = crstlmt;
 
-	// 視差補完領域の穴埋め　0:しない 1:する
-	dispComplementHoleFilling = hlfil;
-	// 視差補完領域の穴埋め幅
-	dispComplementHoleSize = hlsz;
+	// 視差補間領域の穴埋め　0:しない 1:する
+	dispInterpolateHoleFilling = hlfil;
+	// 視差補間領域の穴埋め幅
+	dispInterpolateHoleSize = hlsz;
 
 }
 
 
 /// <summary>
-/// エッジ補完パラメータを設定する
+/// エッジ補間パラメータを設定する
 /// </summary>
-/// <param name="edgcmp">エッジ補完 0:しない 1:する(IN)</param>
+/// <param name="edgcmp">エッジ補間 0:しない 1:する(IN)</param>
 /// <param name="minblks">エッジ線分上の最小視差ブロック数(IN)</param>
 /// <param name="mincoef">エッジ視差の最小線形性指数（回帰線の決定係数）(IN)</param>
-/// <param name="cmpwdt">エッジ線の補完視差ブロック幅(IN)</param>
-void DisparityFilter::setEdgeComplementParameter(int edgcmp, int minblks, double mincoef, int cmpwdt)
+/// <param name="cmpwdt">エッジ線の補間視差ブロック幅(IN)</param>
+void DisparityFilter::setEdgeInterpolateParameter(int edgcmp, int minblks, double mincoef, int cmpwdt)
 {
-	// エッジ補完 0:しない 1:する
-	edgeLineComplement = edgcmp;
+	// エッジ補間 0:しない 1:する
+	edgeLineInterpolate = edgcmp;
 
 	// エッジ線分上の最小視差ブロック数
 	edgeLineMinBlocks = minblks;
 	// エッジ視差の最小線形性指数（回帰線の決定係数）
 	edgeLineMinLinearity = mincoef;
-	// 視差ブロックの補完幅
-	edgeLineComplementWidth = cmpwdt;
+	// 視差ブロックの補間幅
+	edgeLineInterpolateWidth = cmpwdt;
 
-	// 視差ブロックの補完幅の上限、下限
-	int lnwdt = edgeLineComplementWidth - 1;
+	// 視差ブロックの補間幅の上限、下限
+	int lnwdt = edgeLineInterpolateWidth - 1;
 	if (lnwdt > 0) {
-		edgeComplementWidthUpper = lnwdt / 2;
-		edgeComplementWidthLower = (-1) * (lnwdt % 2 + edgeComplementWidthUpper);
+		edgeInterpolateWidthUpper = lnwdt / 2;
+		edgeInterpolateWidthLower = (-1) * (lnwdt % 2 + edgeInterpolateWidthUpper);
 	}
 	else {
-		edgeComplementWidthUpper = 0;
-		edgeComplementWidthLower = 0;
+		edgeInterpolateWidthUpper = 0;
+		edgeInterpolateWidthLower = 0;
 	}
 
 }
@@ -629,7 +629,7 @@ bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char
 	unsigned char* pdspimg, float* ppxldsp, float* pblkdsp)
 {
 
-	if (dispAveDisp == 0 && edgeLineComplement == 0) {
+	if (dispAveDisp == 0 && edgeLineInterpolate == 0) {
 		return false;
 	}
 
@@ -655,8 +655,8 @@ bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char
 	// 視差ブロック縦オフセット
 	dispBlockOffsetY = dspofsy;
 
-	// エッジ線を補完する
-	if (edgeLineComplement == 1) {
+	// エッジ線を補間する
+	if (edgeLineInterpolate == 1) {
 		sharpenLinearEdge(imghgt, imgwdt, prgtimg,
 			blkhgt, blkwdt, mtchgt, mtcwdt, dspofsx, dspofsy, depth, shdwdt,
 			pblkval);
@@ -672,13 +672,13 @@ bool DisparityFilter::averageDisparityData(int imghgt, int imgwdt, unsigned char
 			getAveragingDisparityOpenCV(imghgt, imgwdt, pblkval, average_disp);
 		}
 
-		// 視差補完する
-		if (dispComplementDisparity == 1) {
-			getComplementDisparity(imghgt, imgwdt, pblkval, pblkcrst);
+		// 視差補間する
+		if (dispInterpolateDisparity == 1) {
+			getInterpolateDisparity(imghgt, imgwdt, pblkval, pblkcrst);
 		}
 
 		// 視差穴埋めをする
-		if (dispComplementHoleFilling == 1) {
+		if (dispInterpolateHoleFilling == 1) {
 			getHoleFillingDisparity(imghgt, imgwdt, pblkval, pblkcrst);
 		}
 	}
@@ -718,7 +718,7 @@ void DisparityFilter::sharpenLinearEdge(int imghgt, int imgwdt, unsigned char* p
 	// 線分上の視差ブロックを取得する
 	getLineSegmentBlocks(imghgt, imgwdt, prgtimg,
 		blkhgt, blkwdt, mtchgt, mtcwdt, dspofsx, dspofsy, depth, shdwdt,
-		pblkval, linno, LineSegments, lineBlockPoints, lineBlockValues, lineBlockWeight, lineBlockComplement);
+		pblkval, linno, LineSegments, lineBlockPoints, lineBlockValues, lineBlockWeight, lineBlockInterpolate);
 
 }
 
@@ -919,7 +919,7 @@ static char *kernelAverageDisparity = (char*)"__kernel void kernelAverageDispari
 		result[idx] = ave;\n\
 	}\n\
 	else {\n\
-		result[idx] = 0.0;\n\
+		result[idx] = 0.0f;\n\
 	}\n\
 }";
 
@@ -942,7 +942,7 @@ static cv::ocl::Program kernelProgramAveraging;
 /// <summary>
 /// カーネルオブジェクト
 /// </summary>
-cv::ocl::Kernel kernelObjectAveraging;
+static cv::ocl::Kernel kernelObjectAveraging;
 
 /// <summary>
 /// glaobalWorkSize
@@ -1347,7 +1347,7 @@ void DisparityFilter::getDisparityImage(int imghgt, int imgwdt,
 
 			// 視差値の範囲を制限する
 			// 範囲を超えた場合は視差なしにする
-			// 補完で埋め戻す
+			// 補間で埋め戻す
 			if (dispLimitation == 1 &&
 				(dsp < dispLowerLimit || dsp > dispUpperLimit)) {
 				dsp = 0.0;
@@ -1377,19 +1377,19 @@ void DisparityFilter::getDisparityImage(int imghgt, int imgwdt,
 
 
 /// <summary>
-/// 視差を補完する
+/// 視差を補間する
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-void DisparityFilter::getComplementDisparity(int imghgt, int imgwdt, int* pblkval, int* pblkcrst)
+void DisparityFilter::getInterpolateDisparity(int imghgt, int imgwdt, int* pblkval, int* pblkcrst)
 {
-	// 視差を補完する
-	getVerticalComplementDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
-	getHorizontalComplementDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
-	getDiagonalUpComplementDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
-	getDiagonalDownComplementDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
+	// 視差を補間する
+	getVerticalInterpolateDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
+	getHorizontalInterpolateDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
+	getDiagonalUpInterpolateDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
+	getDiagonalDownInterpolateDisparity(imghgt, imgwdt, false, pblkval, pblkcrst);
 
 }
 
@@ -1403,26 +1403,26 @@ void DisparityFilter::getComplementDisparity(int imghgt, int imgwdt, int* pblkva
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
 void DisparityFilter::getHoleFillingDisparity(int imghgt, int imgwdt, int* pblkval, int* pblkcrst)
 {
-	// 視差補完領域の穴埋めをする
-	getHorizontalComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
-	getVerticalComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
-	getDiagonalUpComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
-	getDiagonalDownComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
-	getHorizontalComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
-	getVerticalComplementDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	// 視差補間領域の穴埋めをする
+	getHorizontalInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	getVerticalInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	getDiagonalUpInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	getDiagonalDownInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	getHorizontalInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
+	getVerticalInterpolateDisparity(imghgt, imgwdt, true, pblkval, pblkcrst);
 
 }
 
 
 /// <summary>
-/// 視差なしを補完する
+/// 視差なしを補間する
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="holefill">補完領域の穴埋め(IN)</param>
+/// <param name="holefill">補間領域の穴埋め(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-void DisparityFilter::getHorizontalComplementDisparity(int imghgt, int imgwdt, bool holefill,
+void DisparityFilter::getHorizontalInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 	int* pblkval, int* pblkcrst)
 {
 	int id, jd, ie, je, pj, pi;
@@ -1439,20 +1439,20 @@ void DisparityFilter::getHorizontalComplementDisparity(int imghgt, int imgwdt, b
 	int hztOfs = dispAveBlockWidth;
 
 	// 左上原点正立画像　
-	// 補完走査の先頭は左端
+	// 補間走査の先頭は左端
 	for (jd = vrtOfs; jd < je - vrtOfs; jd++) {
 		// ブロック前方走査
 		// 左から右
 		for (id = hztOfs; id < ie - hztOfs; id++) {
-			complementForward(imgblkwdt, id, hztOfs, jd, id, pblkval);
+			interpolateForward(imgblkwdt, id, hztOfs, jd, id, pblkval);
 		}
 		// ブロック後方走査
 		// 右から左　
 		int stid = id - 1;
 		for (id = stid; id >= hztOfs; id--) {
-			complementBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
+			interpolateBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockWidth,
-				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
+				dispInterpolateRatioInside, dispInterpolateRatioRound, dispInterpolateRatioRound);
 		}
 	}
 
@@ -1460,14 +1460,14 @@ void DisparityFilter::getHorizontalComplementDisparity(int imghgt, int imgwdt, b
 
 
 /// <summary>
-/// 垂直走査で視差なしを補完する
+/// 垂直走査で視差なしを補間する
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="holefill">補完領域の穴埋め(IN)</param>
+/// <param name="holefill">補間領域の穴埋め(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-void DisparityFilter::getVerticalComplementDisparity(int imghgt, int imgwdt, bool holefill, 
+void DisparityFilter::getVerticalInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 	int* pblkval, int* pblkcrst)
 {
 	int id, jd, ie, je, pj, pi;
@@ -1484,34 +1484,34 @@ void DisparityFilter::getVerticalComplementDisparity(int imghgt, int imgwdt, boo
 	int hztOfs = dispAveBlockWidth;
 
 	// 左上原点正立画像　
-	// 補完走査の先頭は上端
+	// 補間走査の先頭は上端
 	for (id = hztOfs; id < ie - hztOfs; id++) {
 		// ブロック下方走査
 		// 上から下
 		for (jd = vrtOfs; jd < je - vrtOfs; jd++) {
-			complementForward(imgblkwdt, jd, vrtOfs, jd, id, pblkval);
+			interpolateForward(imgblkwdt, jd, vrtOfs, jd, id, pblkval);
 		}
 		// ブロック上方走査
 		// 下から上
 		int stjd = jd - 1;
 		for (jd = stjd; jd >= vrtOfs; jd--) {
-			complementBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
+			interpolateBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockHeight,
-				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
+				dispInterpolateRatioInside, dispInterpolateRatioRound, dispInterpolateRatioRound);
 		}
 	}
 }
 
 
 /// <summary>
-/// 対角下向き走査で視差なしを補完する
+/// 対角下向き走査で視差なしを補間する
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="holefill">補完領域の穴埋め(IN)</param>
+/// <param name="holefill">補間領域の穴埋め(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt, bool holefill, 
+void DisparityFilter::getDiagonalDownInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 	int* pblkval, int* pblkcrst)
 {
 	int id, jd, ie, je, pj, pi;
@@ -1533,8 +1533,8 @@ void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt,
 	idd = hztOfs - 1;
 
 	// 左上原点正立画像
-	// 左上から右下へ斜め方向の補完
-	// 補完走査の先頭は左上端
+	// 左上から右下へ斜め方向の補間
+	// 補間走査の先頭は左上端
 	// 先ず走査の先頭を左上端から右へ　走査の先頭は常に上端
 	// 次に走査の先頭を左上端から下へ　走査の先頭は常に左端
 	for (ij = 0; ij < (je + ie); ij++) {
@@ -1558,15 +1558,15 @@ void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt,
 		// ブロック斜め右下走査
 		//  左上から右下
 		for (jd = jdd, id = idd; (jd < (je - vrtOfs)) && (id < (ie - hztOfs)); jd++, id++) {
-			complementForward(imgblkwdt, id, idd, jd, id, pblkval);
+			interpolateForward(imgblkwdt, id, idd, jd, id, pblkval);
 		}
 		// ブロック斜め左上走査
 		// 右下から左上
 		int stid = id - 1;
 		for (jd = jd - 1, id = stid; jd >= vrtOfs && id >= hztOfs; jd--, id--) {
-			complementBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
+			interpolateBackward(imgblkwdt, id, stid, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockDiagonal,
-				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
+				dispInterpolateRatioInside, dispInterpolateRatioRound, dispInterpolateRatioRound);
 		}
 	}
 
@@ -1574,14 +1574,14 @@ void DisparityFilter::getDiagonalDownComplementDisparity(int imghgt, int imgwdt,
 
 
 /// <summary>
-/// 対角上向き走査で視差なしを補完する
+/// 対角上向き走査で視差なしを補間する
 /// </summary>
 /// <param name="imghgt">画像の高さ(IN)</param>
 /// <param name="imgwdt">画像の幅(IN)</param>
-/// <param name="holefill">補完領域の穴埋め(IN)</param>
+/// <param name="holefill">補間領域の穴埋め(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, bool holefill,
+void DisparityFilter::getDiagonalUpInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 	int* pblkval, int* pblkcrst)
 {
 	int id, jd, ie, je, pj, pi;
@@ -1606,10 +1606,10 @@ void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, b
 	idd = hztOfs - 1;
 
 	// 左上原点正立画像　
-	// 右上から左下へ斜め方向の補完
-	// 補完走査の開始位置は左上端
+	// 右上から左下へ斜め方向の補間
+	// 補間走査の開始位置は左上端
 	// 先ず走査の先頭を左上端から右へ　走査の先頭は常に上端
-	// 補完走査の開始位置は右上端へ移して
+	// 補間走査の開始位置は右上端へ移して
 	// 次に走査の先頭を右上端から下へ　走査の先頭は常に右端
 	for (ij = 0; ij < (je + ie); ij++) {
 		// 対角走査開始位置を求める
@@ -1632,15 +1632,15 @@ void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, b
 		// ブロック斜め左下走査
 		// 左下から右上
 		for (jd = jdd, id = idd; (jd < (je - vrtOfs)) && (id >= hztOfs); jd++, id--) {
-			complementForward(imgblkwdt, jd, jdd, jd, id, pblkval);
+			interpolateForward(imgblkwdt, jd, jdd, jd, id, pblkval);
 		}
 		// ブロック斜め右上走査
 		// 右上から左下
 		int stjd = jd - 1;
 		for (jd = stjd, id = id + 1; (jd >= vrtOfs) && (id < (ie - hztOfs)); jd--, id++) {
-			complementBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
+			interpolateBackward(imgblkwdt, jd, stjd, jd, id, pblkval, pblkcrst, holefill,
 				disparityBlockDiagonal,
-				dispComplementRatioInside, dispComplementRatioRound, dispComplementRatioRound);
+				dispInterpolateRatioInside, dispInterpolateRatioRound, dispInterpolateRatioRound);
 		}
 	}
 
@@ -1648,23 +1648,23 @@ void DisparityFilter::getDiagonalUpComplementDisparity(int imghgt, int imgwdt, b
 
 
 /// <summary>
-/// 視差ブロック配列の昇順走査で注目ブロックを補完する
+/// 視差ブロック配列の昇順走査で注目ブロックを補間する
 /// </summary>
 /// <param name="imgblkwdt">画像のブロック幅(IN)</param>
-/// <param name="ii">補完ブロック配列の走査インデックス(IN)</param>
-/// <param name="sti">補完ブロック配列走査の開始インデックス(IN)</param>
+/// <param name="ii">補間ブロック配列の走査インデックス(IN)</param>
+/// <param name="sti">補間ブロック配列走査の開始インデックス(IN)</param>
 /// <param name="jd">注目ブロックのyインデックス(IN)</param>
 /// <param name="id">注目ブロックのxインデックス(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
-void DisparityFilter::complementForward(int imgblkwdt, int ii, int sti, int jd, int id,
+void DisparityFilter::interpolateForward(int imgblkwdt, int ii, int sti, int jd, int id,
 	int* pblkval)
 {
 
 	// 
-	// 視差補完
-	// 視差なしを前後の有効な視差を使って補完する
-	// ブロックの視差値の配列を前方へ走査し補完値を重みを付けて保存する
-	// 次に、後方へ走査して重みから補完値を決定しる
+	// 視差補間
+	// 視差なしを前後の有効な視差を使って補間する
+	// ブロックの視差値の配列を前方へ走査し補間値を重みを付けて保存する
+	// 次に、後方へ走査して重みから補間値を決定しる
 	// 両端のブロックは参照しない
 	// 
 	//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
@@ -1684,20 +1684,20 @@ void DisparityFilter::complementForward(int imgblkwdt, int ii, int sti, int jd, 
 
 	// 重み（平均計算用）
 	wgtcmp[ii] = 0;
-	// 視差値（補完値計算用）
+	// 視差値（補間値計算用）
 	blkcmp[ii] = *(pblkval + imgblkwdt * jd + id);
 
 	if (ii != sti) {
-		// 視差値ゼロ（視差なし）を補完する
+		// 視差値ゼロ（視差なし）を補間する
 		if (blkcmp[ii] == 0) {
 			if (blkcmp[ii - 1] > 0) {
 				// 後方の重みをインクリメントしてセットする
-				// 補完視差値を継承する
+				// 補間視差値を継承する
 				wgtcmp[ii] = wgtcmp[ii - 1] + 1;
 				blkcmp[ii] = blkcmp[ii - 1];
 			}
-			// 先頭から補完する場合
-			// 補完視差値はゼロのまま
+			// 先頭から補間する場合
+			// 補間視差値はゼロのまま
 			// 後方の重みをインクリメントしてセットする
 			else {
 				if (wgtcmp[ii - 1] > 0) {
@@ -1718,30 +1718,30 @@ void DisparityFilter::complementForward(int imgblkwdt, int ii, int sti, int jd, 
 
 
 /// <summary>
-/// 視差ブロック配列の降順走査で注目ブロックを補完する
+/// 視差ブロック配列の降順走査で注目ブロックを補間する
 /// </summary>
 /// <param name="imgblkwdt">画像のブロック幅(IN)</param>
-/// <param name="ii">補完ブロック配列の走査インデックス(IN)</param>
-/// <param name="sti">補完ブロック配列走査の開始インデックス(IN)</param>
+/// <param name="ii">補間ブロック配列の走査インデックス(IN)</param>
+/// <param name="sti">補間ブロック配列走査の開始インデックス(IN)</param>
 /// <param name="jd">注目ブロックのyインデックス(IN)</param>
 /// <param name="id">注目ブロックのxインデックス(IN)</param>
 /// <param name="pblkval">ブロック視差値(倍精度整数サブピクセル)(IN/OUT)</param>
 /// <param name="pblkcrst">ブロックコントラスト(IN)</param>
-/// <param name="holefill">補完領域の穴埋め(IN)</param>
-/// <param name="blkwdt">補完ブロックの画素幅(IN)</param>
-/// <param name="midprt">中央領域補完画素幅の視差値倍率(IN)</param>
-/// <param name="toprt">先頭輪郭補完画素幅の視差値倍率(IN)</param>
-/// <param name="btmrt">後端輪郭補完画素幅の視差値倍率(IN)</param>
-void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd, int id,
+/// <param name="holefill">補間領域の穴埋め(IN)</param>
+/// <param name="blkwdt">補間ブロックの画素幅(IN)</param>
+/// <param name="midprt">中央領域補間画素幅の視差値倍率(IN)</param>
+/// <param name="toprt">先頭輪郭補間画素幅の視差値倍率(IN)</param>
+/// <param name="btmrt">後端輪郭補間画素幅の視差値倍率(IN)</param>
+void DisparityFilter::interpolateBackward(int imgblkwdt, int ii, int sti, int jd, int id,
 	int* pblkval, int *pblkcrst, bool holefill,
 	double blkwdt, double midrt, double toprt, double btmrt)
 {
 
 	// 走査の開始インデックスの場合
 	if (ii == sti) {
-		// 終端の重みと補完視差値をセットする
-		// 終端の重みは補完視差値に倍率を掛けた値にする
-		// 終端（画像の端）が視差なしの場合の補完幅を調整する
+		// 終端の重みと補間視差値をセットする
+		// 終端の重みは補間視差値に倍率を掛けた値にする
+		// 終端（画像の端）が視差なしの場合の補間幅を調整する
 		// 
 		//  ... 0 1 2 3 4 5 6 7 8 9 0
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1752,7 +1752,7 @@ void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd,
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+
 		// | |0|0|1|2|3|4|5|6|7|8|9|x|
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+
-		//  x = 補完視差値B * 調整倍率
+		//  x = 補間視差値B * 調整倍率
 		// blkcmp 
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+
 		// | |A|B|B|B|B|B|B|B|B|B|B|B|
@@ -1764,18 +1764,18 @@ void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd,
 		}
 	}
 
-	// 前方の重みと補完視差値を取得する
+	// 前方の重みと補間視差値を取得する
 	int wgttmp = wgtcmp[ii + 1];
 	int blktmp = blkcmp[ii + 1];
 
-	// 先頭が補完視差値がゼロの場合を補完する
+	// 先頭が補間視差値がゼロの場合を補間する
 	// 先頭は重みだけセットされている
-	// 後方の補完視差値を前方の補完視差値と同じにする
+	// 後方の補間視差値を前方の補間視差値と同じにする
 	if ((blkcmp[ii] == 0 && wgtcmp[ii] > 0)) {
 		blkcmp[ii] = blktmp;
 
-		// 先頭の重みは補完視差値に倍率を掛けた値にする
-		// 先頭（画像の端）が視差なしの場合の補完幅を調整する
+		// 先頭の重みは補間視差値に倍率を掛けた値にする
+		// 先頭（画像の端）が視差なしの場合の補間幅を調整する
 		// 
 		//  0 1 2 3 4 5 6 7 8 9 0 ...
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -1787,7 +1787,7 @@ void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd,
 		// | |1|2|3|4|5|6|7|8|9|0|0|
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-
 		//                    x 
-		//  x = 補完視差値A * 調整倍率
+		//  x = 補間視差値A * 調整倍率
 		// blkcmp 
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-
 		// | |0|0|0|0|0|0|0|0|0|A|B| 
@@ -1798,41 +1798,41 @@ void DisparityFilter::complementBackward(int imgblkwdt, int ii, int sti, int jd,
 		}
 	}
 
-	// 現在の補完視差値と重みがセットされている場合
-	// 現在の補完視差値の重み計算をする
+	// 現在の補間視差値と重みがセットされている場合
+	// 現在の補間視差値の重み計算をする
 	if ((blkcmp[ii] > 0 && wgtcmp[ii] > 0)) {
 		// 前方の重みをインクリメントする
 		wgttmp = wgttmp + 1;
 
-		// 弱パターンの場合に補完する
-		if (holefill == true || pblkcrst[imgblkwdt * jd + id] <= dispComplementContrastLimit) {
+		// 弱パターンの場合に補間する
+		if (holefill == true || pblkcrst[imgblkwdt * jd + id] <= dispInterpolateContrastLimit) {
 
-			// 最小視差値以上を補完する
-			if (blktmp >= (dispComplementLowLimit * MATCHING_SUBPIXEL_TIMES) &&
-				blkcmp[ii] >= (dispComplementLowLimit * MATCHING_SUBPIXEL_TIMES)) {
+			// 最小視差値以上を補間する
+			if (blktmp >= (dispInterpolateLowLimit * MATCHING_SUBPIXEL_TIMES) &&
+				blkcmp[ii] >= (dispInterpolateLowLimit * MATCHING_SUBPIXEL_TIMES)) {
 
 				double rng = (wgttmp + wgtcmp[ii]) * blkwdt;
 				double rngtmp = (double)blktmp * midrt / MATCHING_SUBPIXEL_TIMES;
 				double rngcmp = (double)blkcmp[ii] * midrt / MATCHING_SUBPIXEL_TIMES;
 
-				// 補完画素幅が視差値倍率以下を補完する
-				// 補完幅が広過ぎる場合は除外する
+				// 補間画素幅が視差値倍率以下を補間する
+				// 補間幅が広過ぎる場合は除外する
 				//
 				// 視差なし連画素幅 < 後方視差値*倍率 + 前方視差値*倍率
 				//
-				if ((holefill == true && rng < (dispComplementHoleSize + blkwdt))
+				if ((holefill == true && rng < (dispInterpolateHoleSize + blkwdt))
 					|| (holefill == false && rng <= (rngtmp + rngcmp))) {
 
-					// 補完画素幅の視差勾配が最大値未満を補完する
-					// 補完幅が狭すぎる場合は除外する
+					// 補間画素幅の視差勾配が最大値未満を補間する
+					// 補間幅が狭すぎる場合は除外する
 					//
 					// 視差勾配 : (後方視差値 - 前方視差値) / 視差なし連画素幅
 					//
 					int diff = abs(blktmp - blkcmp[ii]) / MATCHING_SUBPIXEL_TIMES;
 					double slp = (double)(diff) / rng;
 
-					if (slp < dispComplementSlopeLimit) {
-						// 重み平均して補完視差値を求める
+					if (slp < dispInterpolateSlopeLimit) {
+						// 重み平均して補間視差値を求める
 						// 前方重み : 前方視差ブロックから注目ブロックまでの距離
 						// 後方重み : 後方視差ブロックから注目ブロックまでの距離
 						// 
@@ -2093,8 +2093,8 @@ int DisparityFilter::getEdgeLineSegment(int imghgt, int imgwdt, unsigned char *p
 /// <param name="linseg">線分座標の配列(IN)</param>
 /// <param name="linblk">線分上の視差ブロックの位置を格納する配列(OUT)</param>
 /// <param name="dspval">線分上の視差ブロックの視差を格納する配列(OUT)</param>
-/// <param name="dspwgt">線分上の視差ブロックの補完重みを格納する配列(OUT)</param>
-/// <param name="dspcmp">線分上の視差ブロックの補完値を格納する配列(OUT)</param>
+/// <param name="dspwgt">線分上の視差ブロックの補間重みを格納する配列(OUT)</param>
+/// <param name="dspcmp">線分上の視差ブロックの補間値を格納する配列(OUT)</param>
 void DisparityFilter::getLineSegmentBlocks(int imghgt, int imgwdt, unsigned char *prgtimg,
 	int blkhgt, int blkwdt, int mtchgt, int mtcwdt, int dspofsx, int dspofsy, int depth, int shdwdt,
 	int *pblkval, int linnum, int linseg[][4], int linblk[][2], int *dspval, int *dspwgt, int *dspcmp)
@@ -2105,10 +2105,10 @@ void DisparityFilter::getLineSegmentBlocks(int imghgt, int imgwdt, unsigned char
 	// 画像の幅ブロック数
 	int imgwdtblk = imgwdt / blkwdt;
 
-	// 視差ブロックの補完幅の上限
-	int maxlnw = edgeComplementWidthUpper;
-	// 視差ブロックの補完幅の下限
-	int minlnw = edgeComplementWidthLower;
+	// 視差ブロックの補間幅の上限
+	int maxlnw = edgeInterpolateWidthUpper;
+	// 視差ブロックの補間幅の下限
+	int minlnw = edgeInterpolateWidthLower;
 
 	// 線分上を走査する
 	for (int i = 0; i < linnum; i++) {
@@ -2178,9 +2178,9 @@ void DisparityFilter::getLineSegmentBlocks(int imghgt, int imgwdt, unsigned char
 
 			// 最小視差ブロック数以上かつ最小線形性指数以上の場合
 			if (dspnum >= edgeLineMinBlocks && coefdet >= edgeLineMinLinearity) {
-				// 視差なしを両端の視差を使って補完する
+				// 視差なしを両端の視差を使って補間する
 				// 端の視差なしは回帰直線で求めた傾きを使って延ばす
-				setComplementDisparity(blkno, dspval, dspwgt, dspcmp, regslp);
+				setInterpolateDisparity(blkno, dspval, dspwgt, dspcmp, regslp);
 
 				// 埋め戻す 
 				for (int k = 0; k < blkno; k++) {
@@ -2245,9 +2245,9 @@ void DisparityFilter::getLineSegmentBlocks(int imghgt, int imgwdt, unsigned char
 
 			// 最小視差ブロック数以上かつ最小線形性指数以上の場合
 			if (dspnum >= edgeLineMinBlocks && coefdet >= edgeLineMinLinearity) {
-				// 視差なしを両端の視差を使って補完する
+				// 視差なしを両端の視差を使って補間する
 				// 端の視差なしは回帰直線で求めた傾きを使って延ばす
-				setComplementDisparity(blkno, dspval, dspwgt, dspcmp, regslp);
+				setInterpolateDisparity(blkno, dspval, dspwgt, dspcmp, regslp);
 				// 埋め戻す 
 				for (int k = 0; k < blkno; k++) {
 					int blkx = linblk[k][0];
@@ -2270,14 +2270,14 @@ void DisparityFilter::getLineSegmentBlocks(int imghgt, int imgwdt, unsigned char
 
 
 /// <summary>
-/// 視差を補完する
+/// 視差を補間する
 /// </summary>
 /// <param name="blknum">視差ブロック数(IN)</param>
 /// <param name="dspval">視差値を格納した配列(IN/OUT)</param>
-/// <param name="dspwgt">線分上の視差ブロックの補完重みを格納する配列</param>
-/// <param name="dspcmp">線分上の視差ブロックの補完値を格納する配列(OUT)</param>
+/// <param name="dspwgt">線分上の視差ブロックの補間重みを格納する配列</param>
+/// <param name="dspcmp">線分上の視差ブロックの補間値を格納する配列(OUT)</param>
 /// <param name="slope">回帰直線の傾き(IN)</param>
-void DisparityFilter::setComplementDisparity(int blknum, int *dspval, int *dspwgt, int *dspcmp, double slope)
+void DisparityFilter::setInterpolateDisparity(int blknum, int *dspval, int *dspwgt, int *dspcmp, double slope)
 {
 
 	// 始点->終点
@@ -2287,15 +2287,15 @@ void DisparityFilter::setComplementDisparity(int blknum, int *dspval, int *dspwg
 	for (int i = 0; i < blknum; i++) {
 		// 視差なしブロックの場合
 		// 重み付けする
-		// 補完視差は引き継がれる
-		// 始点が視差なしの場合は補完視差になる
+		// 補間視差は引き継がれる
+		// 始点が視差なしの場合は補間視差になる
 		if (dspval[i] == 0) {
 			dspwgt[i] = prvwgt + 1;
 			dspcmp[i] = prvcmp;
 		}
 		// 視差なしブロックの場合
 		// 重み付け0にする
-		// 補完視差は同じにする
+		// 補間視差は同じにする
 		else {
 			dspwgt[i] = 0;
 			dspcmp[i] = dspval[i];
@@ -2305,19 +2305,19 @@ void DisparityFilter::setComplementDisparity(int blknum, int *dspval, int *dspwg
 	}
 
 	// すべて視差なしの場合
-	// 補完しない
+	// 補間しない
 	if (prvcmp == 0) {
 		return;
 	}
 
 	// 終点->始点
-	// 始点から終点に向かって視差なしを補完する
+	// 始点から終点に向かって視差なしを補間する
 	prvwgt = 0;
 	prvcmp = 0;
 	int	setval;
 	for (int i = blknum - 1; i >= 0; i--) {
 		// 重みなし(0)はそのまま
-		// 重み付きは補完値を求める
+		// 重み付きは補間値を求める
 		if (dspwgt[i] == 0) {
 			setval = dspcmp[i];
 			prvwgt = 0;
@@ -2325,23 +2325,23 @@ void DisparityFilter::setComplementDisparity(int blknum, int *dspval, int *dspwg
 		}
 		else {
 			// 終点が視差なしの場合
-			// 前補完視差が0
+			// 前補間視差が0
 			if (prvcmp == 0) {
 				// y = ax + b
-				// 補完視差値 = slope * dspwgt[i] + dspcmp[i]  
+				// 補間視差値 = slope * dspwgt[i] + dspcmp[i]  
 				setval = (int)(slope * dspwgt[i] + dspcmp[i]);
 				// dspwgt[i]が0になるまでprvcmpは0のまま繰り返す
 			}
 			// 始点が視差なしの場合
-			// 現補完視差が0
+			// 現補間視差が0
 			else if (dspcmp[i] == 0) {
 				// y = ax + b
 				// 始点へ向かって前視差値から傾き分減らす
-				// 補完視差値 = prvcmp - a  
+				// 補間視差値 = prvcmp - a  
 				setval = (int)(prvcmp - slope);
 				prvcmp = setval;
 			}
-			// 前後の視差から補完視差を求める
+			// 前後の視差から補間視差を求める
 			// 重み平均 : (前視差値 * 後重み + 後視差値 * 前重み) / (後重み + 前重み)
 			else {
 				prvwgt = prvwgt + 1;
@@ -2349,7 +2349,7 @@ void DisparityFilter::setComplementDisparity(int blknum, int *dspval, int *dspwg
 				// dspwgt[i]が0になるまでprvcmpはそのまま繰り返す
 			}
 		}
-		// 補完視差を保存する
+		// 補間視差を保存する
 		dspval[i] = setval;
 	}
 

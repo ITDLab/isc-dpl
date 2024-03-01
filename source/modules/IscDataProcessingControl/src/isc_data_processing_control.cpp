@@ -136,6 +136,33 @@ int IscDataProcessingControl::Initialize(IscDataProcModuleConfiguration* isc_dat
     // setup openCL
     if (cv::ocl::haveOpenCL()) {
         cv::ocl::setUseOpenCL(true);
+
+        // information
+        {
+            cv::ocl::Context context;
+            if (!context.create(cv::ocl::Device::TYPE_GPU)) {
+                OutputDebugStringA("[ERROR]Failed creating the context...\n");
+            }
+
+            char msg[256] = {};
+            sprintf_s(msg, "[INFO]GPU devices are detected. ndevices=%zu\n", context.ndevices());
+
+            for (int i = 0; i < context.ndevices(); i++) {
+                cv::ocl::Device device = context.device(i);
+
+                sprintf_s(msg, "    device:%d\n", i);
+                OutputDebugStringA(msg);
+
+                sprintf_s(msg, "    name:%s\n", device.name().c_str());
+                OutputDebugStringA(msg);
+                sprintf_s(msg, "    available:%d\n", (int)device.available());
+                OutputDebugStringA(msg);
+                sprintf_s(msg, "    imageSupport:%d\n", (int)device.imageSupport());
+                OutputDebugStringA(msg);
+                sprintf_s(msg, "    OpenCL_C_Version:%s\n", device.OpenCL_C_Version().c_str());
+                OutputDebugStringA(msg);
+            }
+        }
     }
 
     // get Buffer
@@ -894,12 +921,6 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
                     memcpy(isc_data_proc_result_data->isc_image_info.frame_data[i].raw_color.image, src_isc_image_info->frame_data[i].raw_color.image, cp_size);
                 }
             }
-
-            {
-                char debug_msg[256] = {};
-                sprintf_s(debug_msg, "[IscDataProcessingControl::GetDataProcModuleData] get dp_proc data fn=%d\n", src_isc_image_info->frame_data[0].frameNo);
-                OutputDebugStringA(debug_msg);
-            }
         }
 
         isc_dataproc_resultdata_ring_buffer_->DoneGetBuffer(get_index);
@@ -1182,11 +1203,6 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
             //OutputDebugStringA(error_msg);
         }
 
-        {
-            char debug_msg[256] = {};
-            sprintf_s(debug_msg, "[IscDataProcessingControl::AsyncRun] start dp_proc fn=%d\n", isc_image_info->frame_data[0].frameNo);
-            OutputDebugStringA(debug_msg);
-        }
     }
 
     isc_image_info_ring_buffer_->DonePutBuffer(put_index, image_status);

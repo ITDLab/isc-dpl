@@ -107,6 +107,14 @@ private:
 		int blkofsy;	/**< 視差ブロック縦オフセット */
 		int crstthr;	/**< コントラスト閾値 */
 		int grdcrct;	/**< 階調補正モードステータス 0:オフ 1:オン */
+		int rmvdup;		/**< 重複マッチング除去：0:しない 1:する */
+		int minbrtrt;	/**< マッチングブロック最低輝度比率(%) */
+	};
+
+	struct ExtensionMatchingParameter {
+		int extmtc;		/**< 拡張マッチング 0:しない 1:する */
+		int extlim;		/**< 拡張マッチング探索制限幅 */
+		int extcnf;		/**< 拡張マッチング信頼限界 */
 	};
 
 	struct BackMatchingParameter {
@@ -117,10 +125,20 @@ private:
 		int bkzrrt;		/**< バックマッチング評価視差ゼロ率（％） */
 	};
 
+	struct NeighborMatchingParameter {
+		int enb;			/**< 近傍マッチング 0:しない 1:する */
+		double neibrot;		/**< 近傍マッチング回転角(度) */
+		double neibvsft;	/**< 近傍マッチング垂直シフト */
+		double neibhsft;	/**< 近傍マッチング水平シフト */
+		double neibrng;		/**< 近傍マッチング視差変化範囲 */
+	};
+
 	struct StereoMatchingParameters {
 		SystemParameter system_parameter;
 		MatchingParameter matching_parameter;
+		ExtensionMatchingParameter extension_matching_parameter;
 		BackMatchingParameter back_matching_parameter;
+		NeighborMatchingParameter neighbor_matching_parameter;
 	};
 
 	StereoMatchingParameters stereo_matching_parameters_;

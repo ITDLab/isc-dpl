@@ -214,7 +214,8 @@ namespace ns_xcsdk_wrapper
  *
  */
 XcSdkWrapper::XcSdkWrapper()
-		:module_path_(), file_name_of_dll_(), dll_handle_(NULL), xc_camera_param_info_(), isc_grab_start_mode_(), isc_shutter_mode_(IscShutterMode::kManualShutter), isc_image_info_(), work_buffer_(), decode_buffer_()
+		:module_path_(), file_name_of_dll_(), dll_handle_(NULL), xc_camera_param_info_(), isc_grab_start_mode_(), isc_shutter_mode_(IscShutterMode::kManualShutter), 
+		isc_image_info_(), work_buffer_(), decode_buffer_(), correct_table_data_()
 {
 	isc_grab_start_mode_.isc_grab_mode = IscGrabMode::kParallax;
 	isc_grab_start_mode_.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
@@ -269,6 +270,69 @@ int XcSdkWrapper::Initialize()
 	xc_camera_param_info_.image_width	= camera_width;
 	xc_camera_param_info_.image_height	= camea_height;
 
+	work_buffer_.max_width = xc_camera_param_info_.image_width;
+	work_buffer_.max_height = xc_camera_param_info_.image_height;
+	buffer_size = work_buffer_.max_width * work_buffer_.max_height * 3;
+	for (int i = 0; i < 4; i++) {
+		work_buffer_.buffer[i] = new unsigned char[buffer_size];
+	}
+
+	// for color image correct table data
+	/*
+		カメラ未接続時
+
+		初期化時に補正テーブルの読み込みを試行します
+		成功すれば、そのテーブルを使って補正します
+		テーブルが読み込めない場合は、補正を行いません
+
+		補正テーブルは、オプションファイルより、ファイル名を取得します
+		オプションファイルは、カレントフォルダで固定ファイル名です
+		xc_sdk_wrapper.ini
+
+		[SYSTEM]
+		COLOR_CORRECT_TABLE_FILE=c:\temp\rect_table_base_decode.dat
+	*/
+
+	correct_table_data_.is_load = false;
+	sprintf_s(correct_table_data_.option_file_name, "%s\\xc_sdk_wrapper.ini", module_path_);
+
+	if (::PathFileExistsA(correct_table_data_.option_file_name) &&
+		!::PathIsDirectoryA(correct_table_data_.option_file_name)) {
+		// 指定されたパスにファイルが存在、かつディレクトリでない -> OK
+		char returned_string[1024] = {};
+
+		GetPrivateProfileStringA(("SYSTEM"), ("COLOR_CORRECT_TABLE_FILE"), ("c:\\temp\\rect_table_base_decode.dat"), returned_string, sizeof(returned_string), correct_table_data_.option_file_name);
+		sprintf_s(correct_table_data_.table_file_name, "%s", returned_string);
+
+		if (::PathFileExistsA(correct_table_data_.option_file_name) &&
+			!::PathIsDirectoryA(correct_table_data_.option_file_name)) {
+			// 指定されたパスにファイルが存在、かつディレクトリでない -> OK
+
+			correct_table_data_.is_load = true;
+		}
+		else {
+			// ファイルが無いので、補正は行わない
+		}
+	}
+	else {
+		// ファイルが無いので、補正は行わない
+	}
+
+	memset(&correct_table_data_.ccpd_header, 0, sizeof(CCPD_Header));
+	correct_table_data_.color_correct_table.correct_table = nullptr;
+	correct_table_data_.color_correct_table.temp_correct_table = nullptr;
+
+	correct_table_data_.configuration.width = camera_width;
+	correct_table_data_.configuration.height = camea_height;
+
+	if (correct_table_data_.is_load) {
+		int ret = ReadCorrectTableFile(correct_table_data_.table_file_name, &correct_table_data_.configuration, &correct_table_data_.color_correct_table);
+
+		if (ret != ISC_OK) {
+			correct_table_data_.is_load = false;
+		}
+	}
+
 	return ISC_OK;
 }
 
@@ -279,6 +343,24 @@ int XcSdkWrapper::Initialize()
  */
 int XcSdkWrapper::Terminate()
 {
+
+	if (correct_table_data_.is_load) {
+		delete[] correct_table_data_.color_correct_table.temp_correct_table;
+		correct_table_data_.color_correct_table.temp_correct_table = nullptr;
+
+		for (int h = 0; h < correct_table_data_.configuration.height; h++) {
+			delete[] correct_table_data_.color_correct_table.correct_table[h];
+		}
+		delete[] correct_table_data_.color_correct_table.correct_table;
+		correct_table_data_.color_correct_table.correct_table = nullptr;
+	}
+
+	work_buffer_.max_width = 0;
+	work_buffer_.max_height = 0;
+	for (int i = 0; i < 4; i++) {
+		delete[] work_buffer_.buffer[i];
+		work_buffer_.buffer[i] = nullptr;
+	}
 
 	decode_buffer_.work_buffer.max_width = 0;
 	decode_buffer_.work_buffer.max_height = 0;
@@ -352,12 +434,6 @@ int XcSdkWrapper::DeviceOpen()
 
 			InitializeIscIamgeinfo(&isc_image_info_);
 
-			work_buffer_.max_width = xc_camera_param_info_.image_width;
-			work_buffer_.max_height = xc_camera_param_info_.image_height;
-			size_t buffer_size = work_buffer_.max_width * work_buffer_.max_height * 3;
-			for (int i = 0; i < 4; i++) {
-				work_buffer_.buffer[i] = new unsigned char[buffer_size];
-			}
 		}
 	}
 
@@ -379,13 +455,6 @@ int XcSdkWrapper::DeviceOpen()
  */
 int XcSdkWrapper::DeviceClose()
 {
-
-	work_buffer_.max_width = 0;
-	work_buffer_.max_height = 0;
-	for (int i = 0; i < 4; i++) {
-		delete[] work_buffer_.buffer[i];
-		work_buffer_.buffer[i] = nullptr;
-	}
 
 	ReleaeIscIamgeinfo(&isc_image_info_);
 
@@ -2110,6 +2179,8 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 	double elp_time[8] = {};
 	char msg[128] = {};
 
+	constexpr int frame_data_id = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
 	utility_measure_time_total.Start();
 	if (isc_grab_start_mode_.isc_grab_color_mode == IscGrabColorMode::kColorON) {
 		utility_measure_time.Start();
@@ -2133,6 +2204,21 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 				}
 			}
 		}
+
+		if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
+			int width = xc_camera_param_info_.image_width;
+			int height = xc_camera_param_info_.image_height;
+
+			isc_image_info->frame_data[frame_data_id].raw_color.width = width * 2;
+			isc_image_info->frame_data[frame_data_id].raw_color.height = height;
+			isc_image_info->frame_data[frame_data_id].raw_color.channel_count = 1;
+
+			size_t cp_size = isc_image_info->frame_data[frame_data_id].raw_color.width * isc_image_info->frame_data[frame_data_id].raw_color.height;
+			memcpy(isc_image_info->frame_data[frame_data_id].raw_color.image, work_buffer_.buffer[0], cp_size);
+
+			// 反転不要です
+		}
+
 		elp_time[7] = utility_measure_time.Stop();
 
 		//sprintf_s(msg, "[GetData]GetYUVImage successful(%.1f)\n", elp_time[7]);
@@ -2140,7 +2226,6 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 
 	}
 
-	constexpr int frame_data_id = kISCIMAGEINFO_FRAMEDATA_LATEST;
 	int ret = getImageEx(isc_image_info_.frame_data[frame_data_id].p2.image, isc_image_info_.frame_data[frame_data_id].p1.image, 1, isc_get_mode->wait_time);
 	isc_image_info->frame_data[frame_data_id].camera_status.error_code = ret;
 
@@ -2322,7 +2407,7 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
+			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width* height * 2);
 
 			// correct
 			correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
@@ -2345,7 +2430,7 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
+			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width* height * 2);
 
 			// correct
 			correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
@@ -2371,7 +2456,7 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], size);
+			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width * height * 2);
 
 			// auto white balance
 			applyAutoWhiteBalance(work_buffer_.buffer[1], work_buffer_.buffer[2]);
@@ -2525,6 +2610,183 @@ int XcSdkWrapper::GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscIm
 }
 
 /**
+ * get rbg image data from YUV.
+ *
+ * @param[in] width image width.
+ * @param[in] height image height.
+ * @param[in] yuv_data input YUYV data.
+ * @param[out] bgr_image output BGR(pix) format image.
+ * @param[in] dwSize YUV data size.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::YuvToRGB(const int width, const int height, unsigned char* yuv_data, unsigned char* bgr_image, int dwSize)
+{
+	/*
+	YUYV -> BGR
+	出力は、BGRの順番です
+
+	*/
+
+
+	unsigned int in = 0, out = 0;
+	int y0 = 0, u = 0, y1 = 0, v = 0;
+	int r = 0, g = 0, b = 0;
+
+	unsigned int size = height * width * 2;
+
+	unsigned char* yuv = yuv_data;
+	unsigned char* output = bgr_image;
+
+	for (in = 0; in < size; in += 4) {
+		y0 = yuv[in + 0];
+		u = yuv[in + 1];
+		y1 = yuv[in + 2];
+		v = yuv[in + 3];
+
+		r = y0 + (1.402 * (v - 128));
+		g = y0 - (0.71414 * (v - 128)) - (0.34414 * (u - 128));
+		b = y0 + (1.772 * (u - 128));
+
+		if (r > 255) r = 255;
+		else if (r < 0) r = 0;
+		if (g > 255) g = 255;
+		else if (g < 0) g = 0;
+		if (b > 255) b = 255;
+		else if (b < 0) b = 0;
+
+		output[out++] = b;
+		output[out++] = g;
+		output[out++] = r;
+
+		r = y1 + (1.402 * (v - 128));
+		g = y1 - (0.71414 * (v - 128)) - (0.34414 * (u - 128));
+		b = y1 + (1.772 * (u - 128));
+
+		if (r > 255) r = 255;
+		else if (r < 0) r = 0;
+		if (g > 255) g = 255;
+		else if (g < 0) g = 0;
+		if (b > 255) b = 255;
+		else if (b < 0) b = 0;
+
+		output[out++] = b;
+		output[out++] = g;
+		output[out++] = r;
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * Apply Correct Table To Image.
+ *
+ * @param[in] width image width.
+ * @param[in] height image height.
+ * @param[in] bgr_image input BGR image.
+ * @param[out] corrected_bgr_image corrected BGR image output.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::ApplyCorrectTabeToBgrImage(const int width, const int height, unsigned char* bgr_image, unsigned char* corrected_bgr_image)
+{
+
+	/*
+		カメラ未接続時
+
+		初期化時に補正テーブルの読み込みを試行します
+		成功すれば、そのテーブルを使って補正します
+		テーブルが読み込めない場合は、補正を行いません	
+
+		補正テーブルは、カレントフォルダで固定ファイル名です
+		rect_table_base_decode.dat
+
+		baseは、基準カメラを意味します
+	*/
+
+	// 既にロード済みか
+	if (correct_table_data_.is_load) {
+		int ret = CorrectRGBImage(width, height, correct_table_data_.color_correct_table.correct_table, bgr_image, corrected_bgr_image);
+	}
+	else {
+		unsigned char* src_image = bgr_image;
+		unsigned char* dst_image = corrected_bgr_image;
+
+		size_t data_size = width * height * 3;
+		memcpy(dst_image, src_image, data_size);
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * apply auto white balance table.(Gray World)
+ *
+ * @param[in] width image width.
+ * @param[in] height image height.
+ * @param[in] bgr_image input BGR image.
+ * @param[out] awb_bgr_image BGR image output widh Auto White Balance.
+ * @return 0 if successful.
+ */
+int  XcSdkWrapper::ApplyAutoWhiteBalanceToBgrImage(const int width, const int height, unsigned char* bgr_image, unsigned char* awb_bgr_image)
+{
+	double r_sum = 0, g_sum = 0, b_sum = 0;
+	double r_ave = 0, g_ave = 0, b_ave = 0;
+
+	unsigned char* src_image = bgr_image;
+
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			b_sum = b_sum + src_image[(i * width + j) * 3];		
+			g_sum = g_sum + src_image[(i * width + j) * 3 + 1];	
+			r_sum = r_sum + src_image[(i * width + j) * 3 + 2];	
+		}
+	}
+
+	int image_size = height * width;
+	if (image_size < 1) {
+		return CAMCONTROL_E_FAIL;
+	}
+	
+	b_ave = b_sum * 1.0 / image_size;
+	g_ave = g_sum * 1.0 / image_size;
+	r_ave = r_sum * 1.0 / image_size;
+
+	if (b_ave < 1) {
+		return CAMCONTROL_E_FAIL;
+	}
+
+	if (g_ave < 1) {
+		return CAMCONTROL_E_FAIL;
+	}
+
+	if (r_ave < 1) {
+		return CAMCONTROL_E_FAIL;
+	}
+
+	//You need to adjust the gain of the RGB component
+	double k_b_ave = (r_ave + g_ave + b_ave) / (3 * b_ave) * 1.2;
+	double k_g_ave = (r_ave + g_ave + b_ave) / (3 * g_ave) * 1.35;
+	double k_r_ave = (r_ave + g_ave + b_ave) / (3 * r_ave) * 1.8;
+
+	int r_valu = 0, g_valu = 0, b_valu = 0;
+	unsigned char* dst_image = awb_bgr_image;
+
+	for (int x = 3; x < height - 2; x++) {
+		for (int y = 0; y < width; y++) {
+			b_valu = src_image[(x * width + y) * 3] * k_b_ave;
+			dst_image[(x * width + y) * 3] = (b_valu) > 255 ? 255 : b_valu;
+
+			g_valu = src_image[(x * width + y) * 3 + 1] * k_g_ave;
+			dst_image[(x * width + y) * 3 + 1] = (g_valu) > 255 ? 255 : g_valu;
+
+			r_valu = src_image[(x * width + y) * 3 + 2 ] * k_r_ave;
+			dst_image[(x * width + y) * 3 + 2] = (r_valu) > 255 ? 255 : r_valu;
+		}
+	}
+
+	return DPC_E_OK;
+}
+
+/**
  * Unpack parallax data.
  *
  * @param[in] IscGrabMode mode for grabing.
@@ -2563,7 +2825,7 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
+			YuvToRGB(width, height, decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2577,36 +2839,16 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			}
 		}
 		else if (isc_get_color_mode == IscGetModeColor::kCorrect) {
-			ret = getYUVImage(decode_buffer_.work_buffer.buffer[0], 0);
-			if (ret != ISC_OK) {
-				if (ret != 0) {
-					if (ret == ERR_USB_NO_IMAGE) {
-						/*ERR_USB_NO_IMAGE*/
-						return CAMCONTROL_E_NO_IMAGE;
-					}
-					else if (ret == 4 /*FT_IO_ERROR*/) {
-						/*FT_IO_ERROR*/
-						return CAMCONTROL_E_FTDI_ERROR;
-					}
-					else if (ret == ERR_NO_VALID_IMAGES_CALIBRATING) {
-						/*ERR_NO_VALID_IMAGES_CALIBRATING*/
-						return CAMCONTROL_E_CAMERA_UNDER_CARIBRATION;
-					}
-					else {
-						// 画像を確認するため継続
-					}
-				}
-			}
 
 			isc_image_info->frame_data[frame_data_id].color.width = width;
 			isc_image_info->frame_data[frame_data_id].color.height = height;
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
+			YuvToRGB(width, height, decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
 
 			// correct
-			correctRGBImage(decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
+			ApplyCorrectTabeToBgrImage(width, height, decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2626,13 +2868,13 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
+			YuvToRGB(width, height, decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
 
 			// correct
-			correctRGBImage(decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
+			ApplyCorrectTabeToBgrImage(width, height, decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
 
 			// auto white balance
-			applyAutoWhiteBalance(decode_buffer_.work_buffer.buffer[2], decode_buffer_.work_buffer.buffer[3]);
+			ApplyAutoWhiteBalanceToBgrImage(width, height, decode_buffer_.work_buffer.buffer[2], decode_buffer_.work_buffer.buffer[3]);
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2652,10 +2894,10 @@ int XcSdkWrapper::Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
 			int size = width * height * 2;
-			convertYUVToRGB(decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], size);
+			YuvToRGB(width, height, decode_buffer_.work_buffer.buffer[0], decode_buffer_.work_buffer.buffer[1], width * height * 2);
 
 			// auto white balance
-			applyAutoWhiteBalance(decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
+			ApplyAutoWhiteBalanceToBgrImage(width, height, decode_buffer_.work_buffer.buffer[1], decode_buffer_.work_buffer.buffer[2]);
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -3408,5 +3650,175 @@ int XcSdkWrapper::UnLoadDLLFunction()
 
 	return DPC_E_OK;
 }
+
+// correct table
+/**
+ * Read correct table from file
+ *
+ * @param[in] file_name file name.
+ * @param[in] config parameter for read.
+ * @param[out] color_correct_table output table.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::ReadCorrectTableFile(char* file_name, Configration* config, ColorCorrectTable* color_correct_table)
+{
+
+	HANDLE hFile = NULL;
+
+	if ((hFile = CreateFileA(	file_name,
+								GENERIC_READ,
+								FILE_SHARE_READ,
+								NULL,
+								OPEN_EXISTING,
+								FILE_ATTRIBUTE_NORMAL,
+								NULL)) == INVALID_HANDLE_VALUE) {
+
+		int ii = GetLastError();
+		char msg[256] = {};
+		sprintf_s(msg, "[ERROR]reate/Open File error. Filename = %s Error Code = %lx", file_name, ii);
+		//MessageBoxA(NULL, msg, "File Read ", MB_OK);
+		return CAMCONTROL_E_OPEN_READ_FILE_FAILED;
+	}
+
+	DWORD number_of_read = 0;
+
+	CCPD_Header ccpd_header_read = {};
+	if (FALSE == ReadFile(hFile, &ccpd_header_read, sizeof(CCPD_Header), &number_of_read, NULL)) {
+	}
+
+	DWORD read_size = ccpd_header_read.table_size;
+	float* read_buffer_x = new float[ccpd_header_read.table_size];
+	memset(read_buffer_x, 0, ccpd_header_read.table_size);
+
+	if (FALSE == ReadFile(hFile, read_buffer_x, read_size, &number_of_read, NULL)) {
+	}
+
+	float* read_buffer_y = new float[ccpd_header_read.table_size];
+	memset(read_buffer_y, 0, ccpd_header_read.table_size);
+
+	if (FALSE == ReadFile(hFile, read_buffer_y, read_size, &number_of_read, NULL)) {
+	}
+
+	CloseHandle(hFile);
+
+	int width = config->width;
+	int height = config->height;
+
+	float** correct_table_x = new float* [height];
+	float** correct_table_y = new float* [height];
+	float* correct_table_x_buff = new float[width * height];;
+	float* correct_table_y_buff = new float[width * height];;
+
+	for (int i = 0; i < height; i++) {
+		correct_table_x[i] = correct_table_x_buff + (i * width);
+		correct_table_y[i] = correct_table_y_buff + (i * width);
+	}
+
+	for (int i = 0; i < height; i++) {
+
+		for (int j = 0; j < width; j++) {
+			correct_table_x[i][j] = read_buffer_x[i * width + j];
+			correct_table_y[i][j] = read_buffer_y[i * width + j];
+		}
+	}
+
+	delete[] read_buffer_y;
+	delete[] read_buffer_x;
+
+	color_correct_table->correct_table = new float** [height];
+
+	for (int h = 0; h < height; h++) {
+		color_correct_table->correct_table[h] = new float* [width];
+	}
+
+	color_correct_table->temp_correct_table = new float[width * height * 8];
+	for (int h = 0; h < height; h++) {
+		for (int w = 0; w < width; w++) {
+			color_correct_table->correct_table[h][w] = color_correct_table->temp_correct_table + (h * width * 8) + (w * 8);
+		}
+	}
+
+	for (int h = 0; h < height; h++)
+	{
+		for (int w = 0; w < width; w++)
+		{
+
+			float ipx = correct_table_x[h][w];
+			float jpy = correct_table_y[h][w];
+
+			color_correct_table->correct_table[h][w][0] = (1 - (ipx - (int)ipx)) * (1 - (jpy - (int)jpy));
+			color_correct_table->correct_table[h][w][1] = (1 - (ipx - (int)ipx)) * (jpy - (int)jpy);
+			color_correct_table->correct_table[h][w][2] = (ipx - (int)ipx) * (1 - (jpy - (int)jpy));
+			color_correct_table->correct_table[h][w][3] = (ipx - (int)ipx) * (jpy - (int)jpy);
+			color_correct_table->correct_table[h][w][4] = ((int)jpy) * width + ((int)ipx);
+			color_correct_table->correct_table[h][w][5] = ((int)jpy + 1) * width + ((int)ipx);
+			color_correct_table->correct_table[h][w][6] = ((int)jpy) * width + ((int)ipx + 1);
+			color_correct_table->correct_table[h][w][7] = ((int)jpy + 1) * width + ((int)ipx + 1);
+
+			color_correct_table->correct_table[h][w][4] *= 3;
+			color_correct_table->correct_table[h][w][5] *= 3;
+			color_correct_table->correct_table[h][w][6] *= 3;
+			color_correct_table->correct_table[h][w][7] *= 3;
+		}
+	}
+
+	delete[] correct_table_y_buff;
+	delete[] correct_table_x_buff;
+	delete[] correct_table_y;
+	delete[] correct_table_x;
+
+	return DPC_E_OK;
+}
+
+/**
+ * correct image
+ *
+ * @param[in] width image widh.
+ * @param[in] height image height.
+ * @param[in] correcTable table.
+ * @param[in] inputImage input image before correct.
+ * @param[out] outputImage output image.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::CorrectRGBImage(const int width, const int height, float*** correc_table, const unsigned char* input_image, unsigned char* output_image)
+{
+
+	int r_value = 0, g_value = 0, b_balue = 0;
+
+	for (int h = 0; h < height; h++)
+	{
+		for (int w = 0; w < width; w++)
+		{
+			r_value = correc_table[h][w][0] * input_image[(int)correc_table[h][w][4]] +
+				correc_table[h][w][1] * input_image[(int)correc_table[h][w][5]] +
+				correc_table[h][w][2] * input_image[(int)correc_table[h][w][6]] +
+				correc_table[h][w][3] * input_image[(int)correc_table[h][w][7]];
+
+			output_image[(h * width + w) * 3] = static_cast<unsigned char>(r_value);
+
+
+			g_value = correc_table[h][w][0] * input_image[(int)correc_table[h][w][4] + 1] +
+				correc_table[h][w][1] * input_image[(int)correc_table[h][w][5] + 1] +
+				correc_table[h][w][2] * input_image[(int)correc_table[h][w][6] + 1] +
+				correc_table[h][w][3] * input_image[(int)correc_table[h][w][7] + 1];
+
+			output_image[(h * width + w) * 3 + 1] = static_cast<unsigned char>(g_value);
+
+
+			b_balue = correc_table[h][w][0] * input_image[(int)correc_table[h][w][4] + 2] +
+				correc_table[h][w][1] * input_image[(int)correc_table[h][w][5] + 2] +
+				correc_table[h][w][2] * input_image[(int)correc_table[h][w][6] + 2] +
+				correc_table[h][w][3] * input_image[(int)correc_table[h][w][7] + 2];
+
+			output_image[(h * width + w) * 3 + 2] = static_cast<unsigned char>(b_balue);
+		}
+	}
+
+	return DPC_E_OK;
+}
+
+
+
+
 
 } /* namespace ns_vmsdk_wrapper */

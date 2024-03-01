@@ -66,13 +66,13 @@ public:
 	/** @brief Set parallax completion parameters.
 		@return none.
 	 */
-	static void setComplementParameter(int enb, double lowlmt, double slplmt,
+	static void setInterpolateParameter(int enb, double lowlmt, double slplmt,
 		double insrt, double rndrt, int crstlmt, int hlfil, double hlsz);
 
 	/** @brief Set edge completion parameters.
 		@return none.
 	 */
-	static void setEdgeComplementParameter(int edgcmp, int minblks, double mincoef, int cmpwdt);
+	static void setEdgeInterpolateParameter(int edgcmp, int minblks, double mincoef, int cmpwdt);
 
 	/** @brief Set Hough transform parameters.
 		@return none.
@@ -142,7 +142,7 @@ private:
 	/** @brief Complementary parallax.
 		@return none.
 	 */
-	static void getComplementDisparity(int imghgt, int imgwdt, int* pblkval,
+	static void getInterpolateDisparity(int imghgt, int imgwdt, int* pblkval,
 		int* pblkcrst);
 
 	/** @brief Fill in the parallax.
@@ -154,37 +154,37 @@ private:
 	/** @brief Horizontal scanning completes areas with no parallax.
 		@return none.
 	 */
-	static void getHorizontalComplementDisparity(int imghgt, int imgwdt, bool holefill,
+	static void getHorizontalInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 		int* pblkval, int* pblkcrst);
 
 	/** @brief Vertical scanning completes areas with no parallax.
 		@return none.
 	 */
-	static void getVerticalComplementDisparity(int imghgt, int imgwdt, bool holefill,
+	static void getVerticalInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 		int* pblkval, int* pblkcrst);
 
 	/** @brief Diagonal downward to complement parallax-free areas.
 		@return none.
 	 */
-	static void getDiagonalDownComplementDisparity(int imghgt, int imgwdt, bool holefill,
+	static void getDiagonalDownInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 		int* pblkval, int* pblkcrst);
 
 	/** @brief Diagonally upward to complement parallax-free areas.
 		@return none.
 	 */
-	static void getDiagonalUpComplementDisparity(int imghgt, int imgwdt, bool holefill,
+	static void getDiagonalUpInterpolateDisparity(int imghgt, int imgwdt, bool holefill,
 		int* pblkval, int* pblkcrst);
 
 	/** @brief Ascending scan of the disparity block array to complement the block of interest.
 		@return none.
 	 */
-	static void complementForward(int imgblkwdt, int ii, int sti, int jd, int id,
+	static void interpolateForward(int imgblkwdt, int ii, int sti, int jd, int id,
 		int* pblkval);
 
 	/** @brief Descending scan of the disparity block array to complement the block of interest.
 		@return none.
 	 */
-	static void complementBackward(int imgblkwdt, int ii, int sti, int jd, int id,
+	static void interpolateBackward(int imgblkwdt, int ii, int sti, int jd, int id,
 		int* pblkval, int *pblkcrst, bool holefill,
 		double blkwdt, double midrt, double toprt, double btmrt);
 
@@ -214,7 +214,7 @@ private:
 	/** @brief Complementary parallax.
 		@return none.
 	 */
-	static void setComplementDisparity(int blknum, int *dspval, int *dspwgt, int *dspcmp, double slope);
+	static void setInterpolateDisparity(int blknum, int *dspval, int *dspwgt, int *dspcmp, double slope);
 
 	/** @brief Find the regression line of disparity on a line segment.
 		@return none.

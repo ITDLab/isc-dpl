@@ -962,9 +962,9 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 					QueryPerformanceCounter(&end_time);
 					double elapsed_time_2 = (double)((double)((end_time.QuadPart - start_time.QuadPart) * 1000.0) / (double)performance_freq_.QuadPart);
 
-					TCHAR msg[128] = {};
-					_stprintf_s(msg, _T("[INFO]Capture & Draw time(ms) %.1f , %.1f\n"), elapsed_time_1, elapsed_time_2);
-					OutputDebugString(msg);
+					//TCHAR msg[128] = {};
+					//_stprintf_s(msg, _T("[INFO]Capture & Draw time(ms) %.1f , %.1f\n"), elapsed_time_1, elapsed_time_2);
+					//OutputDebugString(msg);
 
 					isc_control_.time_to_event = GetTickCount64();
 				}
@@ -979,9 +979,9 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 					if ((time - isc_control_.time_to_event) > play_time_out) {
 						isc_control_.main_state = MainStateState::kPlayStop;
 
-						TCHAR msg[128] = {};
-						_stprintf_s(msg, _T("[INFO]Play time out! stop it\n"));
-						OutputDebugString(msg);
+						//TCHAR msg[128] = {};
+						//_stprintf_s(msg, _T("[INFO]Play time out! stop it\n"));
+						//OutputDebugString(msg);
 					}
 				}
 			}
@@ -1552,21 +1552,87 @@ void CDPCguiDlg::OnBnClickedButton6()
 			return;
 		}
 
+		// IDC_CHECK1   Disparity
+		// IDC_CHECK2   Base Image
+		// IDC_CHECK3   Matching Image
+		// IDC_CHECK4   Color Image
+		// 
+		// IDC_CHECK5   Base Image Correct
+		// IDC_CHECK6   Matching Image Correct
+		// IDC_CHECK7   Color Image Correct
+
+		const bool is_disparity = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_mono_s0_image = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_mono_s0_image_correct = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_mono_s1_image = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_mono_s1_image_correct = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_color_image = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_color_image_correct = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_dpl_stereo_matching = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
+		const bool is_dpl_disparity_filter = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
+
 		bool is_header_valided = true;
 		switch (raw_file_headaer.grab_mode) {
 		case(1):
 			// IscGrabMode::kParallax:
-			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);
+			((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_UNCHECKED);
+			if (is_disparity && is_dpl_disparity_filter) {
+				((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);
+			}
+			else if (!is_disparity && !is_dpl_disparity_filter) {
+				((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_CHECKED);
+			}
+
+			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);
+
+			if (raw_file_headaer.color_mode == 0) {
+				((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);
+
+				if (!is_mono_s0_image) {
+					((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);
+				}
+			}
+			else {
+				//((CButton*)GetDlgItem(IDC_CHECK7))->SetCheck(BST_UNCHECKED);
+
+				if (is_mono_s0_image && is_color_image) {
+					((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);
+				}
+				else if (!is_mono_s0_image && !is_color_image) {
+					((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_CHECKED);
+				}
+			}
 			break;
 
 		case(2):
 			// IscGrabMode::kCorrect:
-			((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK6))->SetCheck(BST_CHECKED);
+			((CButton*)GetDlgItem(IDC_CHECK1))->SetCheck(BST_UNCHECKED);
+
+			if (is_mono_s1_image && is_dpl_stereo_matching) {
+				((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_UNCHECKED);
+			}
+			else if (!is_mono_s1_image && !is_dpl_stereo_matching) {
+				((CButton*)GetDlgItem(IDC_CHECK16))->SetCheck(BST_CHECKED);
+			}
+
+			if (raw_file_headaer.color_mode == 0) {
+				((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);
+
+				if (!is_mono_s0_image) {
+					((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_CHECKED);
+				}
+			}
+			else {
+				//((CButton*)GetDlgItem(IDC_CHECK7))->SetCheck(BST_UNCHECKED);
+
+				if (is_mono_s0_image && is_color_image) {
+					((CButton*)GetDlgItem(IDC_CHECK2))->SetCheck(BST_UNCHECKED);
+				}
+				else if (!is_mono_s0_image && !is_color_image) {
+					((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_CHECKED);
+				}
+			}
+
 			break;
 
 		case(3):
@@ -1575,6 +1641,8 @@ void CDPCguiDlg::OnBnClickedButton6()
 			((CButton*)GetDlgItem(IDC_CHECK5))->SetCheck(BST_UNCHECKED);
 			((CButton*)GetDlgItem(IDC_CHECK3))->SetCheck(BST_CHECKED);
 			((CButton*)GetDlgItem(IDC_CHECK6))->SetCheck(BST_UNCHECKED);
+			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);
+
 			break;
 
 		case(4):
@@ -1591,13 +1659,11 @@ void CDPCguiDlg::OnBnClickedButton6()
 			break;
 		}
 
+		UpdateData(TRUE);
+
 		if (raw_file_headaer.color_mode == 0) {
-			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_UNCHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK7))->SetCheck(BST_UNCHECKED);
 		}
 		else if (raw_file_headaer.color_mode == 1) {
-			((CButton*)GetDlgItem(IDC_CHECK4))->SetCheck(BST_CHECKED);
-			((CButton*)GetDlgItem(IDC_CHECK7))->SetCheck(BST_CHECKED);
 		}
 		else {
 			is_header_valided = false;

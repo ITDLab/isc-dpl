@@ -85,19 +85,19 @@ IscDisparityFilterInterface::IscDisparityFilterInterface():
     frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt = 1;
     frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt = 1;
 
-    frame_decoder_parameters_.complement_parameter.enb = 1;
-    frame_decoder_parameters_.complement_parameter.lowlmt = 5;
-    frame_decoder_parameters_.complement_parameter.slplmt = 0.1;
-    frame_decoder_parameters_.complement_parameter.insrt = 1;
-    frame_decoder_parameters_.complement_parameter.rndrt = 0.2;
-    frame_decoder_parameters_.complement_parameter.crstlmt = 40;   // VM:45
-    frame_decoder_parameters_.complement_parameter.hlfil = 1;
-    frame_decoder_parameters_.complement_parameter.hlsz = 8;
+    frame_decoder_parameters_.interpolate_parameter.enb = 1;
+    frame_decoder_parameters_.interpolate_parameter.lowlmt = 5;
+    frame_decoder_parameters_.interpolate_parameter.slplmt = 0.1;
+    frame_decoder_parameters_.interpolate_parameter.insrt = 1;
+    frame_decoder_parameters_.interpolate_parameter.rndrt = 0.1;
+    frame_decoder_parameters_.interpolate_parameter.crstlmt = 50;   // VM:45
+    frame_decoder_parameters_.interpolate_parameter.hlfil = 1;
+    frame_decoder_parameters_.interpolate_parameter.hlsz = 8;
 
-    frame_decoder_parameters_.edge_complement_parameter.edgcmp = 1;
-    frame_decoder_parameters_.edge_complement_parameter.minblks = 20;
-    frame_decoder_parameters_.edge_complement_parameter.mincoef = 20.0;
-    frame_decoder_parameters_.edge_complement_parameter.cmpwdt = 1;
+    frame_decoder_parameters_.edge_interpolate_parameter.edgcmp = 1;
+    frame_decoder_parameters_.edge_interpolate_parameter.minblks = 20;
+    frame_decoder_parameters_.edge_interpolate_parameter.mincoef = 20.0;
+    frame_decoder_parameters_.edge_interpolate_parameter.cmpwdt = 1;
 
     frame_decoder_parameters_.hough_transferm_parameter.edgthr1 = 50;
     frame_decoder_parameters_.hough_transferm_parameter.edgthr2 = 100;
@@ -284,43 +284,43 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     GetPrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"rndwgt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     frame_decoder_parameters->averaging_block_weight_parameter.rndwgt = _wtoi(returned_string);
 
-    // ComplementParameter
-    GetPrivateProfileString(L"COMPLEMENT", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.enb = _wtoi(returned_string);
+    // InterpolateParameter
+    GetPrivateProfileString(L"INTERPOLATE", L"enb", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.enb = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"lowlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.lowlmt = _wtof(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"lowlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.lowlmt = _wtof(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"slplmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.slplmt = _wtof(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"slplmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.slplmt = _wtof(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"insrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.insrt = _wtof(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"insrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.insrt = _wtof(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"rndrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.rndrt = _wtof(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"rndrt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.rndrt = _wtof(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"crstlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.crstlmt = _wtoi(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"crstlmt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.crstlmt = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"hlfil", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.hlfil = _wtoi(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"hlfil", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.hlfil = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"COMPLEMENT", L"hlsz", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->complement_parameter.hlsz = _wtof(returned_string);
+    GetPrivateProfileString(L"INTERPOLATE", L"hlsz", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->interpolate_parameter.hlsz = _wtof(returned_string);
 
-    // Edge Complement
-    GetPrivateProfileString(L"EDGE_COMPLEMENT", L"edgcmp", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->edge_complement_parameter.edgcmp = _wtoi(returned_string);
+    // Edge Interpolate
+    GetPrivateProfileString(L"EDGE_INTERPOLATE", L"edgcmp", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->edge_interpolate_parameter.edgcmp = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"EDGE_COMPLEMENT", L"minblks", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->edge_complement_parameter.minblks = _wtoi(returned_string);
+    GetPrivateProfileString(L"EDGE_INTERPOLATE", L"minblks", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->edge_interpolate_parameter.minblks = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"EDGE_COMPLEMENT", L"mincoef", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->edge_complement_parameter.mincoef = _wtoi(returned_string);
+    GetPrivateProfileString(L"EDGE_INTERPOLATE", L"mincoef", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->edge_interpolate_parameter.mincoef = _wtoi(returned_string);
 
-    GetPrivateProfileString(L"EDGE_COMPLEMENT", L"cmpwdt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
-    frame_decoder_parameters->edge_complement_parameter.cmpwdt = _wtoi(returned_string);
+    GetPrivateProfileString(L"EDGE_INTERPOLATE", L"cmpwdt", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    frame_decoder_parameters->edge_interpolate_parameter.cmpwdt = _wtoi(returned_string);
 
     // Hough Transform
     GetPrivateProfileString(L"HOUGH_TRANSFORM", L"edgthr1", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
@@ -405,43 +405,43 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->averaging_block_weight_parameter.rndwgt);
     WritePrivateProfileString(L"AVERAGE_BLOCK_WEIGHT", L"rndwgt", string, file_name);
 
-    // ComplementParameter
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.enb);
-    WritePrivateProfileString(L"COMPLEMENT", L"enb", string, file_name);
+    // Interpolate Parameter
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->interpolate_parameter.enb);
+    WritePrivateProfileString(L"INTERPOLATE", L"enb", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.lowlmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"lowlmt", string, file_name);
+    swprintf_s(string, L"%.3f", frame_decoder_parameters->interpolate_parameter.lowlmt);
+    WritePrivateProfileString(L"INTERPOLATE", L"lowlmt", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.slplmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"slplmt", string, file_name);
+    swprintf_s(string, L"%.3f", frame_decoder_parameters->interpolate_parameter.slplmt);
+    WritePrivateProfileString(L"INTERPOLATE", L"slplmt", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.insrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"insrt", string, file_name);
+    swprintf_s(string, L"%.3f", frame_decoder_parameters->interpolate_parameter.insrt);
+    WritePrivateProfileString(L"INTERPOLATE", L"insrt", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.rndrt);
-    WritePrivateProfileString(L"COMPLEMENT", L"rndrt", string, file_name);
+    swprintf_s(string, L"%.3f", frame_decoder_parameters->interpolate_parameter.rndrt);
+    WritePrivateProfileString(L"INTERPOLATE", L"rndrt", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.crstlmt);
-    WritePrivateProfileString(L"COMPLEMENT", L"crstlmt", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->interpolate_parameter.crstlmt);
+    WritePrivateProfileString(L"INTERPOLATE", L"crstlmt", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->complement_parameter.hlfil);
-    WritePrivateProfileString(L"COMPLEMENT", L"hlfil", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->interpolate_parameter.hlfil);
+    WritePrivateProfileString(L"INTERPOLATE", L"hlfil", string, file_name);
 
-    swprintf_s(string, L"%.3f", frame_decoder_parameters->complement_parameter.hlsz);
-    WritePrivateProfileString(L"COMPLEMENT", L"hlsz", string, file_name);
+    swprintf_s(string, L"%.3f", frame_decoder_parameters->interpolate_parameter.hlsz);
+    WritePrivateProfileString(L"INTERPOLATE", L"hlsz", string, file_name);
 
-    // Edge Complement
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_complement_parameter.edgcmp);
-    WritePrivateProfileString(L"EDGE_COMPLEMENT", L"edgcmp", string, file_name);
+    // Edge Interpolate
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_interpolate_parameter.edgcmp);
+    WritePrivateProfileString(L"EDGE_INTERPOLATE", L"edgcmp", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_complement_parameter.minblks);
-    WritePrivateProfileString(L"EDGE_COMPLEMENT", L"minblks", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_interpolate_parameter.minblks);
+    WritePrivateProfileString(L"EDGE_INTERPOLATE", L"minblks", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_complement_parameter.mincoef);
-    WritePrivateProfileString(L"EDGE_COMPLEMENT", L"mincoef", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_interpolate_parameter.mincoef);
+    WritePrivateProfileString(L"EDGE_INTERPOLATE", L"mincoef", string, file_name);
 
-    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_complement_parameter.cmpwdt);
-    WritePrivateProfileString(L"EDGE_COMPLEMENT", L"cmpwdt", string, file_name);
+    swprintf_s(string, L"%d", (int)frame_decoder_parameters->edge_interpolate_parameter.cmpwdt);
+    WritePrivateProfileString(L"EDGE_INTERPOLATE", L"cmpwdt", string, file_name);
 
     // Hough Transform
     swprintf_s(string, L"%d", (int)frame_decoder_parameters->hough_transferm_parameter.edgthr1);
@@ -497,21 +497,21 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
         frame_decoder_parameters->averaging_block_weight_parameter.nrwgt,
         frame_decoder_parameters->averaging_block_weight_parameter.rndwgt);
 
-    DisparityFilter::setComplementParameter(
-        frame_decoder_parameters->complement_parameter.enb,
-        frame_decoder_parameters->complement_parameter.lowlmt,
-        frame_decoder_parameters->complement_parameter.slplmt,
-        frame_decoder_parameters->complement_parameter.insrt,
-        frame_decoder_parameters->complement_parameter.rndrt,
-        frame_decoder_parameters->complement_parameter.crstlmt,
-        frame_decoder_parameters->complement_parameter.hlfil,
-        frame_decoder_parameters->complement_parameter.hlsz);
+    DisparityFilter::setInterpolateParameter(
+        frame_decoder_parameters->interpolate_parameter.enb,
+        frame_decoder_parameters->interpolate_parameter.lowlmt,
+        frame_decoder_parameters->interpolate_parameter.slplmt,
+        frame_decoder_parameters->interpolate_parameter.insrt,
+        frame_decoder_parameters->interpolate_parameter.rndrt,
+        frame_decoder_parameters->interpolate_parameter.crstlmt,
+        frame_decoder_parameters->interpolate_parameter.hlfil,
+        frame_decoder_parameters->interpolate_parameter.hlsz);
 
-    DisparityFilter::setEdgeComplementParameter(
-        frame_decoder_parameters->edge_complement_parameter.edgcmp,
-        frame_decoder_parameters->edge_complement_parameter.minblks,
-        frame_decoder_parameters->edge_complement_parameter.mincoef,
-        frame_decoder_parameters->edge_complement_parameter.cmpwdt);
+    DisparityFilter::setEdgeInterpolateParameter(
+        frame_decoder_parameters->edge_interpolate_parameter.edgcmp,
+        frame_decoder_parameters->edge_interpolate_parameter.minblks,
+        frame_decoder_parameters->edge_interpolate_parameter.mincoef,
+        frame_decoder_parameters->edge_interpolate_parameter.cmpwdt);
 
     DisparityFilter::setHoughTransformParameter(
         frame_decoder_parameters->hough_transferm_parameter.edgthr1,
@@ -680,21 +680,21 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     MakeParameterSet(frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt,  L"nrwgt",    L"AveragingBlockWeight", L"ブロックの重み（近傍）", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt, L"rndwgt",   L"AveragingBlockWeight", L"ブロックの重み（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
 
-    // ComplementParameter
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.enb,        L"enb",      L"Complement", L"補完処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.lowlmt,     L"lowlmt",   L"Complement", L"視補完最小視差値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.slplmt,     L"slplmt",   L"Complement", L"補完幅の最大視差勾配", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.insrt,      L"insrt",    L"Complement", L"補完画素幅の視差値倍率（内側）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.rndrt,      L"rndrt",    L"Complement", L"補完画素幅の視差値倍率（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.crstlmt,    L"crstlmt",  L"Complement", L"補完ブロックのコントラスト上限値", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlfil,      L"hlfil",    L"Complement", L"穴埋め処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.complement_parameter.hlsz,       L"hlsz",     L"Complement", L"穴埋め幅", &isc_data_proc_module_parameter->parameter_set[index++]);
+    // InterpolateParameter
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.enb,        L"enb",      L"Interpolate", L"補完処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.lowlmt,     L"lowlmt",   L"Interpolate", L"視補完最小視差値", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.slplmt,     L"slplmt",   L"Interpolate", L"補完幅の最大視差勾配", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.insrt,      L"insrt",    L"Interpolate", L"補完画素幅の視差値倍率（内側）", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.rndrt,      L"rndrt",    L"Interpolate", L"補完画素幅の視差値倍率（周辺）", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.crstlmt,    L"crstlmt",  L"Interpolate", L"補完ブロックのコントラスト上限値", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.hlfil,      L"hlfil",    L"Interpolate", L"穴埋め処理しない：0 する：1", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.interpolate_parameter.hlsz,       L"hlsz",     L"Interpolate", L"穴埋め幅", &isc_data_proc_module_parameter->parameter_set[index++]);
 
-    // EdgeComplementParameter
-    MakeParameterSet(frame_decoder_parameters_.edge_complement_parameter.edgcmp,    L"edgcmp",  L"EdgeComplement", L"エッジ補完 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.edge_complement_parameter.minblks,   L"minblks", L"EdgeComplement", L"エッジ線分上の最小視差ブロック数", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.edge_complement_parameter.mincoef,   L"mincoef", L"EdgeComplement", L"エッジ視差の最小線形性指数", &isc_data_proc_module_parameter->parameter_set[index++]);
-    MakeParameterSet(frame_decoder_parameters_.edge_complement_parameter.cmpwdt,    L"cmpwdt",  L"EdgeComplement", L"エッジ線の補完視差ブロック幅", &isc_data_proc_module_parameter->parameter_set[index++]);
+    // EdgeInterpolateParameter
+    MakeParameterSet(frame_decoder_parameters_.edge_interpolate_parameter.edgcmp,    L"edgcmp",  L"EdgeInterpolate", L"エッジ補完 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.edge_interpolate_parameter.minblks,   L"minblks", L"EdgeInterpolate", L"エッジ線分上の最小視差ブロック数", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.edge_interpolate_parameter.mincoef,   L"mincoef", L"EdgeInterpolate", L"エッジ視差の最小線形性指数", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(frame_decoder_parameters_.edge_interpolate_parameter.cmpwdt,    L"cmpwdt",  L"EdgeInterpolate", L"エッジ線の補完視差ブロック幅", &isc_data_proc_module_parameter->parameter_set[index++]);
 
     // HoughTransformParameter
     MakeParameterSet(frame_decoder_parameters_.hough_transferm_parameter.edgthr1,   L"edgthr1", L"HoughTransform", L"Cannyエッジ検出閾値1", &isc_data_proc_module_parameter->parameter_set[index++]);
@@ -798,21 +798,21 @@ int IscDisparityFilterInterface::LoadParameterFromFile(const wchar_t* file_name,
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_block_weight_parameter.nrwgt);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.averaging_block_weight_parameter.rndwgt);
 
-    // ComplementParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.enb);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.lowlmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.slplmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.insrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.rndrt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.crstlmt);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlfil);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.complement_parameter.hlsz);
+    // InterpolateParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.enb);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.lowlmt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.slplmt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.insrt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.rndrt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.crstlmt);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.hlfil);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.interpolate_parameter.hlsz);
 
-    // EdgeComplementParameter
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_complement_parameter.edgcmp);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_complement_parameter.minblks);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_complement_parameter.mincoef);
-    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_complement_parameter.cmpwdt);
+    // EdgeInterpolateParameter
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_interpolate_parameter.edgcmp);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_interpolate_parameter.minblks);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_interpolate_parameter.mincoef);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.edge_interpolate_parameter.cmpwdt);
 
     // HoughTransformParameter
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &frame_decoder_parameters_.hough_transferm_parameter.edgthr1);

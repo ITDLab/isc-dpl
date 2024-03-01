@@ -142,8 +142,9 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
     isc_log_->Open(ipc_dpl_configuration_.log_file_path, log_file_name_, ipc_dpl_configuration_.log_level, true);
     isc_log_->LogDebug(L"IscMainControlImpl", L"---Open log---\n");
 
-    // camera control open
     wchar_t log_msg[256] = {};
+
+    // camera control open
     wchar_t camera_str[16] = {};
     switch (isc_camera_control_config.isc_camera_model) {
     case IscCameraModel::kVM: swprintf_s(camera_str, L"VM\n"); break;
@@ -464,14 +465,6 @@ int IscMainControlImpl::RecieveDataProcCamera()
                 int camera_result = isc_camera_control_->GetData(&buffer_data->isc_image_info);
 
                 if (camera_result == DPC_E_OK) {
-
-                    {
-                        int fn = buffer_data->isc_image_info.frame_data[0].frameNo;
-                        char msg[128] = {};
-                        sprintf_s(msg, "[IscMainControlImpl::RecieveDataProcCamera] GetData(frame)=%d\n", fn);
-
-                        OutputDebugStringA(msg);
-                    }
 
                     // I have data from the camera
                     if (show_elaped_time) {
@@ -1684,14 +1677,6 @@ int IscMainControlImpl::GetCameraData(IscImageInfo* isc_image_Info)
     // copy data to result
     int ret = CopyIscImageInfo(isc_image_Info, &buffer_data->isc_image_info);
 
-    {
-        int fn = isc_image_Info->frame_data[0].frameNo;
-        char msg[128] = {};
-        sprintf_s(msg, "[IscMainControlImpl::GetCameraData] GetGetBuffer(frame)=%d\n", fn);
-
-        OutputDebugStringA(msg);
-    }
-
     isc_image_info_ring_buffer_->DoneGetBuffer(get_index);
 
     return DPC_E_OK;
@@ -1801,7 +1786,7 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
         }
 
         // color
-        if (dst_isc_image_Info->color_grab_mode == IscGrabColorMode::kColorON) {
+        if (src_isc_image_Info->color_grab_mode == IscGrabColorMode::kColorON) {
             if (src_isc_image_Info->frame_data[i].color.width != 0 && src_isc_image_Info->frame_data[i].color.height != 0 &&
                 src_isc_image_Info->frame_data[i].color.channel_count == 3) {
 

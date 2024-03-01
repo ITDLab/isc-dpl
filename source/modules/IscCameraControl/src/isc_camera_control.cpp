@@ -1122,9 +1122,10 @@ bool IscCameraControl::DeviceOptionIsImplemented(const IscCameraParameter option
 		return false;
 	}
 
-	if (!isc_camera_control_config_.enabled_camera) {
-		return false;
-	}
+	// 機能の有無は回答する
+	//if (!isc_camera_control_config_.enabled_camera) {
+	//	return false;
+	//}
 
 	bool ret = isc_sdk_control_->DeviceOptionIsImplemented(option_name);
 
@@ -1996,14 +1997,6 @@ int IscCameraControl::GetData(IscImageInfo* isc_image_info)
 	else {
 		// get data from camera
 		ret = GetDataLiveCamera(isc_image_info);
-	}
-
-	if (ret == DPC_E_OK) {
-		int fn = isc_image_info->frame_data[0].frameNo;
-		char msg[128] = {};
-		sprintf_s(msg, "[IscCameraControl::GetData] GetData(frame)=%d\n", fn);
-
-		OutputDebugStringA(msg);
 	}
 
 	return ret;

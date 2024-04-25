@@ -36,7 +36,9 @@ public:
 	void SetCameraModel(const int model);
 	bool GetDataRecordPath(TCHAR* path, const int max_length) const;
 	void SetDataRecordPath(const TCHAR* path);
-	
+	int GetCameraMinimumWriteInterval() const;
+	void SetCameraMinimumWriteInterval(const int interval_time);
+
 	bool IsEnabledDataProcLib() const;
 	void SetEnabledDataProcLib(const bool enabled);
 
@@ -63,6 +65,7 @@ private:
 	bool enabled_camera_;						/**< カメラ有効 */
 	int camera_model_;							/**< カメラ型式 0:VM 1:XC 2:4K 3:4KA 4:4KJ */
 	TCHAR data_record_path_[_MAX_PATH];			/**< データ保存先 */
+	int minimum_write_interval_time_;			/**< 書き込みの最小空き時間 (msec) */
 
 	bool enabled_data_proc_library_;			/**< データ処理モジュール有効 */
 

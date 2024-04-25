@@ -37,6 +37,7 @@ struct IscDplConfiguration {
     IscCameraModel isc_camera_model;            /**< physical camera model */
     wchar_t save_image_path[_MAX_PATH];         /**< the path to save the image */
     wchar_t load_image_path[_MAX_PATH];         /**< image loading path */
+    int minimum_write_interval_time;            /**< minimum free time to write (msec) */
 
     bool enabled_data_proc_module;              /**< whether to use a data processing library */
 };

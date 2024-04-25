@@ -286,6 +286,27 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 		return CAMCONTROL_E_READ_CAMERA_MODEL;
 	}
 
+	{
+		// deug informatin
+		char msg[256] = {};
+
+		OutputDebugStringA("[INFO]IscFileReadControlImpl::Start() \n");
+		
+		OutputDebugStringA("    ");
+		OutputDebugStringW(file_read_information_.read_file_name);
+		OutputDebugStringA("\n");
+
+		__int64 one_fr_size = sizeof(raw_read_data_.isc_raw_data_header) + buff_size;
+		__int64 total_frame_count = (file_read_information_.file_size - sizeof(file_read_information_.raw_file_header)) / one_fr_size;
+
+		sprintf_s(msg, "    Total Frame Count=%lld\n", total_frame_count);
+		OutputDebugStringA(msg);
+
+		OutputDebugStringA("[INFO]IscFileReadControlImpl::Start() end of message -- \n");
+	}
+
+
+
 	return DPC_E_OK;
 }
 
@@ -555,12 +576,51 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info, const b
 	const int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
 	if (init) {
+		isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
+		isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time = 0;
+
+		if (raw_read_data_.isc_raw_data_header.version >= 300) {
+
+			ULARGE_INTEGER ul_int = {};
+			ul_int.LowPart = raw_read_data_.isc_raw_data_header.frame_time_low;
+			ul_int.HighPart = raw_read_data_.isc_raw_data_header.frame_time_high;
+
+			isc_image_info->frame_data[frame_data_index].frame_time = ul_int.QuadPart;
+
+			// debug
+			if (0) {
+				struct timespec tm = {};
+				tm.tv_sec = ul_int.QuadPart / 1000LL;
+				tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
+
+				struct tm ltm;
+				localtime_s(&ltm, &tm.tv_sec);
+				long millisecond = tm.tv_nsec / 1000000LL;
+
+				char time_str[256] = {};
+				char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+				sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%03d\n",
+					raw_read_data_.isc_raw_data_header.frame_index,
+					ltm.tm_year + 1900,
+					ltm.tm_mon + 1,
+					ltm.tm_mday,
+					dayofweek[ltm.tm_wday],
+					ltm.tm_hour,
+					ltm.tm_min,
+					ltm.tm_sec,
+					millisecond);
+
+				OutputDebugStringA(time_str);
+			}
+		}
+		else {
+			isc_image_info->frame_data[frame_data_index].frame_time = 0;
+		}
+
 		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
 		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
 		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
-
-		isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
-		isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time = 0;
 
 		isc_image_info->frame_data[frame_data_index].p1.width = 0;
 		isc_image_info->frame_data[frame_data_index].p1.height = 0;

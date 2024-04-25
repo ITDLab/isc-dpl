@@ -43,7 +43,7 @@ DpcImageWriter::DpcImageWriter():
 	max_width_(0), max_height_(0), save_image_path_(),
 	max_buffer_count_(0), image_buffers_(), depth_buffers_(), image_data_count_(0),
 	image_data_buffers_(nullptr), depth_data_count_(0), depth_data_buffers_(nullptr), pcd_data_count_(0), pcd_data_buffers_(nullptr), work_buffers_(),
-	thread_control_(), handle_semaphore_(NULL), thread_handle_(NULL), threads_critical_(), write_state_(WriteState::idle)
+	thread_control_(), handle_semaphore_(NULL), thread_handle_(NULL), threads_critical_(), write_state_(WriteState::idle), pcd_set_parameter_()
 {
 
 }
@@ -630,6 +630,10 @@ int DpcImageWriter::WriteDepthToFileAsPCD(const TCHAR* file_name, const int widt
 
 	// Unity -> ROS
 	// Position: Unity(x,y,z) -> ROS(z,-x,y)
+	pcd_set_parameter_.is_axis_unity = true;
+	pcd_set_parameter_.axis_reverse_x = false;
+	pcd_set_parameter_.axis_reverse_y = false;
+	pcd_set_parameter_.axis_reverse_z = false;
 
 	for (int i = 0; i < height; i++) {
 		
@@ -646,17 +650,65 @@ int DpcImageWriter::WriteDepthToFileAsPCD(const TCHAR* file_name, const int widt
 			pt = pt_t(x, y, z, col);
 
 			if (value > 0) {
-				x = -1 * ((b * (j - xc)) / value);
-				y = (b * (yc - i)) / value;
-				z = (float)bf / value;
-				
-				if (z >= min_distance && z < max_distance) {
-					unsigned char b = src_image[j][0];
-					unsigned char g = src_image[j][1];
-					unsigned char r = src_image[j][2];
-					col = MAKE_RGB(r, g, b);
+				if (pcd_set_parameter_.is_axis_unity) {
+					// Unity
+					if (pcd_set_parameter_.axis_reverse_x) {
+						x = -1 * ((b * (xc - j)) / value);
+					}
+					else {
+						x = ((b * (xc - j)) / value);
+					}
+					if (pcd_set_parameter_.axis_reverse_y) {
+						y = -1 * ((b * (yc - i)) / value);
+					}
+					else {
+						y = (b * (yc - i)) / value;
+					}
+					if (pcd_set_parameter_.axis_reverse_z) {
+						z = -1 * ((float)bf / value);
+					}
+					else {
+						z = (float)bf / value;
+					}
 
-					pt = pt_t(x, y, z, col);
+					if (abs(z) >= min_distance && abs(z) < max_distance) {
+						unsigned char b = src_image[j][0];
+						unsigned char g = src_image[j][1];
+						unsigned char r = src_image[j][2];
+						col = MAKE_RGB(r, g, b);
+
+						pt = pt_t(x, y, z, col);
+					}
+				}
+				else {
+					// ROS
+					if (pcd_set_parameter_.axis_reverse_x) {
+						x = -1 * ((float)bf / value);
+					}
+					else {
+						x = (float)bf / value;
+					}
+					if (pcd_set_parameter_.axis_reverse_y) {
+						y = -1 * ((b * (xc - j)) / value);
+					}
+					else {
+						y = ((b * (xc - j)) / value);
+					}
+					if (pcd_set_parameter_.axis_reverse_z) {
+						z = -1 * ((b * (yc - i)) / value);
+					}
+					else {
+						z = (b * (yc - i)) / value;
+					}
+
+					if (abs(x) >= min_distance && abs(x) < max_distance) {
+						unsigned char b = src_image[j][0];
+						unsigned char g = src_image[j][1];
+						unsigned char r = src_image[j][2];
+						col = MAKE_RGB(r, g, b);
+
+						pt = pt_t(x, y, z, col);
+					}
 				}
 			}
 

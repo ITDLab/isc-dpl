@@ -950,6 +950,11 @@ int IscDisparityFilterInterface::GetAverageDisparityData(IscImageInfo* isc_image
         ppxldsp,    // 視差データ 右下原点 
         pblkdsp);   // ブロック視差データ 右下原点
 
+    if (ret == false) {
+        // Filterを行わない
+        return DPCPROCESS_E_FILTER_THROUGH;
+    }
+
     return DPC_E_OK;
 }
 

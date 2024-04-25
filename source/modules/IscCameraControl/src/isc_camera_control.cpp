@@ -185,6 +185,8 @@ int IscCameraControl::Initialize(const IscCameraControlConfiguration* isc_camera
 	swprintf_s(isc_camera_control_config_.save_image_path, L"%s", isc_camera_control_configuration->save_image_path);
 	swprintf_s(isc_camera_control_config_.load_image_path, L"%s", isc_camera_control_configuration->load_image_path);
 
+	isc_camera_control_config_.minimum_write_interval_time = isc_camera_control_configuration->minimum_write_interval_time;
+
 	measure_tackt_time_->Init();
 
 	// log
@@ -248,7 +250,8 @@ int IscCameraControl::Initialize(const IscCameraControlConfiguration* isc_camera
 		save_data_configration.minimum_capacity_required = 20;	// 20GB
 		save_data_configration.save_time_for_one_file = 60;		// 60分
 		save_data_configration.max_buffer_count = max_buffer_count;
-		
+		save_data_configration.minimum_write_interval_time = isc_camera_control_config_.minimum_write_interval_time;
+
 		isc_file_write_control_impl_ = new IscFileWriteControlImpl;
 		ret = isc_file_write_control_impl_->Initialize(isc_camera_control_configuration, &save_data_configration, width, height, isc_log_);
 		if (ret != DPC_E_OK) {
@@ -548,6 +551,25 @@ int IscCameraControl::ImageHandler(IscImageInfoRingBuffer::BufferData* buffer_da
 		else {
 			// Continue to confirm image
 		}
+	}
+
+	// add time stamp
+	// SDKより取得した時間となるため、厳密にカメラより受信した時間ではない
+	struct timespec tm = {};
+	__int64 frame_time_ms_i64 = 0;
+	/*
+		これらの関数は、 TIME_UTC 値として base のみをサポートしています。
+		TIME_UTC は、 time_spec 1970 年 1 月 1 日午前 0 時 (協定世界時) のエポック開始からの秒数とナノ秒の値を設定します。	
+	*/
+	int tg_ret = timespec_get(&tm, TIME_UTC);
+	if (tg_ret == 0) {
+		// failed
+	}
+	else {
+		frame_time_ms_i64 = (tm.tv_sec * 1000LL) + tm.tv_nsec / 1000000LL;
+	}
+	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		buffer_data->isc_image_info.frame_data[i].frame_time = frame_time_ms_i64;
 	}
 
 	// data write
@@ -2068,6 +2090,8 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].camera_status.error_code = buffer_data->isc_image_info.frame_data[i].camera_status.error_code;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = buffer_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time;
+
+		isc_image_info->frame_data[i].frame_time = buffer_data->isc_image_info.frame_data[i].frame_time;
 
 		isc_image_info->frame_data[i].p1.width = 0;
 		isc_image_info->frame_data[i].p1.height = 0;

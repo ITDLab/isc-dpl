@@ -142,6 +142,10 @@ private:
 
 		unsigned int frame_index;
 		IscRawFileHeader raw_file_hedaer;
+
+		int minimum_write_interval_time;				/**< 書き込みの最小空き時間 (msec) */
+		__int64 previous_write_interval_time_tick;		/**< 書き込みの最小空き時間の監視　前回の時間 msec(=GetTickCount) */
+
 	};
 	FileWriteInformation file_write_information_;
 

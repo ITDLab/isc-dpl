@@ -490,6 +490,8 @@ BOOL CDPCguiDlg::OnInitDialog()
 	dpl_gui_configuration_->GetDataRecordPath(isc_dpl_configuration_.save_image_path, _MAX_PATH);
 	dpl_gui_configuration_->GetDataRecordPath(isc_dpl_configuration_.load_image_path, _MAX_PATH);
 
+	isc_dpl_configuration_.minimum_write_interval_time = dpl_gui_configuration_->GetCameraMinimumWriteInterval();
+
 	isc_dpl_configuration_.enabled_data_proc_module = dpl_gui_configuration_->IsEnabledDataProcLib();
 
 	// open camera for use it
@@ -3535,6 +3537,35 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 
 		isc_control_.is_isc_image_info_valid = true;
 
+		// debug
+		if (0) {
+			ULARGE_INTEGER ul_int = {};
+			ul_int.QuadPart = isc_control_.isc_image_info.frame_data[0].frame_time;
+			struct timespec tm = {};
+			tm.tv_sec = ul_int.QuadPart / 1000LL;
+			tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
+
+			struct tm ltm;
+			localtime_s(&ltm, &tm.tv_sec);
+			long millisecond = tm.tv_nsec / 1000000LL;
+
+			char time_str[256] = {};
+			char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+			sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%03d\n",
+				isc_control_.isc_image_info.frame_data[0].frameNo,
+				ltm.tm_year + 1900,
+				ltm.tm_mon + 1,
+				ltm.tm_mday,
+				dayofweek[ltm.tm_wday],
+				ltm.tm_hour,
+				ltm.tm_min,
+				ltm.tm_sec,
+				millisecond);
+
+			OutputDebugStringA(time_str);
+		}
+
 		// deta processing result
 		dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
 		if (dpl_result == DPC_E_OK) {
@@ -3563,6 +3594,35 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 		}
 
 		isc_control_.is_isc_image_info_valid = true;
+
+		// debug
+		if (0) {
+			ULARGE_INTEGER ul_int = {};
+			ul_int.QuadPart = isc_control_.isc_image_info.frame_data[0].frame_time;
+			struct timespec tm = {};
+			tm.tv_sec = ul_int.QuadPart / 1000LL;
+			tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
+
+			struct tm ltm;
+			localtime_s(&ltm, &tm.tv_sec);
+			long millisecond = tm.tv_nsec / 1000000LL;
+
+			char time_str[256] = {};
+			char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+			sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%d\n",
+				isc_control_.isc_image_info.frame_data[0].frameNo,
+				ltm.tm_year + 1900,
+				ltm.tm_mon + 1,
+				ltm.tm_mday,
+				dayofweek[ltm.tm_wday],
+				ltm.tm_hour,
+				ltm.tm_min,
+				ltm.tm_sec,
+				millisecond);
+
+			OutputDebugStringA(time_str);
+		}
 
 		// deta processing result
 		dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);

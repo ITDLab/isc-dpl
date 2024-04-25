@@ -39,6 +39,7 @@ DplGuiConfiguration::DplGuiConfiguration():
 	enabled_camera_(false),
 	camera_model_(0),
 	data_record_path_(),
+	minimum_write_interval_time_(0),
 	enabled_data_proc_library_(false),
 	draw_min_distance_(0),
 	draw_max_distance_(10.0),
@@ -83,7 +84,7 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 		ENABLED=0
 		CAMERA_MODEL=0		;0:VM 1:XC 2:4K 3:4KA 4:4KJ
 		DATA_RECORD_PATH=c:\temp
-
+		MINIMUM_WRITE_INTERVAL=0
 
 		[DATA_PROC_MODULES]
 		COUNT=0
@@ -119,6 +120,11 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 
 	GetPrivateProfileString(_T("CAMERA"), _T("DATA_RECORD_PATH"), _T("c:\\temp"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
 	_stprintf_s(data_record_path_, _T("%s"), returned_string);
+
+
+	GetPrivateProfileString(_T("CAMERA"), _T("MINIMUM_WRITE_INTERVAL"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	minimum_write_interval_time_ = temp_value >= 0 ? temp_value : 0;
 
 	if (camera_model_ == 0) {
 		// 0:VM
@@ -380,6 +386,31 @@ bool DplGuiConfiguration::GetDataRecordPath(TCHAR* path, const int max_length) c
 void DplGuiConfiguration::SetDataRecordPath(const TCHAR* path)
 {
 	_stprintf_s(data_record_path_, _T("%s"), path);
+
+	return;
+}
+
+/**
+ * 設定ファイルより設定を読み込み
+ *
+ * @return int 書き込みの最小空き時間
+ */
+int DplGuiConfiguration::GetCameraMinimumWriteInterval() const
+{
+	return minimum_write_interval_time_;
+}
+
+/**
+ * 設定ファイルより設定を読み込み
+ *
+ * @param[in] interval_time 書き込みの最小空き時間
+ * @return int 戻り値の説明
+ */
+void DplGuiConfiguration::SetCameraMinimumWriteInterval(const int interval_time)
+{
+	if (interval_time >= 0) {
+		minimum_write_interval_time_ = interval_time;
+	}
 
 	return;
 }

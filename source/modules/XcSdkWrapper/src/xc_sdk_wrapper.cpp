@@ -1953,6 +1953,8 @@ int XcSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
+		isc_image_info->frame_data[i].frame_time = 0;
+
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2026,6 +2028,8 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
 		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
+
+		isc_image_info->frame_data[i].frame_time = 0;
 
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;

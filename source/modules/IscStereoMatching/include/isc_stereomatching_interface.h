@@ -78,10 +78,20 @@ public:
 	*/
 	int GetDisparity(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data);
 
+	/** @brief get parallax pixel information (no matching).
+		@return 0, if successful.
+	*/
+	int GetDecodeDisparity(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data);
+
 	/** @brief get parallax stereo information.
 		@return 0, if successful.
 	*/
 	int GetBlockDisparity(IscImageInfo* isc_image_Info, IscBlockDisparityData* isc_stereo_disparity_data);
+
+	/** @brief Mask parallax data with Edge.
+		@return 0, if successful.
+	*/
+	int GetEdgeMaskDisparity(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data);
 
 private:
 
@@ -133,18 +143,42 @@ private:
 		double neibrng;		/**< 近傍マッチング視差変化範囲 */
 	};
 
+	struct EdgeMaskFilterParameter {
+		int enabled;                /**< EdgeMask 0:しない 1:する */
+		int edge_filter_method;     /**< Filetrの手法 0:無し 1:Sobel 2:Canny 3: Laplacian */
+
+		// sobel
+		int sobel_x_order;          /**< Sobel xに関する微分の次数 */
+		int sobel_y_order;          /**< Sobel yに関する微分の次数 */
+		int sobel_ksize;            /**< Sobel 拡張Sobelカーネルのサイズ． 1, 3, 5 あるいは 7 のいずれか */
+		int sobel_threshold;        /**< Sobel 閾値以上の場合にエッジ（＝白）と見なす */
+
+		// canny
+		int canny_threshold_1;      /**< Canny ヒステリシスが存在する処理の，1番目の閾値 */
+		int canny_threshold_2;      /**< Canny ヒステリシスが存在する処理の，2番目の閾値 */
+		int canny_aperture_size;    /**< Canny Sobel() オペレータのアパーチャサイズ */
+
+		// laplacian
+		int laplacian_ksize;        /**< Laplacian 2次微分フィルタを求めるために利用されるアパーチャのサイズ */
+		int laplacian_scale;        /**< Laplacian 求められたラプラシアンに対するスケールファクタ */
+		int laplacian_threshold;    /**< Laplacian 閾値以上の場合にエッジ（＝白）と見なす */
+	};
+
 	struct StereoMatchingParameters {
 		SystemParameter system_parameter;
 		MatchingParameter matching_parameter;
 		ExtensionMatchingParameter extension_matching_parameter;
 		BackMatchingParameter back_matching_parameter;
 		NeighborMatchingParameter neighbor_matching_parameter;
+		EdgeMaskFilterParameter edge_mask_filter_parameter;
 	};
 
 	StereoMatchingParameters stereo_matching_parameters_;
+	EdgeMaskFilterParameter edge_mask_filter_temporary_parameter_;
 
 	struct WorkBuffers {
 		IscImageInfo::ImageType buff_image[4];
+		IscImageInfo::DepthType buff_depth[4];
 	};
 	WorkBuffers work_buffers_;
 

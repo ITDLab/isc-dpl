@@ -85,6 +85,7 @@
 #define DPCPROCESS_E_INVALID_PARAMETER          ((DPL_RESULT) 0xA2000004)  /**< The parameter is invalid. */
 #define DPCPROCESS_E_FILE_NOT_FOUND             ((DPL_RESULT) 0xA2000005)  /**< The parameter is invalid. */
 #define DPCPROCESS_E_INVALID_MODE               ((DPL_RESULT) 0xA2000006)  /**< The parameter is invalid. */
+#define DPCPROCESS_E_FILTER_THROUGH             ((DPL_RESULT) 0xA2000007)  /**< The parameter is invalid. */
 
 /**
 * @}

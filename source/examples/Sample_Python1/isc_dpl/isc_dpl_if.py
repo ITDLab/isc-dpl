@@ -1133,6 +1133,19 @@ class IscDplIf:
         if ret == 0:
             frame_index = 0
 
+            # show time stamp
+            frame_time_sec = int(self.isc_image_info.frame_data[frame_index].frame_time / 1000)
+            time_stamp = frame_time_sec
+
+            time_stamp_tm = time.localtime(time_stamp)
+            tm_millisecond = int(self.isc_image_info.frame_data[frame_index].frame_time - (frame_time_sec * 1000))
+            #print("{}/{}/{} {:02}:{:02}:{:02}.{:03}".format(time_stamp_tm.tm_year, time_stamp_tm.tm_mon, time_stamp_tm.tm_mday, time_stamp_tm.tm_hour, time_stamp_tm.tm_min, time_stamp_tm.tm_sec, tm_millisecond))
+
+            # other way
+            # dt = datetime.datetime.fromtimestamp(time_stamp, datetime.timezone.utc)
+            # dt = datetime.datetime.fromtimestamp(time_stamp, datetime.timezone(datetime.timedelta(hours=9)))
+            # print(dt)
+
             # base image
             p1_width = self.isc_image_info.frame_data[frame_index].p1.width
             p1_height = self.isc_image_info.frame_data[frame_index].p1.height

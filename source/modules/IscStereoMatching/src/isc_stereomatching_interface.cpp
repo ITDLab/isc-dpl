@@ -97,6 +97,19 @@ IscStereoMatchingInterface::IscStereoMatchingInterface():
     stereo_matching_parameters_.neighbor_matching_parameter.neibhsft = 0.5; // VM:0.5
     stereo_matching_parameters_.neighbor_matching_parameter.neibrng = 8;    // VM:8
 
+    stereo_matching_parameters_.edge_mask_filter_parameter.enabled = 1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.edge_filter_method = 1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_x_order = 1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_y_order = 0;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_ksize = 3;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_threshold = 8;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_1 = 30;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_2 = 70;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_aperture_size = 3;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_ksize = 1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_scale = 1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_threshold = 8;
+
 }	
 
 /**
@@ -180,6 +193,12 @@ int IscStereoMatchingInterface::Initialize(IscDataProcModuleConfiguration* isc_d
         work_buffers_.buff_image[i].channel_count = 0;
         work_buffers_.buff_image[i].image = new unsigned char[image_size];
         memset(work_buffers_.buff_image[i].image, 0, image_size);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        work_buffers_.buff_depth[i].width = 0;
+        work_buffers_.buff_depth[i].height = 0;
+        work_buffers_.buff_depth[i].image = new float[depth_size];
     }
 
     // initialize FrameDecoder
@@ -304,6 +323,59 @@ int IscStereoMatchingInterface::LoadParameterFromFile(const wchar_t* file_name, 
     GetPrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrng", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
     stereo_matching_parameters->neighbor_matching_parameter.neibrng = _wtof(returned_string);
 
+    // EdgeMaskFilterParameter
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"enabled", L"1", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.enabled = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"edge_filter_method", L"1", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.edge_filter_method = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_x_order", L"1", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.sobel_x_order = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_y_order", L"0", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.sobel_y_order = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_ksize", L"3", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.sobel_ksize = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_threshold", L"8", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.sobel_threshold = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"canny_threshold_1", L"30", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_1 = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"canny_threshold_2", L"70", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_2 = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"canny_aperture_size", L"3", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.canny_aperture_size = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_ksize", L"1", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.laplacian_ksize = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_scale", L"1", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.laplacian_scale = _wtoi(returned_string);
+
+    GetPrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_threshold", L"8", returned_string, sizeof(returned_string) / sizeof(wchar_t), file_name);
+    stereo_matching_parameters->edge_mask_filter_parameter.laplacian_threshold = _wtoi(returned_string);
+
+    {
+        // edge_mask_filter_parameter_　を一時的な保存へコピー
+        edge_mask_filter_temporary_parameter_.enabled = stereo_matching_parameters->edge_mask_filter_parameter.enabled;
+        edge_mask_filter_temporary_parameter_.edge_filter_method = stereo_matching_parameters->edge_mask_filter_parameter.edge_filter_method;
+        edge_mask_filter_temporary_parameter_.sobel_x_order = stereo_matching_parameters->edge_mask_filter_parameter.sobel_x_order;
+        edge_mask_filter_temporary_parameter_.sobel_y_order = stereo_matching_parameters->edge_mask_filter_parameter.sobel_y_order;
+        edge_mask_filter_temporary_parameter_.sobel_ksize = stereo_matching_parameters->edge_mask_filter_parameter.sobel_ksize;
+        edge_mask_filter_temporary_parameter_.sobel_threshold = stereo_matching_parameters->edge_mask_filter_parameter.sobel_threshold;
+        edge_mask_filter_temporary_parameter_.canny_threshold_1 = stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_1;
+        edge_mask_filter_temporary_parameter_.canny_threshold_2 = stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_2;
+        edge_mask_filter_temporary_parameter_.canny_aperture_size = stereo_matching_parameters->edge_mask_filter_parameter.canny_aperture_size;
+        edge_mask_filter_temporary_parameter_.laplacian_ksize = stereo_matching_parameters->edge_mask_filter_parameter.laplacian_ksize;
+        edge_mask_filter_temporary_parameter_.laplacian_scale = stereo_matching_parameters->edge_mask_filter_parameter.laplacian_scale;
+        edge_mask_filter_temporary_parameter_.laplacian_threshold = stereo_matching_parameters->edge_mask_filter_parameter.laplacian_threshold;
+    }
+
     return DPC_E_OK;
 }
 
@@ -405,6 +477,43 @@ int IscStereoMatchingInterface::SaveParameterToFile(const wchar_t* file_name, co
     swprintf_s(string, L"%.3f", stereo_matching_parameters->neighbor_matching_parameter.neibrng);
     WritePrivateProfileString(L"NEIGHBOR_MATCHING", L"neibrng", string, file_name);
 
+    // EdgeMaskFilterParameter
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.enabled);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"enabled", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.edge_filter_method);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"edge_filter_method", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.sobel_x_order);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_x_order", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.sobel_y_order);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_y_order", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.sobel_ksize);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_ksize", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.sobel_threshold);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"sobel_threshold", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_1);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"canny_threshold_1", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.canny_threshold_2);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"canny_threshold_2", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.canny_aperture_size);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"canny_aperture_size", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.laplacian_ksize);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_ksize", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.laplacian_scale);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_scale", string, file_name);
+
+    swprintf_s(string, L"%d", (int)stereo_matching_parameters->edge_mask_filter_parameter.laplacian_threshold);
+    WritePrivateProfileString(L"EDGE_MASK_FILTER", L"laplacian_threshold", string, file_name);
+
     return DPC_E_OK;
 }
 
@@ -457,6 +566,20 @@ int IscStereoMatchingInterface::SetParameterToStereoMatchingModule(const StereoM
         stereo_matching_parameters->neighbor_matching_parameter.neibrng
     );
 
+    // Edge Mask
+    stereo_matching_parameters_.edge_mask_filter_parameter.enabled = edge_mask_filter_temporary_parameter_.enabled;
+    stereo_matching_parameters_.edge_mask_filter_parameter.edge_filter_method = edge_mask_filter_temporary_parameter_.edge_filter_method;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_x_order = edge_mask_filter_temporary_parameter_.sobel_x_order;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_y_order = edge_mask_filter_temporary_parameter_.sobel_y_order;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_ksize = edge_mask_filter_temporary_parameter_.sobel_ksize;
+    stereo_matching_parameters_.edge_mask_filter_parameter.sobel_threshold = edge_mask_filter_temporary_parameter_.sobel_threshold;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_1 = edge_mask_filter_temporary_parameter_.canny_threshold_1;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_2 = edge_mask_filter_temporary_parameter_.canny_threshold_2;
+    stereo_matching_parameters_.edge_mask_filter_parameter.canny_aperture_size = edge_mask_filter_temporary_parameter_.canny_aperture_size;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_ksize = edge_mask_filter_temporary_parameter_.laplacian_ksize;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_scale = edge_mask_filter_temporary_parameter_.laplacian_scale;
+    stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_threshold = edge_mask_filter_temporary_parameter_.laplacian_threshold;
+
     return DPC_E_OK;
 }
 
@@ -471,6 +594,13 @@ int IscStereoMatchingInterface::Terminate()
     StereoMatching::deleteMatchingThread();
 
     // release work
+    for (int i = 0; i < 4; i++) {
+        work_buffers_.buff_depth[i].width = 0;
+        work_buffers_.buff_depth[i].height = 0;
+        delete[] work_buffers_.buff_depth[i].image;
+        work_buffers_.buff_depth[i].image = nullptr;
+    }
+
     for (int i = 0; i < 2; i++) {
         work_buffers_.buff_image[i].width = 0;
         work_buffers_.buff_image[i].height = 0;
@@ -624,6 +754,14 @@ int IscStereoMatchingInterface::GetParameter(IscDataProcModuleParameter* isc_dat
     MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibhsft,  L"neibhsft",    L"NeighborMatching", L"近傍マッチング水平シフト", &isc_data_proc_module_parameter->parameter_set[index++]);
     MakeParameterSet(stereo_matching_parameters_.neighbor_matching_parameter.neibrng,   L"neibrng",     L"NeighborMatching", L"近傍マッチング視差変化範囲", &isc_data_proc_module_parameter->parameter_set[index++]);
 
+    // EdgeMaskFilterParameter
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.enabled,            L"enb",         L"EdgeMaskFilter", L"EdgeMask 0:しない 1:する", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.edge_filter_method, L"method",      L"EdgeMaskFilter", L"Filetrの手法 0:無し 1:Sobel", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.sobel_x_order,      L"x_order",     L"EdgeMaskFilter", L"xに関する微分の次数", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.sobel_y_order,      L"y_order",     L"EdgeMaskFilter", L"yに関する微分の次数", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.sobel_ksize,        L"ksize",       L"EdgeMaskFilter", L"拡張Sobelカーネルのサイズ", &isc_data_proc_module_parameter->parameter_set[index++]);
+    MakeParameterSet(stereo_matching_parameters_.edge_mask_filter_parameter.sobel_threshold,    L"threshold",   L"EdgeMaskFilter", L"閾値以上の場合にエッジと見なす", &isc_data_proc_module_parameter->parameter_set[index++]);
+
     isc_data_proc_module_parameter->parameter_count = index;
 
     return DPC_E_OK;
@@ -729,6 +867,15 @@ int IscStereoMatchingInterface::SetParameter(IscDataProcModuleParameter* isc_dat
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibvsft);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibhsft);
     ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &stereo_matching_parameters_.neighbor_matching_parameter.neibrng);
+
+    // EdgeMaskFilterParameter
+    // 処理中の変更を防止するために一時変数へ保存
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.enabled);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.edge_filter_method);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.sobel_x_order);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.sobel_y_order);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.sobel_ksize);
+    ParseParameterSet(&isc_data_proc_module_parameter->parameter_set[index++], &edge_mask_filter_temporary_parameter_.sobel_threshold);
 
     parameter_update_request_ = true;
 
@@ -841,6 +988,54 @@ int IscStereoMatchingInterface::GetDisparity(IscImageInfo* isc_image_Info, IscDa
 }
 
 /**
+ * 視差画素情報を取得します(Matchingをしない関数)
+ *
+ * @param[in] isc_image_Info 入力画像・データ
+ * @param[out] isc_data_proc_result_data　処理結果画素情報
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscStereoMatchingInterface::GetDecodeDisparity(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data)
+{
+    if (isc_image_Info->grab != IscGrabMode::kCorrect) {
+        return DPCPROCESS_E_INVALID_MODE;
+    }
+
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_Info->frame_data[fd_index].p1.width == 0) || (isc_image_Info->frame_data[fd_index].p1.height == 0)) {
+        return DPC_E_OK;
+    }
+
+    if ((isc_image_Info->frame_data[fd_index].p2.width == 0) || (isc_image_Info->frame_data[fd_index].p2.height == 0)) {
+        return DPC_E_OK;
+    }
+
+    if (parameter_update_request_) {
+        int ret = SetParameterToStereoMatchingModule(&stereo_matching_parameters_);
+        parameter_update_request_ = false;
+    }
+
+    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+    // (1) get disparity
+    int width = isc_image_Info->frame_data[fd_index].p1.width;
+    int height = isc_image_Info->frame_data[fd_index].p1.height;
+
+    unsigned char* display_image = work_buffers_.buff_image[0].image;
+
+    dst_isc_image_info->frame_data[fd_index].depth.width = width;
+    dst_isc_image_info->frame_data[fd_index].depth.height = height;
+    float* disparity = dst_isc_image_info->frame_data[fd_index].depth.image;
+
+    memset(disparity, 0, width * height * sizeof(float));
+
+    StereoMatching::getDisparity(height, width, display_image, disparity);
+
+    return DPC_E_OK;
+}
+
+/**
  * 視差ブロック情報を取得するを取得します
  *
  * @param[in] isc_image_Info 入力画像・データ
@@ -896,5 +1091,140 @@ int IscStereoMatchingInterface::GetBlockDisparity(IscImageInfo* isc_image_Info, 
 
     StereoMatching::getBlockDisparity(stereo_height, stereo_width, pmtchgt, pmtcwdt, pblkofsx, pblkofsy, pdepth, pshdwdt, pblkdsp, pblkval, pblkcrst);
     
+    return DPC_E_OK;
+}
+
+/**
+ * 視差データをEdgeでMaskします
+ *
+ * @param[in] isc_image_Info 入力画像・データ
+ * @param[out] isc_stereo_disparity_data　処理結果視差情報
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscStereoMatchingInterface::GetEdgeMaskDisparity(IscImageInfo* isc_image_Info, IscDataProcResultData* isc_data_proc_result_data)
+{
+
+    if (isc_image_Info->grab != IscGrabMode::kCorrect) {
+        return DPCPROCESS_E_INVALID_MODE;
+    }
+
+    int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    if ((isc_image_Info->frame_data[fd_index].p1.width == 0) || (isc_image_Info->frame_data[fd_index].p1.height == 0)) {
+        return DPC_E_OK;
+    }
+
+    if ((isc_image_Info->frame_data[fd_index].p2.width == 0) || (isc_image_Info->frame_data[fd_index].p2.height == 0)) {
+        return DPC_E_OK;
+    }
+
+    if (parameter_update_request_) {
+        int ret = SetParameterToStereoMatchingModule(&stereo_matching_parameters_);
+
+        parameter_update_request_ = false;
+    }
+
+    if (stereo_matching_parameters_.edge_mask_filter_parameter.enabled == 0) {
+        return DPC_E_OK;
+    }
+
+    IscImageInfo* dst_isc_image_info = &isc_data_proc_result_data->isc_image_info;
+
+    // (1) edge detection
+    unsigned char* src_image = isc_image_Info->frame_data[fd_index].p1.image;
+    int src_image_width = isc_image_Info->frame_data[fd_index].p1.width;
+    int src_image_height = isc_image_Info->frame_data[fd_index].p1.height;
+    cv::Mat src_image_mat(src_image_height, src_image_width, CV_8UC1, src_image);
+
+    float* edge_image = work_buffers_.buff_depth[1].image;
+    cv::Mat edge_image_mat(src_image_height, src_image_width, CV_32F, edge_image);
+
+    unsigned char* abs_edge_image = work_buffers_.buff_image[1].image;
+    cv::Mat abs_edge_image_mat(src_image_height, src_image_width, CV_8UC1, abs_edge_image);
+
+    int edge_filter_method = stereo_matching_parameters_.edge_mask_filter_parameter.edge_filter_method;
+
+    if (edge_filter_method == 1) {
+        // sobel
+        int x_order = stereo_matching_parameters_.edge_mask_filter_parameter.sobel_x_order;
+        int y_order = stereo_matching_parameters_.edge_mask_filter_parameter.sobel_y_order;
+        int ksize = stereo_matching_parameters_.edge_mask_filter_parameter.sobel_ksize;
+        double threshold = (double)stereo_matching_parameters_.edge_mask_filter_parameter.sobel_threshold;
+        
+        // Sobelフィルタの処理(入力画像,出力画像,出力タイプ,x方向の微分次数,y方向の微分次数,フィルタサイズ)
+        cv::Sobel(src_image_mat, edge_image_mat, CV_32F, x_order, y_order, ksize);
+
+        // convertScaleAbs（＝スケーリング後に絶対値を計算し，結果を8ビットに変換）
+        cv::convertScaleAbs(edge_image_mat, abs_edge_image_mat, 1, 0);
+
+        // 閾値以上の場合にエッジ（＝白）と見なす(入力画像,出力画像,閾値,最大値,閾値タイプ)
+        cv::threshold(abs_edge_image_mat, abs_edge_image_mat, threshold, 255, cv::THRESH_BINARY);
+    }
+    else if (edge_filter_method == 2) {
+        // cany
+        double threshold1 = (double)stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_1;
+        double threshold2 = (double)stereo_matching_parameters_.edge_mask_filter_parameter.canny_threshold_2;
+        int aperture_size = stereo_matching_parameters_.edge_mask_filter_parameter.canny_aperture_size;
+
+        cv::Canny(src_image_mat, edge_image_mat, threshold1, threshold2, aperture_size, false);
+
+        // convertScaleAbs（＝スケーリング後に絶対値を計算し，結果を8ビットに変換）
+        cv::convertScaleAbs(edge_image_mat, abs_edge_image_mat, 1, 0);
+    }
+    else if (edge_filter_method == 3) {
+        int ksize = stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_ksize;
+        double scale = stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_scale;
+        double threshold = (double)stereo_matching_parameters_.edge_mask_filter_parameter.laplacian_threshold;
+
+        // Laplacian
+        cv::Laplacian(src_image_mat, edge_image_mat, CV_32F, ksize, scale);
+
+        // convertScaleAbs（＝スケーリング後に絶対値を計算し，結果を8ビットに変換）
+        cv::convertScaleAbs(edge_image_mat, abs_edge_image_mat, 1, 0);
+
+        // 閾値以上の場合にエッジ（＝白）と見なす(入力画像,出力画像,閾値,最大値,閾値タイプ)
+        cv::threshold(abs_edge_image_mat, abs_edge_image_mat, threshold, 255, cv::THRESH_BINARY);
+    }
+    else {
+        return DPC_E_OK;
+    }
+
+    // (2)mask
+    int disparity_width = dst_isc_image_info->frame_data[fd_index].depth.width;
+    int disparity_height = dst_isc_image_info->frame_data[fd_index].depth.height;
+    float* disparity = dst_isc_image_info->frame_data[fd_index].depth.image;
+    
+    size_t depth_size = disparity_width * disparity_height * sizeof(float);
+    memcpy(work_buffers_.buff_depth[0].image, disparity, depth_size);
+
+    cv::Mat src_disparity_mat(disparity_height, disparity_width, CV_32FC1, work_buffers_.buff_depth[0].image);
+    cv::Mat mask_result_mat(disparity_height, disparity_width, CV_32FC1, disparity);
+
+    for (int i = 0; i < disparity_height; i++) {
+
+        float* src = work_buffers_.buff_depth[0].image + (i * disparity_width);
+        unsigned char* mask_src = abs_edge_image + (i * disparity_width);
+
+        float* dst = disparity + (i * disparity_width);
+
+        for (int j = 0; j < disparity_width; j++) {
+            if (*mask_src == 255) {
+                if (*src > 1) {
+                    *dst = *src;
+                }
+                else {
+                    *dst = 0;
+                }
+            }
+            else {
+                *dst = 0;
+            }
+            src++;
+            dst++;
+            mask_src++;
+        }
+    }
+
     return DPC_E_OK;
 }

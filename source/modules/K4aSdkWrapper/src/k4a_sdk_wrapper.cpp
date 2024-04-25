@@ -1864,6 +1864,8 @@ int K4aSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
+		isc_image_info->frame_data[i].frame_time = 0;
+
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -1938,10 +1940,11 @@ int K4aSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
+		isc_image_info->frame_data[i].frame_time = 0;
+
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
-
 
 		isc_image_info->frame_data[i].p1.width = 0;
 		isc_image_info->frame_data[i].p1.height = 0;

@@ -99,6 +99,7 @@ int IscFileWriteControlImpl::Initialize(const IscCameraControlConfiguration* isc
 	isc_save_data_configuration_.save_time_for_one_file = isc_save_data_configuration->save_time_for_one_file;
 	
 	isc_save_data_configuration_.max_buffer_count = isc_save_data_configuration->max_buffer_count;
+	isc_save_data_configuration_.minimum_write_interval_time = isc_save_data_configuration->minimum_write_interval_time;
 
 	camera_width_ = width;
 	camera_height_ = height;
@@ -180,6 +181,9 @@ int IscFileWriteControlImpl::Initialize(const IscCameraControlConfiguration* isc
 
 	file_write_information_.previous_time_free_space_monitoring = 0i64;
 	file_write_information_.free_space_monitoring_cycle_sec = 1 * 60;	// minutes -> second
+
+	file_write_information_.minimum_write_interval_time = isc_save_data_configuration_.minimum_write_interval_time;
+	file_write_information_.previous_write_interval_time_tick = 0i64;
 
 	/*
 		pre-allocated
@@ -402,6 +406,7 @@ int IscFileWriteControlImpl::Start(const IscCameraSpecificParameter* camera_spec
 
 	file_write_information_.start_time_of_current_file_msec = GetTickCount64();
 	file_write_information_.previous_time_free_space_monitoring = GetTickCount64();
+	file_write_information_.previous_write_interval_time_tick = GetTickCount64();
 
 	// write speed check
 	file_write_speed_info_.Start();
@@ -468,12 +473,14 @@ int IscFileWriteControlImpl::Add(IscImageInfo* isc_image_info)
 		buffer_data->isc_image_info.camera_specific_parameter.base_length = isc_image_info->camera_specific_parameter.base_length;
 		buffer_data->isc_image_info.camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
 
+		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code = isc_image_info->frame_data[frame_data_index].camera_status.error_code;
+		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time;
+
+		buffer_data->isc_image_info.frame_data[frame_data_index].frame_time = isc_image_info->frame_data[frame_data_index].frame_time;
+
 		buffer_data->isc_image_info.frame_data[frame_data_index].frameNo = isc_image_info->frame_data[frame_data_index].frameNo;
 		buffer_data->isc_image_info.frame_data[frame_data_index].gain = isc_image_info->frame_data[frame_data_index].gain;
 		buffer_data->isc_image_info.frame_data[frame_data_index].exposure = isc_image_info->frame_data[frame_data_index].exposure;
-
-		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code = isc_image_info->frame_data[frame_data_index].camera_status.error_code;
-		buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[frame_data_index].camera_status.data_receive_tact_time;
 
 		buffer_data->isc_image_info.frame_data[frame_data_index].p1.width = 0;
 		buffer_data->isc_image_info.frame_data[frame_data_index].p1.height = 0;
@@ -1284,7 +1291,22 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 			ULONGLONG time = 0;
 			int get_index = isc_file_write_Control->isc_image_info_ring_buffer_->GetGetBuffer(&image_info_buffer_data, &time);
 
-			if (get_index >= 0) {
+			// 書き込み周期の確認
+			bool is_write_interval_elapsed_ok = false;
+			int minimum_write_interval_time = isc_file_write_Control->file_write_information_.minimum_write_interval_time;
+			if (minimum_write_interval_time > 0) {
+				__int64 now_time_msec = GetTickCount64();
+				__int64 elapsed_time_msec = now_time_msec - file_write_information_.previous_write_interval_time_tick;
+
+				if (elapsed_time_msec > minimum_write_interval_time) {
+					is_write_interval_elapsed_ok = true;
+				}
+			}
+			else {
+				is_write_interval_elapsed_ok = true;
+			}
+
+			if ((get_index >= 0) && is_write_interval_elapsed_ok) {
 				// there is an image
 
 				// mono
@@ -1302,6 +1324,11 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 					isc_raw_data_header.error_code = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].camera_status.error_code;
 					isc_raw_data_header.exposure = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].exposure;
 					isc_raw_data_header.gain = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].gain;
+
+					ULARGE_INTEGER ul_int = {};
+					ul_int.QuadPart = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frame_time;
+					isc_raw_data_header.frame_time_low = ul_int.u.LowPart;
+					isc_raw_data_header.frame_time_high = ul_int.u.HighPart;
 
 					number_of_write_to_file = isc_raw_data_header.header_size;
 					number_of_byteswritten = 0;
@@ -1360,6 +1387,11 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 					isc_raw_data_header.exposure = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].exposure;
 					isc_raw_data_header.gain = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].gain;
 
+					ULARGE_INTEGER ul_int = {};
+					ul_int.QuadPart = image_info_buffer_data->isc_image_info.frame_data[frame_data_index].frame_time;
+					isc_raw_data_header.frame_time_low = ul_int.u.LowPart;
+					isc_raw_data_header.frame_time_high = ul_int.u.HighPart;
+
 					number_of_write_to_file = isc_raw_data_header.header_size;
 					number_of_byteswritten = 0;
 
@@ -1410,6 +1442,8 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 				//	swprintf_s(logMag, L"[INFO]File Save FPS=%d\n", write_fps);
 				//	OutputDebugString(logMag);
 				//}
+
+				file_write_information_.previous_write_interval_time_tick = GetTickCount64();
 			}
 
 			// ended

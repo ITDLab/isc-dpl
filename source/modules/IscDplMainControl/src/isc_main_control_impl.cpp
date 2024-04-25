@@ -124,6 +124,7 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
 
     swprintf_s(ipc_dpl_configuration_.save_image_path, L"%s", ipc_dpl_configuration->save_image_path);
     swprintf_s(ipc_dpl_configuration_.load_image_path, L"%s", ipc_dpl_configuration->load_image_path);
+    ipc_dpl_configuration_.minimum_write_interval_time = ipc_dpl_configuration->minimum_write_interval_time;
 
     ipc_dpl_configuration_.enabled_data_proc_module = ipc_dpl_configuration->enabled_data_proc_module;
 
@@ -135,6 +136,7 @@ int IscMainControlImpl::Initialize(const IscDplConfiguration* ipc_dpl_configurat
     isc_camera_control_config.isc_camera_model = ipc_dpl_configuration_.isc_camera_model;
     swprintf_s(isc_camera_control_config.save_image_path, L"%s", ipc_dpl_configuration_.save_image_path);
     swprintf_s(isc_camera_control_config.load_image_path, L"%s", ipc_dpl_configuration_.load_image_path);
+    isc_camera_control_config.minimum_write_interval_time = ipc_dpl_configuration_.minimum_write_interval_time;
 
     // log
     swprintf_s(log_file_name_, L"%s\\IscDplLib", ipc_dpl_configuration_.log_file_path);
@@ -1737,6 +1739,8 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
 
         dst_isc_image_Info->frame_data[i].camera_status.error_code = src_isc_image_Info->frame_data[i].camera_status.error_code;
         dst_isc_image_Info->frame_data[i].camera_status.data_receive_tact_time = src_isc_image_Info->frame_data[i].camera_status.data_receive_tact_time;
+
+        dst_isc_image_Info->frame_data[i].frame_time = src_isc_image_Info->frame_data[i].frame_time;
 
         dst_isc_image_Info->frame_data[i].p1.width = 0;
         dst_isc_image_Info->frame_data[i].p1.height = 0;

@@ -1305,6 +1305,11 @@ int IscDataProcessingControl::RunDataProcStereoMatching(IscImageInfo* isc_image_
 
         dp_ret = isc_disparity_filter_->GetAverageDisparityData(isc_image_info, &isc_block_disparity_data_, isc_data_proc_result_data);
 
+        if (dp_ret == DPCPROCESS_E_FILTER_THROUGH) {
+            dp_ret = isc_stereo_matching_->GetDecodeDisparity(isc_image_info, isc_data_proc_result_data);
+            dp_ret = isc_stereo_matching_->GetEdgeMaskDisparity(isc_image_info, isc_data_proc_result_data);
+        }
+
         isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;
         isc_data_proc_result_data->module_status[module_index].processing_time = measure_time_->Stop();
 

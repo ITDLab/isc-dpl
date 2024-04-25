@@ -45,6 +45,7 @@ struct IscCameraControlConfiguration {
     IscCameraModel isc_camera_model;            /**< physical camera model */
     wchar_t save_image_path[_MAX_PATH];         /**< the path to save the image */
     wchar_t load_image_path[_MAX_PATH];         /**< image loading path */
+    int minimum_write_interval_time;            /**< minimum free time to write (msec) */
 };
 
 /** @struct  IscSaveDataConfiguration
@@ -61,6 +62,8 @@ struct IscSaveDataConfiguration {
 	int save_time_for_one_file;				/**< 保存ファイルの1個あたりの時間 (分) */
 
     int max_buffer_count;                   /**< 内部バッファーの数 */
+
+    int minimum_write_interval_time;        /**< 書き込みの最小空き時間 (msec) */
 };
 
 
@@ -250,6 +253,8 @@ struct IscImageInfo {
     struct FrameData {
         IscCameraStatus camera_status;      /**< カメラの状態 */
 
+        __int64 frame_time;                 /**< UNIX UTC Time (msec) */
+
         int frameNo;                        /**< フレームの番号 */
         int gain;                           /**< フレームのGain値 */
         int exposure;                       /**< フレームのExposure値 */
@@ -356,23 +361,30 @@ struct IscRawFileHeader {
                 64
 */
 
-constexpr int ISC_ROW_DATA_HEADER_VERSION = 200;     /**< Header Version 2.0.0 */  
+constexpr int ISC_ROW_DATA_HEADER_VERSION = 300;     /**< Header Version 2.0.0 */  
+
+/*
+    200 -> 300 rserve[0/1] frame_time(64bit)　に変更
+
+*/
 
 /** @struct  IscRawDataHeader
  *  @brief This is the structure to file
  */
 struct IscRawDataHeader {
-    int		version;        /**< Header version */
-    int		header_size;    /**< Header size */
-    int		data_size;      /**< Data size */
-    int     compressed;     /**< Data is compressed 0:none 1:compressed */
-    int		frame_index;    /**< Frame index */
-    int		type;           /**< Type 1:mono 2:color*/
-    int		status;         /**< AutoCalib　Staus */
-    int		error_code;     /**< Error code */
-    int		exposure;       /**< Exposure value */
-    int		gain;           /**< Gain Value */
-    int		reserve[6];     /**< Reserve */
+    int		version;            /**< Header version */
+    int		header_size;        /**< Header size */
+    int		data_size;          /**< Data size */
+    int     compressed;         /**< Data is compressed 0:none 1:compressed */
+    int		frame_index;        /**< Frame index */
+    int		type;               /**< Type 1:mono 2:color*/
+    int		status;             /**< AutoCalib　Staus */
+    int		error_code;         /**< Error code */
+    int		exposure;           /**< Exposure value */
+    int		gain;               /**< Gain Value */
+    int     frame_time_low;     /**< frame time (UTC msec) lower part */
+    int     frame_time_high;    /**< frame time (UTC msec) high part */
+    int		reserve[4];         /**< Reserve */
 };
 
 #endif /* ISC_CEMERA_DEF_H */

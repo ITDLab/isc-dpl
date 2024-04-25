@@ -147,6 +147,16 @@ private:
 		}
 	};
 
+	struct PCDSetParameter {
+		bool is_axis_unity;
+
+		bool axis_reverse_x;
+		bool axis_reverse_y;
+		bool axis_reverse_z;
+	};
+
+	PCDSetParameter pcd_set_parameter_;
+
 	static unsigned __stdcall ControlThread(void* context);
 	int WriteDataProc(DpcImageWriter* dpc_iamge_writer);
 

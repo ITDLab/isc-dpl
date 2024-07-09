@@ -248,8 +248,6 @@ int XcSdkWrapper::Initialize()
 	sprintf_s(module_path_, "%s", xc_module_file_name_);
 	PathRemoveFileSpecA(module_path_);
 
-	MessageBoxA(NULL, module_path_, "module_path_", MB_OK);
-
 	// value in specification
 	constexpr int camera_width = 1280;
 	constexpr int camea_height = 720;

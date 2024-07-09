@@ -1222,6 +1222,10 @@ void CDPCguiDlg::OnMouseMove(UINT nFlags, CPoint point)
 		is_inside_rect = true;
 	}
 
+	if (draw_data_lib_ == nullptr) {
+		return;
+	}
+
 	POINT image_position = {};
 	if (is_inside_rect) {
 		mouse_operation_control_.mouse_position_real_time_monitor.valid = true;

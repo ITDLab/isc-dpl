@@ -48,6 +48,8 @@
 #pragma comment (lib,"opencv_world480")
 #endif
 
+extern char c4k_module_file_name_[1024];
+
 namespace ns_k4asdk_wrapper
 {
 
@@ -222,7 +224,9 @@ int K4aSdkWrapper::Initialize()
 	// get module path
 	char module_path_name[MAX_PATH + 1] = {};
 	GetModuleFileNameA(NULL, module_path_name, MAX_PATH);
-	sprintf_s(module_path_, "%s", module_path_name);
+
+	// DLL のエントリ ポイントより取得
+	sprintf_s(module_path_, "%s", c4k_module_file_name_);
 	PathRemoveFileSpecA(module_path_);
 
 	// value in specification

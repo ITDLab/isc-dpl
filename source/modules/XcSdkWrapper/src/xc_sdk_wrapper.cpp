@@ -48,6 +48,8 @@
 #pragma comment (lib,"opencv_world480")
 #endif
 
+extern char xc_module_file_name_[1024];
+
 namespace ns_xcsdk_wrapper
 {
 
@@ -241,8 +243,12 @@ int XcSdkWrapper::Initialize()
 	// get module path
 	char module_path_name[MAX_PATH + 1] = {};
 	GetModuleFileNameA(NULL, module_path_name, MAX_PATH);
-	sprintf_s(module_path_, "%s", module_path_name);
+	
+	// DLL のエントリ ポイントより取得
+	sprintf_s(module_path_, "%s", xc_module_file_name_);
 	PathRemoveFileSpecA(module_path_);
+
+	MessageBoxA(NULL, module_path_, "module_path_", MB_OK);
 
 	// value in specification
 	constexpr int camera_width = 1280;

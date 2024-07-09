@@ -9,6 +9,9 @@ from enum import Enum
 from enum import IntEnum
 import numpy as np
 import cv2
+import datetime
+import time
+from time import gmtime, strftime
 
 # @enum  IscCameraModel
 # @brief This is a camera model name parameter
@@ -191,6 +194,8 @@ class FrameData (Structure):
     _fields_ = [
                 ("camera_status", IscCameraStatus), #/**< カメラの状態 */
 
+                ("frame_time", c_int64),            #/**< UNIX UTC Time (msec) */
+    
                 ("frameNo", c_int),                 #/**< フレームの番号 */
                 ("gain", c_int),                    #/**< フレームのGain値 */
                 ("exposure", c_int),                #/**< フレームのExposure値 */
@@ -1135,6 +1140,7 @@ class IscDplIf:
 
             # show time stamp
             frame_time_sec = int(self.isc_image_info.frame_data[frame_index].frame_time / 1000)
+            #print("frame_time {}".format(frame_time_sec))
             time_stamp = frame_time_sec
 
             time_stamp_tm = time.localtime(time_stamp)
@@ -1245,3 +1251,27 @@ class IscDplIf:
             return -1, self.error_image_base, -1, self.error_image_color, -1, self.error_data_depth
         
         return ret_base_image, nd_array_base_image_flip, ret_color_image, nd_array_color_image_flip, ret_depth_data, nd_array_depth_data_flip
+
+    def get_area_distance(self, top_left_x, top_left_y, bottom_right_x, bottom_right_y):
+
+        #print(f"get_area_distance input={top_left_x},{top_left_y},{bottom_right_x},{bottom_right_y}")
+
+        self.isc_area_data_static = IscAreaDataStatistics()
+
+        # Only the range min_distance~max_distance is valid
+        self.isc_area_data_static.min_distance = c_float(0.5)
+        self.isc_area_data_static.max_distance = c_float(20.0)
+
+        # flip Coordinates need to be converted because the image is inverted.
+        depth_width = self.isc_image_info.frame_data[0].depth.width
+        depth_height = self.isc_image_info.frame_data[0].depth.height
+
+        roi_x = depth_width - bottom_right_x
+        roi_y =  depth_height - bottom_right_y
+
+        roi_width = bottom_right_x - top_left_x + 1
+        roi_height = bottom_right_y - top_left_y + 1
+
+        ret = self.DplGetAreaStatistics(roi_x, roi_y, roi_width, roi_height, self.isc_image_info, self.isc_area_data_static)
+
+        return self.isc_area_data_static.roi_3d.distance

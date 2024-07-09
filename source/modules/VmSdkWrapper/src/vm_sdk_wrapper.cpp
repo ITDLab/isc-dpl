@@ -48,6 +48,8 @@
 
 #define SDK_VERSION 2320
 
+extern char vm_module_file_name_[1024];
+
 namespace ns_vmsdk_wrapper
 {
 constexpr char kISC_VM_DRV_FILE_NAME[] = "ISCSDKLibvm200.dll";
@@ -224,7 +226,9 @@ int VmSdkWrapper::Initialize()
 	// get module path
 	char module_path_name[MAX_PATH + 1] = {};
 	GetModuleFileNameA(NULL, module_path_name, MAX_PATH);
-	sprintf_s(module_path_, "%s", module_path_name);
+
+	// DLL のエントリ ポイントより取得
+	sprintf_s(module_path_, "%s", vm_module_file_name_);
 	PathRemoveFileSpecA(module_path_);
 
 	// value in specification

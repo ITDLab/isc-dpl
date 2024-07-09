@@ -37,7 +37,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 ## Requirements for Windows  
 ****
 - Windows 10(x64)/11  
-- Visual Studio 2022 (require MFC)  
+- Visual Studio 2022 (MFCを使用します C++ MFCを選択してインストールしてください)  
 - OpenCV 4.8.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの設定を調整してください)  
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x75)  

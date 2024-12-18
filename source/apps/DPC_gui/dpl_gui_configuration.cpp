@@ -44,9 +44,23 @@ DplGuiConfiguration::DplGuiConfiguration():
 	draw_min_distance_(0),
 	draw_max_distance_(10.0),
 	draw_outside_bounds_(true),
-	max_disparity_(255)
+	max_disparity_(255),
+	lb_display_(1),
+	lb_depth_(0),
+	cb_sw_stereo_matching_(true),
+	cb_disparity_filter_(true),
+	cb_sw_calibration_(false),
+	cb_disparity_(false),
+	cb_base_image_(true),
+	cb_base_image_correted_(false),
+	cb_matching_image_(false),
+	cb_matching_image_correted_(false),
+	cb_color_image_(false),
+	cb_color_image_correted_(false),
+	cmb_shutter_control_mode_(0)
 {
 
+	
 
 }
 
@@ -95,6 +109,22 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 		MIN_DISTANCE=0
 		MAX_DISTANCE=10
 		DRAW_OUTSIDE_BOUNDS=1
+
+		[GUI_DEFAULT]
+		LB_DISPLAY=0
+		LB_DEPTH=0
+
+		CB_SW_STEREO_MATCHING=0
+		CB_DISPAIRTY_FILTER=0
+		CB_SW_CALIBRATION=0
+
+		CB_DISPARITY=0
+		CB_BASE_IMAGE=0
+		CB_BASE_IMAGE_CORRECTED=0
+		CB_MATCHING_IMAGE=0
+		CB_MATCHING_IMAGE_CORRECTED=0
+		CB_COLOR_IMAGE=0
+		CB_COLOR_IMAGE_CORRECTED=0
 
 	*/
 	
@@ -179,6 +209,56 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 	temp_value = _tstoi(returned_string);
 	draw_outside_bounds_ = temp_value == 1 ? true : false;
 
+	// [GUI_DEFAULT]
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("LB_DISPLAY"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	lb_display_ = _tstoi(returned_string);
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("LB_DEPTH"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	lb_depth_ = _tstoi(returned_string);
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_SW_STEREO_MATCHING"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_sw_stereo_matching_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_DISPAIRTY_FILTER"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_disparity_filter_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_SW_CALIBRATION"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_sw_calibration_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_DISPARITY"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_disparity_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_BASE_IMAGE"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_base_image_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_BASE_IMAGE_CORRECTED"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_base_image_correted_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_MATCHING_IMAGE"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_matching_image_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_MATCHING_IMAGE_CORRECTED"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_matching_image_correted_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_COLOR_IMAGE"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_color_image_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CB_COLOR_IMAGE_CORRECTED"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cb_color_image_correted_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("GUI_DEFAULT"), _T("CMB_SHUTTER_CONTROL_MODE"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	cmb_shutter_control_mode_ = temp_value;
 
 	// for 4K
 	// 4Kカメラは、データ処理ライブラリの対象外です
@@ -210,8 +290,6 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 /**
  * 設定ファイルへ設定を保存
  *
- * @param[in] file_path 設定ファイルのパス
- * @param[out] paramB 第一引数の説明
  * @return int 戻り値の説明
  */
 bool DplGuiConfiguration::Save()
@@ -251,6 +329,62 @@ bool DplGuiConfiguration::Save()
 
 	_stprintf_s(write_string, _T("%d"), (int)draw_outside_bounds_);
 	WritePrivateProfileString(_T("DRAW"), _T("DRAW_OUTSIDE_BOUNDS"), write_string, configuration_file_name_);
+
+	return true;
+}
+
+/**
+ * 設定ファイルへGui設定を保存
+ *
+ * @return int 戻り値の説明
+ */
+bool DplGuiConfiguration::SaveGuiDefault()
+{
+	if (!successfully_loaded_) {
+		return false;
+	}
+
+	TCHAR write_string[256] = {};
+
+	// [GUI_DEFAULT]
+	_stprintf_s(write_string, _T("%d"), (int)lb_display_);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("LB_DISPLAY"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), (int)lb_depth_);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("LB_DEPTH"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_sw_stereo_matching_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_SW_STEREO_MATCHING"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_disparity_filter_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_DISPAIRTY_FILTER"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_sw_calibration_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_SW_CALIBRATION"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_disparity_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_DISPARITY"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_base_image_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_BASE_IMAGE"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_base_image_correted_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_BASE_IMAGE_CORRECTED"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_matching_image_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_MATCHING_IMAGE"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_matching_image_correted_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_MATCHING_IMAGE_CORRECTED"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_color_image_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_COLOR_IMAGE"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cb_color_image_correted_ ? 1 : 0);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CB_COLOR_IMAGE_CORRECTED"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), cmb_shutter_control_mode_);
+	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CMB_SHUTTER_CONTROL_MODE"), write_string, configuration_file_name_);
 
 	return true;
 }
@@ -531,3 +665,159 @@ void DplGuiConfiguration::SetDrawOutsideBounds(const bool enabled)
 
 	return;
 }
+
+/**
+ * 設定ファイルより設定を読み込み
+ *
+ * @return int 戻り値の説明
+ */
+int DplGuiConfiguration::GetGuiLbDisplay() const
+{
+	return lb_display_;
+}
+
+/**
+ * 設定ファイルを更新
+ *
+ * @param[in] 視差の最大値
+ *
+ * @return int 戻り値の説明
+ */
+void DplGuiConfiguration::SetGuiLbDisplay(const int mode)
+{
+	lb_display_ = mode;
+	return;
+}
+
+int DplGuiConfiguration::GetGuiLbDepth() const
+{
+	return lb_depth_;
+}
+
+void DplGuiConfiguration::SetGuiLbDepth(const int mode)
+{
+	lb_depth_ = mode;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbSwStereoMathing() const
+{
+	return cb_sw_stereo_matching_;
+}
+
+void DplGuiConfiguration::SetGuiCbSwStereoMathing(const bool enabled)
+{
+	cb_sw_stereo_matching_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbDisparityFilter() const
+{
+	return cb_disparity_filter_;
+}
+
+void DplGuiConfiguration::SetGuiCbDisparityFilter(const bool enabled)
+{
+	cb_disparity_filter_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbSwCalibration() const
+{
+	return cb_sw_calibration_;
+}
+
+void DplGuiConfiguration::SetGuiCbSwCalibration(const bool enabled)
+{
+	cb_sw_calibration_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbDisparity() const
+{
+	return cb_disparity_;
+}
+
+void DplGuiConfiguration::SetGuiCbDisparity(const bool enabled)
+{
+	cb_disparity_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbBaseImage() const
+{
+	return cb_base_image_;
+}
+
+void DplGuiConfiguration::SetGuiCbBaseImage(const bool enabled)
+{
+	cb_base_image_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbBaseImageCorrected() const
+{
+	return cb_base_image_correted_;
+}
+
+void DplGuiConfiguration::SetGuiCbBaseImageCorrected(const bool enabled)
+{
+	cb_base_image_correted_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbMatchingImage() const
+{
+	return cb_matching_image_;
+}
+
+void DplGuiConfiguration::SetGuiCbMatchingImage(const bool enabled)
+{
+	cb_matching_image_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbMatchingImageCorrected() const
+{
+	return cb_matching_image_correted_;
+}
+
+void DplGuiConfiguration::SetGuiCbMatchingImageCorrected(const bool enabled)
+{
+	cb_matching_image_correted_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbColorImage() const
+{
+	return cb_color_image_;
+}
+
+void DplGuiConfiguration::SetGuiCbColorImage(const bool enabled)
+{
+	cb_color_image_ = enabled;
+	return;
+}
+
+bool DplGuiConfiguration::IsGuiCbColorImageCorrected() const
+{
+	return cb_color_image_correted_;
+}
+
+void DplGuiConfiguration::SetGuiCbColorImageCorrected(const bool enabled)
+{
+	cb_color_image_correted_ = enabled;
+	return;
+}
+
+int DplGuiConfiguration::GetGuiCmbShutterControlMode() const
+{
+	return cmb_shutter_control_mode_;
+}
+
+void DplGuiConfiguration::SetGuiCmbShutterControlMode(const int mode)
+{
+	cmb_shutter_control_mode_ = mode;
+	return;
+}
+

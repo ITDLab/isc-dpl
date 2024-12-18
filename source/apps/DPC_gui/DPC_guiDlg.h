@@ -69,6 +69,7 @@ public:
 	afx_msg void OnBnClickedCheck14();
 	afx_msg void OnBnClickedCheck15();
 	afx_msg void OnBnClickedCheck16();
+	afx_msg void OnBnClickedCheck17();
 	afx_msg void OnCbnSelchangeCombo1();
 	afx_msg void OnCbnSelchangeCombo3();
 
@@ -79,6 +80,8 @@ public:
 	bool SetupDialogItemsInitial(bool is_disable_all);
 	bool SetupDialogItems(const bool is_start, const IscControl* isc_control);
 	bool SaveDPLparameterFileToImageFolder();
+	void UpdateCb(const int id, const bool is_enabled);
+	bool SetupGuiControlDefault(bool enabled_camera);
+	bool SaveGuiControlDefault();
 
-	afx_msg void OnBnClickedCheck17();
 };

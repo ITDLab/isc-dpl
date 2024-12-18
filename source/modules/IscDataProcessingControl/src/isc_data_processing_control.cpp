@@ -798,6 +798,8 @@ int IscDataProcessingControl::ClearIscDataProcResultData(IscDataProcResultData* 
         isc_image_info->frame_data[i].camera_status.error_code = 0;
         isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
+        isc_image_info->frame_data[i].frame_time = 0;
+
         isc_image_info->frame_data[i].p1.width = 0;
         isc_image_info->frame_data[i].p1.height = 0;
         isc_image_info->frame_data[i].p1.channel_count = 0;
@@ -873,6 +875,8 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
 
                 isc_data_proc_result_data->isc_image_info.frame_data[i].camera_status.error_code = src_isc_image_info->frame_data[i].camera_status.error_code;
                 isc_data_proc_result_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time = src_isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
+
+                isc_data_proc_result_data->isc_image_info.frame_data[i].frame_time = src_isc_image_info->frame_data[i].frame_time;
 
                 isc_data_proc_result_data->isc_image_info.frame_data[i].p1.width = src_isc_image_info->frame_data[i].p1.width;
                 isc_data_proc_result_data->isc_image_info.frame_data[i].p1.height = src_isc_image_info->frame_data[i].p1.height;
@@ -1142,6 +1146,8 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
             buffer_data->isc_image_info.frame_data[i].camera_status.error_code = isc_image_info->frame_data[i].camera_status.error_code;
             buffer_data->isc_image_info.frame_data[i].camera_status.data_receive_tact_time = isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
 
+            buffer_data->isc_image_info.frame_data[i].frame_time = isc_image_info->frame_data[i].frame_time;
+
             buffer_data->isc_image_info.frame_data[i].p1.width = isc_image_info->frame_data[i].p1.width;
             buffer_data->isc_image_info.frame_data[i].p1.height = isc_image_info->frame_data[i].p1.height;
             buffer_data->isc_image_info.frame_data[i].p1.channel_count = isc_image_info->frame_data[i].p1.channel_count;
@@ -1352,6 +1358,8 @@ int IscDataProcessingControl::RunDataProcStereoMatching(IscImageInfo* isc_image_
     dst_isc_image_info->frame_data[fd_index].camera_status.error_code = isc_image_info->frame_data[fd_index].camera_status.error_code;
     dst_isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time;
 
+    dst_isc_image_info->frame_data[fd_index].frame_time = isc_image_info->frame_data[fd_index].frame_time;
+
     dst_isc_image_info->frame_data[fd_index].p1.width = isc_image_info->frame_data[fd_index].p1.width;
     dst_isc_image_info->frame_data[fd_index].p1.height = isc_image_info->frame_data[fd_index].p1.height;
     dst_isc_image_info->frame_data[fd_index].p1.channel_count = isc_image_info->frame_data[fd_index].p1.channel_count;
@@ -1456,6 +1464,8 @@ int IscDataProcessingControl::RunDataProcFrameDecoder(IscImageInfo* isc_image_in
 
     dst_isc_image_info->frame_data[fd_index].camera_status.error_code = isc_image_info->frame_data[fd_index].camera_status.error_code;
     dst_isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time = isc_image_info->frame_data[fd_index].camera_status.data_receive_tact_time;
+
+    dst_isc_image_info->frame_data[fd_index].frame_time = isc_image_info->frame_data[fd_index].frame_time;
 
     dst_isc_image_info->frame_data[fd_index].p1.width = isc_image_info->frame_data[fd_index].p1.width;
     dst_isc_image_info->frame_data[fd_index].p1.height = isc_image_info->frame_data[fd_index].p1.height;
@@ -1619,6 +1629,8 @@ int IscDataProcessingControl::RunDataProcFrameDecoderInDoubleShutter(IscImageInf
 
             dst_isc_image_info->frame_data[i].camera_status.error_code = isc_image_info->frame_data[i].camera_status.error_code;
             dst_isc_image_info->frame_data[i].camera_status.data_receive_tact_time = isc_image_info->frame_data[i].camera_status.data_receive_tact_time;
+
+            dst_isc_image_info->frame_data[i].frame_time = isc_image_info->frame_data[i].frame_time;
         }
     }
 

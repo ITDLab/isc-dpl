@@ -538,6 +538,9 @@ BOOL CDPCguiDlg::OnInitDialog()
 		((CEdit*)GetDlgItem(IDC_STATIC_ISC_MODEL))->SetWindowText(_T("ISC MODEL:  --------"));
 	}
 
+	// Gui default on/off
+	SetupGuiControlDefault(isc_dpl_configuration_.enabled_camera && (dpl_result == DPC_E_OK));
+
 	// initialize Dialog for camera parameter
 	camera_info_dlg_ = new CameraInfoDlg(this);
 	camera_info_dlg_->Create(IDD_DIALOG1, this);
@@ -1022,6 +1025,10 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 					play_control_dlg_->ClearRequests();
 					isc_control_.resume_request = true;
 				}
+
+				// for pickup information
+				ImageDrawProc();
+				isc_control_.time_to_event = GetTickCount64();
 			}
 			break;
 
@@ -1312,6 +1319,9 @@ void CDPCguiDlg::OnBnClickedButton1()
 void CDPCguiDlg::OnBnClickedButton2()
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
+
+	// save current settings
+	SaveGuiControlDefault();
 
 	// camera streaming start/stop
 	if (isc_control_.camera_status == CameraStatus::kStop) {
@@ -2740,59 +2750,91 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		int max_value = 0;
 		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->GetScrollRange(&min_value, &max_value);
 
+		TCHAR tc_buff[64] = {};
+
 		// Exposure用ScrollBar処理
 		switch (nSBCode)
 		{
 			// 左端
 		case SB_LEFT:
 			scroll_pos = min_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 			break;
 			// 右端
 		case SB_RIGHT:
 			scroll_pos = max_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 			break;
 			// 左ページ/左矢印
 		case SB_PAGELEFT:
 			scroll_pos -= 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
+			break;
 		case SB_LINELEFT:
 			scroll_pos = max(min_value, scroll_pos - 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 			break;
 			// 右ページ/右矢印
 		case SB_PAGERIGHT:
 			scroll_pos += 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
+			break;
 		case SB_LINERIGHT:
 			scroll_pos = min(max_value, scroll_pos + 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 			break;
 		case SB_THUMBPOSITION:
-			//case SB_THUMBTRACK:
 			scroll_pos = nPos;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
+			break;
+		case SB_THUMBTRACK:
+			scroll_pos = nPos;
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
+			break;
+		case SB_ENDSCROLL:
 			break;
 		}
 
-		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(scroll_pos);
+		if (nSBCode == SB_ENDSCROLL) {
+			// update
+			scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->GetScrollPos();
 
-		int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kGain, scroll_pos);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR1()"), MB_ICONERROR);
+			int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kGain, scroll_pos);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR1()"), MB_ICONERROR);
+			}
+			Sleep(160);
+
+			// Read Back
+			int read_value = scroll_pos;
+			ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kGain, &read_value);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR1()"), MB_ICONERROR);
+			}
+
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(read_value);
+			_stprintf_s(tc_buff, _T("%d"), read_value);
+			((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 		}
-		Sleep(16);
-
-		// Read Back
-		int read_value = scroll_pos;
-		ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kGain, &read_value);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR1()"), MB_ICONERROR);
-		}
-
-		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->SetScrollPos(read_value);
-
-		TCHAR tc_buff[64] = {};
-		_stprintf_s(tc_buff, _T("%d"), read_value);
-		((CEdit*)GetDlgItem(IDC_EDIT1))->SetWindowText(tc_buff);
 	}
 
 	// Exposure用Scroll Bar?
@@ -2802,6 +2844,8 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		int min_value = 0;
 		int max_value = 0;
 		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->GetScrollRange(&min_value, &max_value);
+		
+		TCHAR tc_buff[64] = {};
 
 		// Exposure用ScrollBar処理
 		switch (nSBCode)
@@ -2809,53 +2853,83 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			// 左端
 		case SB_LEFT:
 			scroll_pos = min_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 			break;
 			// 右端
 		case SB_RIGHT:
 			scroll_pos = max_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 			break;
 			// 左ページ/左矢印
 		case SB_PAGELEFT:
 			scroll_pos -= 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
+			break;
 		case SB_LINELEFT:
 			scroll_pos = max(min_value, scroll_pos - 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 			break;
 			// 右ページ/右矢印
 		case SB_PAGERIGHT:
 			scroll_pos += 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
+			break;
 		case SB_LINERIGHT:
 			scroll_pos = min(max_value, scroll_pos + 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 			break;
 		case SB_THUMBPOSITION:
-			//case SB_THUMBTRACK:
 			scroll_pos = nPos;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
+			break;
+		case SB_THUMBTRACK:
+			scroll_pos = nPos;
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
+			break;
+		case SB_ENDSCROLL:
 			break;
 		}
 
-		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(scroll_pos);
+		if (nSBCode == SB_ENDSCROLL) {
+			// update
+			scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->GetScrollPos();
 
-		int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kExposure, scroll_pos);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR2()"), MB_ICONERROR);
+			int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kExposure, scroll_pos);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR2()"), MB_ICONERROR);
+			}
+			Sleep(160);
+
+			// Read Back
+			int read_value = scroll_pos;
+			ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kExposure, &read_value);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR2()"), MB_ICONERROR);
+			}
+
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(read_value);
+			_stprintf_s(tc_buff, _T("%d"), read_value);
+			((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 		}
-		Sleep(16);
-
-		// Read Back
-		int read_value = scroll_pos;
-		ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kExposure, &read_value);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR2()"), MB_ICONERROR);
-		}
-
-		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR2))->SetScrollPos(read_value);
-
-		TCHAR tc_buff[64] = {};
-		_stprintf_s(tc_buff, _T("%d"), read_value);
-		((CEdit*)GetDlgItem(IDC_EDIT2))->SetWindowText(tc_buff);
 	}
 
 	// IDC_SCROLLBAR3   Fine Expossure Scroll Bar
@@ -2868,59 +2942,93 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		int max_value = 0;
 		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->GetScrollRange(&min_value, &max_value);
 
+		TCHAR tc_buff[64] = {};
+
 		// Exposure用ScrollBar処理
 		switch (nSBCode)
 		{
 			// 左端
 		case SB_LEFT:
 			scroll_pos = min_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 			break;
 			// 右端
 		case SB_RIGHT:
 			scroll_pos = max_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 			break;
 			// 左ページ/左矢印
 		case SB_PAGELEFT:
 			scroll_pos -= 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
+			break;
 		case SB_LINELEFT:
 			scroll_pos = max(min_value, scroll_pos - 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 			break;
 			// 右ページ/右矢印
 		case SB_PAGERIGHT:
 			scroll_pos += 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
+			break;
 		case SB_LINERIGHT:
 			scroll_pos = min(max_value, scroll_pos + 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 			break;
 		case SB_THUMBPOSITION:
-			//case SB_THUMBTRACK:
 			scroll_pos = nPos;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
+			break;
+		case SB_THUMBTRACK:
+			scroll_pos = nPos;
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
+			break;
+		case SB_ENDSCROLL:
 			break;
 		}
 
 		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(scroll_pos);
 
-		int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kFineExposure, scroll_pos);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR3()"), MB_ICONERROR);
+		if (nSBCode == SB_ENDSCROLL) {
+			// update
+			scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->GetScrollPos();
+
+			int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kFineExposure, scroll_pos);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR3()"), MB_ICONERROR);
+			}
+			Sleep(160);
+
+			// Read Back
+			int read_value = scroll_pos;
+			ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kFineExposure, &read_value);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR3()"), MB_ICONERROR);
+			}
+
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(read_value);
+			_stprintf_s(tc_buff, _T("%d"), read_value);
+			((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 		}
-		Sleep(16);
-
-		// Read Back
-		int read_value = scroll_pos;
-		ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kFineExposure, &read_value);
-		if (ret != DPC_E_OK) {
-			TCHAR msg[64] = {};
-			_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
-			MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR3()"), MB_ICONERROR);
-		}
-
-		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->SetScrollPos(read_value);
-
-		TCHAR tc_buff[64] = {};
-		_stprintf_s(tc_buff, _T("%d"), read_value);
-		((CEdit*)GetDlgItem(IDC_EDIT3))->SetWindowText(tc_buff);
 	}
 
 	return;
@@ -3493,6 +3601,37 @@ bool CDPCguiDlg::SetupDialogItems(const bool is_start, const IscControl* isc_con
 	return true;
 }
 
+void DebugOutFrameTimeMsg(const int frame_no, const __int64 frame_time)
+{
+	ULARGE_INTEGER ul_int = {};
+	ul_int.QuadPart = frame_time;
+	struct timespec tm = {};
+	tm.tv_sec = ul_int.QuadPart / 1000LL;
+	tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
+
+	struct tm ltm;
+	localtime_s(&ltm, &tm.tv_sec);
+	long millisecond = tm.tv_nsec / 1000000LL;
+
+	char time_str[256] = {};
+	char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+	sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%03d\n",
+		frame_no,
+		ltm.tm_year + 1900,
+		ltm.tm_mon + 1,
+		ltm.tm_mday,
+		dayofweek[ltm.tm_wday],
+		ltm.tm_hour,
+		ltm.tm_min,
+		ltm.tm_sec,
+		millisecond);
+
+	OutputDebugStringA(time_str);
+
+	return;
+}
+
 bool CDPCguiDlg::ImageCaptureProc()
 {
 	isc_control_.is_isc_image_info_valid = false;
@@ -3511,10 +3650,20 @@ bool CDPCguiDlg::ImageCaptureProc()
 
 	isc_control_.is_isc_image_info_valid = true;
 
+	if (0) {
+		OutputDebugStringA("[INFO]Camera Time\n");
+		DebugOutFrameTimeMsg(isc_control_.isc_image_info.frame_data[0].frameNo, isc_control_.isc_image_info.frame_data[0].frame_time);
+	}
+
 	// deta processing result
 	dpl_result = isc_dpl_->GetDataProcModuleData(&isc_control_.isc_data_proc_result_data);
 	if (dpl_result == DPC_E_OK) {
 		isc_control_.is_data_proc_result_valid = true;
+
+		if (0) {
+			OutputDebugStringA("[INFO]Data Proc Time\n");
+			DebugOutFrameTimeMsg(isc_control_.isc_data_proc_result_data.isc_image_info.frame_data[0].frameNo, isc_control_.isc_data_proc_result_data.isc_image_info.frame_data[0].frame_time);
+		}
 	}
 
 	return true;
@@ -3543,31 +3692,7 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 
 		// debug
 		if (0) {
-			ULARGE_INTEGER ul_int = {};
-			ul_int.QuadPart = isc_control_.isc_image_info.frame_data[0].frame_time;
-			struct timespec tm = {};
-			tm.tv_sec = ul_int.QuadPart / 1000LL;
-			tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
-
-			struct tm ltm;
-			localtime_s(&ltm, &tm.tv_sec);
-			long millisecond = tm.tv_nsec / 1000000LL;
-
-			char time_str[256] = {};
-			char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-
-			sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%03d\n",
-				isc_control_.isc_image_info.frame_data[0].frameNo,
-				ltm.tm_year + 1900,
-				ltm.tm_mon + 1,
-				ltm.tm_mday,
-				dayofweek[ltm.tm_wday],
-				ltm.tm_hour,
-				ltm.tm_min,
-				ltm.tm_sec,
-				millisecond);
-
-			OutputDebugStringA(time_str);
+			DebugOutFrameTimeMsg(isc_control_.isc_image_info.frame_data[0].frameNo, isc_control_.isc_image_info.frame_data[0].frame_time);
 		}
 
 		// deta processing result
@@ -3601,31 +3726,7 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 
 		// debug
 		if (0) {
-			ULARGE_INTEGER ul_int = {};
-			ul_int.QuadPart = isc_control_.isc_image_info.frame_data[0].frame_time;
-			struct timespec tm = {};
-			tm.tv_sec = ul_int.QuadPart / 1000LL;
-			tm.tv_nsec = static_cast<long>((ul_int.QuadPart - (tm.tv_sec * 1000LL)) * 1000000);
-
-			struct tm ltm;
-			localtime_s(&ltm, &tm.tv_sec);
-			long millisecond = tm.tv_nsec / 1000000LL;
-
-			char time_str[256] = {};
-			char dayofweek[7][4] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-
-			sprintf_s(time_str, "%d: %d/%d/%d %s %02d:%02d:%02d.%d\n",
-				isc_control_.isc_image_info.frame_data[0].frameNo,
-				ltm.tm_year + 1900,
-				ltm.tm_mon + 1,
-				ltm.tm_mday,
-				dayofweek[ltm.tm_wday],
-				ltm.tm_hour,
-				ltm.tm_min,
-				ltm.tm_sec,
-				millisecond);
-
-			OutputDebugStringA(time_str);
+			DebugOutFrameTimeMsg(isc_control_.isc_image_info.frame_data[0].frameNo, isc_control_.isc_image_info.frame_data[0].frame_time);
 		}
 
 		// deta processing result
@@ -4118,8 +4219,8 @@ bool CDPCguiDlg::ImageDrawProc()
 		IscAreaDataStatistics isc_data_statistics = {};
 		double min_distance = 0, max_distance = 0;
 		draw_data_lib_->GetMinMaxDistance(&min_distance, &max_distance);
-		isc_data_statistics.min_distance = min_distance;
-		isc_data_statistics.max_distance = max_distance;
+		isc_data_statistics.min_distance = (float)min_distance;
+		isc_data_statistics.max_distance = (float)max_distance;
 
 		int get_success = isc_dpl_->GetAreaStatistics(roi_x, roi_y, roi_width, roi_height, isc_image_info, &isc_data_statistics);
 		if (get_success == DPC_E_OK) {
@@ -4249,3 +4350,114 @@ bool CDPCguiDlg::SaveDPLparameterFileToImageFolder()
 	return true;
 }
 
+void CDPCguiDlg::UpdateCb(const int id, const bool is_enabled)
+{
+	if (is_enabled) {
+		((CButton*)GetDlgItem(id))->SetCheck(BST_CHECKED);
+	}
+	else {
+		((CButton*)GetDlgItem(id))->SetCheck(BST_UNCHECKED);
+	}
+
+	return;
+}
+
+bool CDPCguiDlg::SetupGuiControlDefault(bool enabled_camera)
+{
+	/*
+		IDC_COMBO1	Disparity Setting Dispaly
+		IDC_COMBO2	Disparity Setting Depth
+
+		IDC_CHECK16	S/W Stereo Matching
+		IDC_CHECK15	Dispality Filter
+		IDC_CHECK17	S/W Calibration
+
+		IDC_CHECK1	Dispatity
+		IDC_CHECK2	Base Image
+		IDC_CHECK5	Base Image Correct
+		IDC_CHECK3	Matching Image
+		IDC_CHECK6	Matching Image Correct
+		IDC_CHECK4	Color Image
+		IDC_CHECK7	Color Image Correct
+
+		IDC_COMBO3	Shutter Control Mode
+	*/
+
+	int mode = dpl_gui_configuration_->GetGuiLbDisplay();
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->SetCurSel(mode);
+
+	mode = dpl_gui_configuration_->GetGuiLbDepth();
+	((CComboBox*)GetDlgItem(IDC_COMBO2))->SetCurSel(mode);
+
+	UpdateCb(IDC_CHECK16, dpl_gui_configuration_->IsGuiCbSwStereoMathing());
+	UpdateCb(IDC_CHECK15, dpl_gui_configuration_->IsGuiCbDisparityFilter());
+	UpdateCb(IDC_CHECK17, dpl_gui_configuration_->IsGuiCbSwCalibration());
+
+	UpdateCb(IDC_CHECK1, dpl_gui_configuration_->IsGuiCbDisparity());
+	UpdateCb(IDC_CHECK2, dpl_gui_configuration_->IsGuiCbBaseImage());
+	UpdateCb(IDC_CHECK5, dpl_gui_configuration_->IsGuiCbBaseImageCorrected());
+	UpdateCb(IDC_CHECK3, dpl_gui_configuration_->IsGuiCbMatchingImage());
+	UpdateCb(IDC_CHECK6, dpl_gui_configuration_->IsGuiCbMatchingImageCorrected());
+	UpdateCb(IDC_CHECK4, dpl_gui_configuration_->IsGuiCbColorImage());
+	UpdateCb(IDC_CHECK7, dpl_gui_configuration_->IsGuiCbColorImageCorrected());
+
+	if (enabled_camera) {
+		int mode = dpl_gui_configuration_->GetGuiCmbShutterControlMode();
+		((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(mode);
+		OnCbnSelchangeCombo3();
+	}
+	else {
+		((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(0);
+	}
+
+	return true;
+}
+
+bool CDPCguiDlg::SaveGuiControlDefault()
+{
+
+	int mode = ((CComboBox*)GetDlgItem(IDC_COMBO1))->GetCurSel();
+	dpl_gui_configuration_->SetGuiLbDisplay(mode);
+
+	mode = ((CComboBox*)GetDlgItem(IDC_COMBO2))->GetCurSel();
+	dpl_gui_configuration_->SetGuiLbDepth(mode);
+
+
+	bool is_enabled = ((CButton*)GetDlgItem(IDC_CHECK16))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbSwStereoMathing(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK15))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbDisparityFilter(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK17))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbSwCalibration(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK1))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbDisparity(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK2))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbBaseImage(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK5))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbBaseImageCorrected(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK3))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbMatchingImage(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK6))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbMatchingImageCorrected(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK4))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbColorImage(is_enabled);
+
+	is_enabled = ((CButton*)GetDlgItem(IDC_CHECK7))->GetCheck() == BST_CHECKED ? true : false;
+	dpl_gui_configuration_->SetGuiCbColorImageCorrected(is_enabled);
+
+	mode = ((CComboBox*)GetDlgItem(IDC_COMBO3))->GetCurSel();
+	dpl_gui_configuration_->SetGuiCmbShutterControlMode(mode);
+
+	// save
+	dpl_gui_configuration_->SaveGuiDefault();
+
+	return true;
+}

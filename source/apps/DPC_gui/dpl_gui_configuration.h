@@ -24,6 +24,7 @@ public:
 
 	bool Load(const TCHAR* file_path);
 	bool Save();
+	bool SaveGuiDefault();
 
 	bool GetLogFilePath(TCHAR* file_path, const int max_length) const;
 	void SetLogFilePath(const TCHAR* file_path);
@@ -52,6 +53,34 @@ public:
 	bool IsDrawOutsideBounds() const;
 	void SetDrawOutsideBounds(const bool enabled);
 
+	int GetGuiLbDisplay() const;
+	void SetGuiLbDisplay(const int mode);
+	int GetGuiLbDepth() const;
+	void SetGuiLbDepth(const int mode);
+
+	bool IsGuiCbSwStereoMathing() const;
+	void SetGuiCbSwStereoMathing(const bool enabled);
+	bool IsGuiCbDisparityFilter() const;
+	void SetGuiCbDisparityFilter(const bool enabled);
+	bool IsGuiCbSwCalibration() const;
+	void SetGuiCbSwCalibration(const bool enabled);
+	bool IsGuiCbDisparity() const;
+	void SetGuiCbDisparity(const bool enabled);
+	bool IsGuiCbBaseImage() const;
+	void SetGuiCbBaseImage(const bool enabled);
+	bool IsGuiCbBaseImageCorrected() const;
+	void SetGuiCbBaseImageCorrected(const bool enabled);
+	bool IsGuiCbMatchingImage() const;
+	void SetGuiCbMatchingImage(const bool enabled);
+	bool IsGuiCbMatchingImageCorrected() const;
+	void SetGuiCbMatchingImageCorrected(const bool enabled);
+	bool IsGuiCbColorImage() const;
+	void SetGuiCbColorImage(const bool enabled);
+	bool IsGuiCbColorImageCorrected() const;
+	void SetGuiCbColorImageCorrected(const bool enabled);
+	int GetGuiCmbShutterControlMode() const;
+	void SetGuiCmbShutterControlMode(const int mode);
+
 private:
 
 	bool successfully_loaded_;
@@ -74,6 +103,23 @@ private:
 	bool draw_outside_bounds_;					/**< 表示最小～最大外を描画する */
 
 	double max_disparity_;						/**< 視差最大 */
+
+	// gui default
+	int lb_display_;							/**< gui list box display */
+	int lb_depth_;								/**< gui list box depth */
+
+	bool cb_sw_stereo_matching_;				/**< gui check box stereo matching */
+	bool cb_disparity_filter_;					/**< gui check box disparity filter */
+	bool cb_sw_calibration_;					/**< gui check box software calibration */
+
+	bool cb_disparity_;							/**< gui check disparity */
+	bool cb_base_image_;						/**< gui check box base image */
+	bool cb_base_image_correted_;				/**< gui check box base image correted */
+	bool cb_matching_image_;					/**< gui check box matching image */
+	bool cb_matching_image_correted_;			/**< gui check box matching image correted */
+	bool cb_color_image_;						/**< gui check box color image */
+	bool cb_color_image_correted_;				/**< gui check box color image correted */
+	int cmb_shutter_control_mode_;				/**< gui combo box shutter control mode */
 
 };
 

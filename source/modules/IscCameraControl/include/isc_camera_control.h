@@ -324,7 +324,7 @@ public:
 	/** @brief get informaton from file.
 	@return 0, if successful.
 	*/
-	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
+	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
 private:
 	IscLog* isc_log_;

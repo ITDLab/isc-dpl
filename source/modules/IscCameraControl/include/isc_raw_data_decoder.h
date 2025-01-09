@@ -38,8 +38,12 @@ public:
 		@return 0, if successful.
 	*/
 	int Decode(const IscCameraModel isc_camera_model, const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-		const int width, const int height, IscImageInfo* isc_image_info);
+		const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index);
 
+	/** @brief Composite Double Shutter data.
+		@return 0, if successful.
+	*/
+	int CombineImagesForDoubleShutter(const IscCameraModel isc_camera_model, const int width, const int height, IscImageInfo* isc_image_info);
 
 private:
 
@@ -50,13 +54,18 @@ private:
 		@return 0, if successful.
 	*/
 	int DecodeVM(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-				const int width, const int height, IscImageInfo* isc_image_info);
+				const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index);
 
 	/** @brief Extract RAW data.
 		@return 0, if successful.
 	*/
 	int DecodeXC(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-		const int width, const int height, IscImageInfo* isc_image_info);
+		const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index);
+
+	/** @brief Composite Double Shutter data.
+		@return 0, if successful.
+	*/
+	int CombineImagesForDoubleShutterXC(const int width, const int height, IscImageInfo* isc_image_info);
 
 };
 

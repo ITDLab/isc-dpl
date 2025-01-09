@@ -298,7 +298,7 @@ extern "C" {
 	/** @brief get the information of the file header.
 		@return 0, if successful.
 	*/
-	ISCDPLC_EXPORTS_API int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
+	ISCDPLC_EXPORTS_API int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
 	// get information for depth, distance, ...
 

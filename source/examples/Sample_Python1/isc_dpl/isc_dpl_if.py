@@ -136,6 +136,7 @@ class IscDplConfiguration (Structure):
                 ("isc_camera_model", c_int),                #/**< physical camera model */
                 ("save_image_path", c_wchar * 260),         #/**< the path to save the image */
                 ("load_image_path", c_wchar * 260),         #/**< image loading path */
+                ("minimum_write_interval_time", c_int),     #/**< minimum free time to write (msec) */
                 ("enabled_data_proc_module", c_bool),       #/**< whether to use a data processing library */
     ]
 
@@ -143,13 +144,14 @@ class IscDplConfiguration (Structure):
 # @brief This is the configuration information
 class IscCameraControlConfiguration (Structure):
     _fields_ = [
-                ("configuration_file_path", c_wchar * 260) ,
+                ("configuration_file_path", c_wchar * 260),
                 ("log_file_path", c_wchar * 260),
                 ("log_level", c_int),
                 ("enabled_camera", c_bool),
                 ("isc_camera_model", c_int),
                 ("save_image_path", c_wchar * 260),
-                ("load_image_path", c_wchar * 260)
+                ("load_image_path", c_wchar * 260),
+                ("minimum_write_interval_time", c_int)
     ]
 
 # /** @struct  IscCameraDisparityParameter
@@ -236,6 +238,18 @@ class IscRawFileHeader (Structure):
                 ("shutter_mode", c_int),    #/**< Shutter control mode */
                 ("color_mode", c_int) ,     #/**< color mode on/off 0:off 1:on*/
                 ("reserve", c_int * 12)     #/**< Reserve */
+    ]
+
+# /** @struct  IscPlayFileInformation
+#  *  @brief This is the structure of play file
+#  */
+class IscPlayFileInformation (Structure):
+    _fields_ = [
+                ("total_frame_count", c_int64), #/**< Number of frames */
+                ("total_time_sec", c_int64),    #/**< Playback Time (sec) */
+                ("frame_interval", c_int),      #/**< Storage Interval */
+                ("start_time", c_int64),        #/**< Start time */
+                ("end_time", c_int64)           #/**< End time */
     ]
 
 # /** @struct  IscGetMode
@@ -669,7 +683,7 @@ class IscDplIf:
 
             #ISCDPLC_EXPORTS_API int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
             self.DplGetFileInformation = libdpl.DplGetFileInformation
-            self.DplGetFileInformation.argtypes = [POINTER(c_wchar), POINTER(IscRawFileHeader)]
+            self.DplGetFileInformation.argtypes = [POINTER(c_wchar), POINTER(IscRawFileHeader), POINTER(IscPlayFileInformation)]
             self.DplGetFileInformation.restype = c_uint
 
             #// get information for depth, distance, ...
@@ -954,7 +968,8 @@ class IscDplIf:
 
         # get parameter from file
         self.isc_raw_file_header = IscRawFileHeader()
-        ret = self.DplGetFileInformation(self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, self.isc_raw_file_header)
+        self.isc_play_file_information = IscPlayFileInformation()
+        ret = self.DplGetFileInformation(self.isc_start_mode.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, self.isc_raw_file_header, self.isc_play_file_information)
         if ret != 0:
             print("[ERROR][IscDplIf]DplGetFileInformation failed(0x{:08X})".format(ret))
             return 1
@@ -969,6 +984,8 @@ class IscDplIf:
         print("                shutter_mode:{}".format(self.isc_raw_file_header.shutter_mode))
         print("                color_mode:{}".format(self.isc_raw_file_header.color_mode))
         print("                *If grab_mode=2, then the show parameter should be 1. If 0, no disparity is displayed")
+        print("                total_frame_count:{}".format(self.isc_play_file_information.total_frame_count))
+        print("                total_time_sec:{}".format(self.isc_play_file_information.total_time_sec))
         
         self.base_length = self.isc_raw_file_header.base_length
         self.bf = self.isc_raw_file_header.bf

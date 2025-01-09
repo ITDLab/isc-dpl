@@ -338,6 +338,11 @@ public:
 	int Decode(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
 		const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST);
 
+	/** @brief performs parallax data synthesis
+		@return 0, if successful.
+	*/
+	int RunComposition(const int width, const int height, IscImageInfo* isc_image_info);
+
 private:
 	char module_path_[_MAX_PATH];		/**< This is the path of dll module */
 	char file_name_of_dll_[_MAX_PATH];	/**< This is the DLL file name */
@@ -426,6 +431,14 @@ private:
 
 	ColorCorrectTableData correct_table_data_;
 
+	struct CompositionParameter {
+		// calc each image
+		double currentExpo;
+		double previousExpo;
+		bool isCurrentBrighter;
+		double 	expoRatio;
+	};
+
 	/** @brief Split RAW data.
 		@return 0, if successful.
 	*/
@@ -506,6 +519,21 @@ private:
 		@return 0, if successful.
 	*/
 	int CorrectRGBImage(const int width, const int height, float*** correc_table, const unsigned char* input_image, unsigned char* output_image);
+
+	/** @brief covert bgr to yuyv
+		@return 0, if successful.
+	*/
+	int ConverBGR2YUYV(const int width, const int height, unsigned char* input_image, unsigned char* output_image);
+
+	/** @brief calculate parameters to be used for synthesis
+		@return 0, if successful.
+	*/
+	int GetComposeParameter(const int width, const int height, CompositionParameter* composition_parameter, IscImageInfo* isc_image_info);
+
+	/** @brief copy frame data
+		@return 0, if successful.
+	*/
+	int CopyFrameData(const int src_index, const int dst_index, IscImageInfo* isc_image_info);
 
 };// class XCSDKWRAPPER_API XcSdkWrapper
 

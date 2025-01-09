@@ -1560,7 +1560,8 @@ void CDPCguiDlg::OnBnClickedButton6()
 
 		// Get file information and apply it
 		IscRawFileHeader raw_file_headaer = {};
-		int ret = isc_dpl_->GetFileInformation(selectFileName.GetBuffer(), &raw_file_headaer);
+		IscPlayFileInformation play_file_information = {};
+		int ret = isc_dpl_->GetFileInformation(selectFileName.GetBuffer(), &raw_file_headaer, &play_file_information);
 		if (ret != DPC_E_OK) {
 			TCHAR msg[64] = {};
 			_stprintf_s(msg, _T("[ERROR]isc_dpl_ GetFileInformation() failure code=0X%08X"), ret);
@@ -1674,6 +1675,24 @@ void CDPCguiDlg::OnBnClickedButton6()
 			is_header_valided = false;
 			break;
 		}
+		
+		// shutter mode
+		switch (raw_file_headaer.shutter_mode) {
+		case 0:
+			((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(0);
+			break;
+		case 1:
+			((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(1);
+			break;
+		case 2:
+			((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(2);
+			break;
+		case 3:
+			((CComboBox*)GetDlgItem(IDC_COMBO3))->SetCurSel(3);
+			break;
+		}
+		OnCbnSelchangeCombo3();
+
 
 		UpdateData(TRUE);
 

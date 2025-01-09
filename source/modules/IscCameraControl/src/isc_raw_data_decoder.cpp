@@ -83,7 +83,7 @@ int RawDataDecoder::Initialize()
   * @retval 0 成功
   * @retval other 失敗
   */
- int RawDataDecoder::Terminate()
+int RawDataDecoder::Terminate()
 {
 
 	if (xc_sdk_wrapper_ != nullptr) {
@@ -114,19 +114,65 @@ int RawDataDecoder::Initialize()
   * @retval 0 成功
   * @retval other 失敗
   */
- int RawDataDecoder::Decode(const IscCameraModel isc_camera_model, const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-							const int width, const int height, IscImageInfo* isc_image_info)
+int RawDataDecoder::Decode(const IscCameraModel isc_camera_model, const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
+							const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index)
 {
 
 	int ret = DPC_E_OK;
 
 	switch (isc_camera_model) {
 	case IscCameraModel::kVM:
-		ret = DecodeVM(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info);
+		ret = DecodeVM(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info, frame_data_index);
 		break;
 
 	case IscCameraModel::kXC:
-		ret = DecodeXC(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info);
+		ret = DecodeXC(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info, frame_data_index);
+		break;
+
+	case IscCameraModel::k4K:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::k4KA:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::k4KJ:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	case IscCameraModel::kUnknown:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+
+	default:
+		return CAMCONTROL_E_INVALID_PARAMETER;
+		//break;
+	}
+
+	return ret;
+}
+
+/**
+ * Double Shutter用の「画像合成を呼び出します.
+ *
+ * param[in] isc_camera_model カメラｎモデルを指定します
+ * param[in] width データの幅を指定します
+ * param[in] height データの高さを指定します
+ * param[in/out] isc_image_info RAWデータを受け取り、結果を書き込みます
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int RawDataDecoder::CombineImagesForDoubleShutter(const IscCameraModel isc_camera_model, const int width, const int height, IscImageInfo* isc_image_info)
+{
+	int ret = DPC_E_OK;
+
+	switch (isc_camera_model) {
+	case IscCameraModel::kVM:
+		break;
+
+	case IscCameraModel::kXC:
+		ret = CombineImagesForDoubleShutterXC(width, height, isc_image_info);
 		break;
 
 	case IscCameraModel::k4K:
@@ -166,8 +212,8 @@ int RawDataDecoder::Initialize()
   * @retval 0 成功
   * @retval other 失敗
   */
- int RawDataDecoder::DecodeVM(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-							const int width, const int height, IscImageInfo* isc_image_info)
+int RawDataDecoder::DecodeVM(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
+							const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index)
 {
 
 	if (vm_sdk_wrapper_ == nullptr) {
@@ -195,14 +241,38 @@ int RawDataDecoder::Initialize()
    * @retval 0 成功
    * @retval other 失敗
    */
- int RawDataDecoder::DecodeXC(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
-	const int width, const int height, IscImageInfo* isc_image_info)
+int RawDataDecoder::DecodeXC(const IscGrabMode isc_grab_mode, const IscGrabColorMode isc_grab_color_mode, const IscGetModeColor isc_get_color_mode,
+							const int width, const int height, IscImageInfo* isc_image_info, int frame_data_index)
 {
 	if (xc_sdk_wrapper_ == nullptr) {
 		return CAMCONTROL_E_INVALID_REQUEST;
 	}
 
-	int ret = xc_sdk_wrapper_->Decode(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info);
+	int ret = xc_sdk_wrapper_->Decode(isc_grab_mode, isc_grab_color_mode, isc_get_color_mode, width, height, isc_image_info, frame_data_index);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * XCのDouble Shutter用の「画像合成を呼び出します.
+ *
+ * param[in] isc_camera_model カメラｎモデルを指定します
+ * param[in] width データの幅を指定します
+ * param[in] height データの高さを指定します
+ * param[in/out] isc_image_info RAWデータを受け取り、結果を書き込みます
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int RawDataDecoder::CombineImagesForDoubleShutterXC(const int width, const int height, IscImageInfo* isc_image_info)
+{
+	if (xc_sdk_wrapper_ == nullptr) {
+		return CAMCONTROL_E_INVALID_REQUEST;
+	}
+
+	int ret = xc_sdk_wrapper_->RunComposition(width, height, isc_image_info);
 	if (ret != DPC_E_OK) {
 		return ret;
 	}

@@ -67,7 +67,7 @@ public:
 	/** @brief get informaton from file.
 		@return 0, if successful.
 	*/
-	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
+	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
 private:
 
@@ -83,6 +83,8 @@ private:
 
 		IscRawFileHeader raw_file_header;
 		unsigned __int64 total_read_size;
+
+		IscPlayFileInformation play_file_information;
 	};
 	FileRaedInformation file_read_information_;
 
@@ -97,6 +99,9 @@ private:
 
 	bool GetDatFileSize(TCHAR* file_name, unsigned __int64* file_size);
 
-	int ReadOneRawData(IscImageInfo* isc_image_info, const bool specify_mode, const bool init, const IscGrabColorMode requested_color_mode, IscGrabColorMode* obtained_color_mode);
+	int ReadOneRawData(IscImageInfo* isc_image_info);
+	int ReadColorRawData(IscImageInfo* isc_image_info);
+	int ReadDoubleShutterRawData(IscImageInfo* isc_image_info);
+
 
 };

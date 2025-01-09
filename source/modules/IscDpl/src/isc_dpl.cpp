@@ -1275,18 +1275,19 @@ int IscDpl::GetCameraData(IscImageInfo* isc_image_Info)
  *
  * @param[in] play_file_name ファイル名
  * @param[out] raw_file_header ヘッダー構造体
- * 
+ * @param[out] play_file_information 再生ファイル情報
+ *
  * @retval 0 成功
  * @retval other 失敗
  */
-int IscDpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header)
+int IscDpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information)
 {
 
 	if (isc_main_control_ == nullptr) {
 		return ISCDPL_E_INVALID_HANDLE;
 	}
 
-	int ret = isc_main_control_->GetFileInformation(play_file_name, raw_file_header);
+	int ret = isc_main_control_->GetFileInformation(play_file_name, raw_file_header, play_file_information);
 	if (ret != DPC_E_OK) {
 		return ret;
 	}

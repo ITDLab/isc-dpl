@@ -387,4 +387,15 @@ struct IscRawDataHeader {
     int		reserve[4];         /**< Reserve */
 };
 
+/** @struct  IscPlayFileInformation
+ *  @brief This is the structure of play file
+ */
+struct IscPlayFileInformation {
+    __int64 total_frame_count;  /**< Number of frames */
+    __int64	total_time_sec;     /**< Playback Time (sec) */
+    int		frame_interval;     /**< Storage Interval */
+    __int64 start_time;         /**< Start time */
+    __int64 end_time;           /**< End time */
+};
+
 #endif /* ISC_CEMERA_DEF_H */

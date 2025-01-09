@@ -314,7 +314,7 @@ namespace ns_isc_dpl {
 		/** @brief get the information of the file header.
 			@return 0, if successful.
 		*/
-		int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header);
+		int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
 		// get information for depth, distance, ...
 

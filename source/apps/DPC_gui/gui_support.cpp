@@ -506,7 +506,9 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 	*is_dpresult_mode = false;
 
 	IscShutterMode shutter_mode = isc_control->isc_image_info.shutter_mode;
+	bool is_raw_on = isc_control->isc_start_mode.isc_grab_start_mode.isc_get_raw_mode == IscGetModeRaw::kRawOn ? true : false;
 	int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	bool is_play_mode = isc_control->isc_start_mode.isc_grab_start_mode.isc_play_mode == IscPlayMode::kPlayOn ? true : false;
 
 	switch (mode) {
 	case DpcDrawLib::ImageDrawMode::kUnknown:
@@ -525,6 +527,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		// mono sensor-0 image
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kMonoS0;
+
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
 
 		image_data_set[0]->image_data_list[0].image_mono_s0.width = isc_control->isc_image_info.frame_data[fd_index].p1.width;
 		image_data_set[0]->image_data_list[0].image_mono_s0.height = isc_control->isc_image_info.frame_data[fd_index].p1.height;
@@ -549,6 +556,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		// depth data
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepth;
+
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
 
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
@@ -591,6 +603,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthMonoS0;
 
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[0].depth.width * image_data_set[0]->image_data_list[0].depth.height * sizeof(float);
@@ -624,6 +641,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		// over lapped depth data,mono sensor-0 image
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kOverlapedDepthMonoS0;
+
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
 
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
@@ -773,6 +795,12 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		memcpy(image_data_set[0]->image_data_list[0].depth_dpl.buffer, isc_control->isc_data_proc_result_data.isc_image_info.frame_data[fd_index].depth.image, cp_size);
 
 		fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
+
 		image_data_set[0]->image_data_list[1].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[1].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;
 		cp_size = image_data_set[0]->image_data_list[1].depth.width * image_data_set[0]->image_data_list[1].depth.height * sizeof(float);

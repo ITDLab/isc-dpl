@@ -2029,15 +2029,16 @@ int IscCameraControl::GetData(IscImageInfo* isc_image_info)
  *
  * @param[in] play_file_name ファイル名
  * @param[out] raw_file_header ヘッダー構造体
+ * @param[out] play_file_information 再生ファイル情報
  *
  * @retval 0 成功
  * @retval other 失敗
  */
-int IscCameraControl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header)
+int IscCameraControl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information)
 {
 	int ret = DPC_E_OK;
 
-	ret = isc_file_read_control_impl_->GetFileInformation(play_file_name, raw_file_header);
+	ret = isc_file_read_control_impl_->GetFileInformation(play_file_name, raw_file_header, play_file_information);
 	if (ret != DPC_E_OK) {
 		return ret;
 	}

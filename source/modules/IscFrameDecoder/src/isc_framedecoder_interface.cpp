@@ -701,6 +701,10 @@ int IscFramedecoderInterface::GetDecodeDataDoubleShutter(IscImageInfo* isc_image
         parameter_update_request_ = false;
     }
 
+    int dbdout = 0; // ダブルシャッター視差出力 0:ブレンド 1:高感度 2:低感度
+    int dbcout = 2; // ダブルシャッター補正画像出力 0:ブレンド 1:高感度 2:低感度 3:適当
+    ISCFrameDecoder::setDoubleShutterOutput(dbdout, dbcout);
+
     // (1)
     fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
     int width_latest = isc_image_info_in->frame_data[fd_index].raw.width / 2;

@@ -2221,10 +2221,27 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			isc_image_info->frame_data[frame_data_id].raw_color.height = height;
 			isc_image_info->frame_data[frame_data_id].raw_color.channel_count = 1;
 
-			size_t cp_size = isc_image_info->frame_data[frame_data_id].raw_color.width * isc_image_info->frame_data[frame_data_id].raw_color.height;
-			memcpy(isc_image_info->frame_data[frame_data_id].raw_color.image, work_buffer_.buffer[0], cp_size);
-
 			// 反転不要です
+
+			// RAWを設定します
+			if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kCorrect ||
+				isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kAwb)
+			{
+				// 補正済みをRAWにします
+				// 補正します
+				convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width * height * 2);
+
+				// correct
+				correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
+
+				// YUVに戻します
+				ConverBGR2YUYV(width, height, work_buffer_.buffer[2], isc_image_info->frame_data[frame_data_id].raw_color.image);
+			}
+			else {
+				// 補正前をRAWにします
+				size_t cp_size = isc_image_info->frame_data[frame_data_id].raw_color.width * isc_image_info->frame_data[frame_data_id].raw_color.height;
+				memcpy(isc_image_info->frame_data[frame_data_id].raw_color.image, work_buffer_.buffer[0], cp_size);
+			}
 		}
 
 		elp_time[7] = utility_measure_time.Stop();
@@ -2261,7 +2278,7 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 	int height = xc_camera_param_info_.image_height;
 
 	// RAW data
-	// ToDo:このままだと、モノクロのみとなっている
+	// ToDo:このままだと、モノクロのみとなっている => 手前でColorを取得することでColroとのペアになることを期待
 	if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
 
 		utility_measure_time.Start();
@@ -2389,36 +2406,21 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			}
 		}
 		else if (isc_grab_start_mode_.isc_get_color_mode == IscGetModeColor::kCorrect) {
-			ret = getYUVImage(work_buffer_.buffer[0], 0);
-			if (ret != ISC_OK) {
-				if (ret != 0) {
-					if (ret == ERR_USB_NO_IMAGE) {
-						/*ERR_USB_NO_IMAGE*/
-						return CAMCONTROL_E_NO_IMAGE;
-					}
-					else if (ret == 4 /*FT_IO_ERROR*/) {
-						/*FT_IO_ERROR*/
-						return CAMCONTROL_E_FTDI_ERROR;
-					}
-					else if (ret == ERR_NO_VALID_IMAGES_CALIBRATING) {
-						/*ERR_NO_VALID_IMAGES_CALIBRATING*/
-						return CAMCONTROL_E_CAMERA_UNDER_CARIBRATION;
-					}
-					else {
-						// 画像を確認するため継続
-					}
-				}
-			}
-
 			isc_image_info->frame_data[frame_data_id].color.width = width;
 			isc_image_info->frame_data[frame_data_id].color.height = height;
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
-			int size = width * height * 2;
-			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width* height * 2);
+			if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
+				// 作成済み
+			}
+			else {
+				int size = width * height * 2;
+				convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width * height * 2);
 
-			// correct
-			correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
+				// correct
+				correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
+			}
+
 
 			if (is_flip_for_compatibility) {
 				// 他のカメラとの互換性のために左右を反転します
@@ -2437,11 +2439,15 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 			isc_image_info->frame_data[frame_data_id].color.height = height;
 			isc_image_info->frame_data[frame_data_id].color.channel_count = 3;
 
-			int size = width * height * 2;
-			convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width* height * 2);
-
-			// correct
-			correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
+			if (isc_grab_start_mode_.isc_get_raw_mode == IscGetModeRaw::kRawOn) {
+				// 作成済み
+			}
+			else {
+				int size = width * height * 2;
+				convertYUVToRGB(work_buffer_.buffer[0], work_buffer_.buffer[1], width * height * 2);
+				// correct
+				correctRGBImage(work_buffer_.buffer[1], work_buffer_.buffer[2]);
+			}
 
 			// auto white balance
 			applyAutoWhiteBalance(work_buffer_.buffer[2], work_buffer_.buffer[3]);
@@ -2613,6 +2619,10 @@ int XcSdkWrapper::GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscIm
 	isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].raw.width = width * 2;
 
 	// make merged image
+	ret = RunComposition(width, height, isc_image_info);
+	if (ret != DPC_E_OK) {
+		return CAMCONTROL_E_NO_IMAGE;
+	}
 
 	return DPC_E_OK;
 }
@@ -3825,8 +3835,312 @@ int XcSdkWrapper::CorrectRGBImage(const int width, const int height, float*** co
 	return DPC_E_OK;
 }
 
+/**
+ * image color convert BGR to YUYV
+ *
+ * @param[in] width image widh.
+ * @param[in] height image height.
+ * @param[in] inputImage input image.
+ * @param[out] outputImage output image.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::ConverBGR2YUYV(const int width, const int height, unsigned char* input_image, unsigned char* output_image)
+{
 
 
+	for (int i = 0; i < height; i++) {
 
+		unsigned char* src = input_image + (i * width * 3);
+		unsigned char* dst = output_image + (i * width * 2);
+
+		for (int j = 0; j < width; j+=2) {
+			unsigned char b0 = *src++;	//Blue
+			unsigned char g0 = *src++;	//Green
+			unsigned char r0 = *src++;	//Red
+
+			unsigned char b1 = *src++;	//Blue
+			unsigned char g1 = *src++;	//Green
+			unsigned char r1 = *src++;	//Red
+
+			int y0 = (int)(0.299 * (float)r0 + 0.587 * (float)g0 + 0.114 * (float)b0);
+			int u0 = (int)(-0.169 * (float)r0 - 0.331 * (float)g0 + 0.500 * (float)b0) + 128;
+			int v0 = (int)(0.500 * (float)r0- 0.419 * (float)g0 - 0.081 * (float)b0) + 128;
+
+			int y1 = (int)(0.299 * (float)r1 + 0.587 * (float)g1 + 0.114 * (float)b1);
+
+			y0 = MIN(255, MAX(0, y0));
+			u0 = MIN(255, MAX(0, u0));
+			v0 = MIN(255, MAX(0, v0));
+
+			y1 = MIN(255, MAX(0, y1));
+
+			*dst++ = y0;
+			*dst++ = u0;
+			*dst++ = y1;
+			*dst++ = v0;
+		}
+	}
+
+	/*
+	cv::Size image_size(width, height);
+	cv::Mat dstY(image_size, CV_8UC1);
+	cv::Mat dstU(image_size, CV_8UC1);
+	cv::Mat dstV(image_size, CV_8UC1);
+
+	cv::Mat mat_src_image(height, width, CV_8UC3, input_image);
+
+	for (int i = 0; i < height; i++) {
+
+		for (int j = 0; j < width; j++) {
+
+			unsigned char b = mat_src_image.at<cv::Vec3b>(i, j)[0];	//Blue
+			unsigned char g = mat_src_image.at<cv::Vec3b>(i, j)[1]; //Green
+			unsigned char r = mat_src_image.at<cv::Vec3b>(i, j)[2]; //Red
+
+			int y = (int)(0.299 * (float)r + 0.587 * (float)g + 0.114 * (float)b);
+			int u = (int)(-0.169 * (float)r - 0.331 * (float)g + 0.500 * (float)b) + 128;
+			int v = (int)(0.500 * (float)r - 0.419 * (float)g - 0.081 * (float)b) + 128;
+
+			y = MIN(255, MAX(0, y));
+			u = MIN(255, MAX(0, u));
+			v = MIN(255, MAX(0, v));
+
+			dstY.at<unsigned char>(i, j) = (unsigned char)y;
+			dstU.at<unsigned char>(i, j) = (unsigned char)u;
+			dstV.at<unsigned char>(i, j) = (unsigned char)v;
+		}
+	}
+
+	unsigned char* yuyvBuffer = output_image;
+
+	for (int y = 0; y < height; y++) {
+
+		unsigned char* pDst = yuyvBuffer + (y * width * 2);
+		int index = 0;
+
+		for (int x = 0; x < width * 2; x += 4) {
+			*pDst++ = dstY.at<unsigned char>(y, index);
+			*pDst++ = dstU.at<unsigned char>(y, index);
+			*pDst++ = dstY.at<unsigned char>(y, index + 1);
+			*pDst++ = dstV.at<unsigned char>(y, index);
+			index += 2;
+		}
+	}
+	*/
+
+	return DPC_E_OK;
+}
+
+/**
+ * calculate parameters to be used for synthesis
+ *
+ * @param[in] width image widh.
+ * @param[in] height image height.
+ * @param[out] composition_parameter result parameter.
+ * @param[in] isc_image_info input latest previous image.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::GetComposeParameter(const int width, const int height, CompositionParameter* composition_parameter, IscImageInfo* isc_image_info)
+{
+
+	constexpr int V_MAX = 748;				
+
+	// 合成露光の計算
+
+	// 今回の画像
+	int exposure = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].exposure;
+	int gain = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].gain;
+
+	double current_expo = (double)(V_MAX - (exposure)) * pow(10.0, (double)(gain) / 200.0);
+	composition_parameter->currentExpo = current_expo;
+
+	// 前回の画像
+	exposure = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].exposure;
+	gain = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].gain;
+	double previous_expo = (double)(V_MAX - (exposure)) * pow(10.0, (double)(gain) / 200.0);
+	composition_parameter->previousExpo = previous_expo;
+
+	// 合成用テーブルの作成
+	bool is_current_brighter = true;
+	double 	expo_ratio = 1.0;
+
+	if (previous_expo > current_expo) {
+		// 今回が明るい絵
+		expo_ratio = previous_expo / current_expo;
+		is_current_brighter = true;
+	}
+	else {
+		// 今回が暗い絵
+		expo_ratio = current_expo / previous_expo;
+		is_current_brighter = false;
+	}
+
+	if (expo_ratio < 1.0) {
+		expo_ratio = 1.0;
+	}
+
+	if (expo_ratio >= 256.0) {
+		expo_ratio = 255.9;
+	}
+
+	composition_parameter->isCurrentBrighter = is_current_brighter;
+	composition_parameter->expoRatio = expo_ratio;
+
+	return DPC_E_OK;
+}
+
+/**
+ * Performs parallax data synthesis
+ *
+ * @param[in] width image widh.
+ * @param[in] height image height.
+ * @param[in] composition_parameter parameter for composition.
+ * @param[inout] isc_image_info input image.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::RunComposition(const int width, const int height, IscImageInfo* isc_image_info)
+{
+
+	// (1)基準画像
+	// 右画像を結合しません　短い露光の画像を使います
+	// Does not merge the right image. It is a short exposure time image
+	CompositionParameter composition_parameter = {};
+
+	int ret = GetComposeParameter(width, height, &composition_parameter, isc_image_info);
+	int primary_disparity_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	int interpolate_disparity_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+
+	if (composition_parameter.isCurrentBrighter) {
+		// 今回の画像
+		CopyFrameData(kISCIMAGEINFO_FRAMEDATA_LATEST, kISCIMAGEINFO_FRAMEDATA_MERGED, isc_image_info);
+
+		primary_disparity_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+		interpolate_disparity_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+	}
+	else {
+		// 前回の画像
+		CopyFrameData(kISCIMAGEINFO_FRAMEDATA_PREVIOUS, kISCIMAGEINFO_FRAMEDATA_MERGED, isc_image_info);
+
+		primary_disparity_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+		interpolate_disparity_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	}
+
+	// (2)視差データ合成
+	float* primary_diaprity = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.image;
+	float* interpolate_diaprity = isc_image_info->frame_data[interpolate_disparity_index].depth.image;
+
+	constexpr float minumum_disparity_value = 2.0f;
+
+	for (int j = 0; j < height; j++) {
+		float* src_temp_diparity = primary_diaprity + (j * width);
+		float* src_temp_diparity2 = interpolate_diaprity + (j * width);
+
+		for (int i = 0; i < width; i++) {
+			if ((*src_temp_diparity < minumum_disparity_value) &&
+				(static_cast<int>(*src_temp_diparity2) > static_cast<int>(*src_temp_diparity))) {
+
+				// 置き換え
+				*src_temp_diparity = *src_temp_diparity2;
+			}
+			src_temp_diparity++;
+			src_temp_diparity2++;
+		}
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * copy frame data
+ *
+ * @param[in] src_index source frame_data index.
+ * @param[in] dst_index dest frame_data index.
+ * @param[inout] isc_image_info input image.
+ * @return 0 if successful.
+ */
+int XcSdkWrapper::CopyFrameData(const int src_index, const int dst_index, IscImageInfo* isc_image_info)
+{
+	// p1
+	isc_image_info->frame_data[dst_index].p1.width = isc_image_info->frame_data[src_index].p1.width;
+	isc_image_info->frame_data[dst_index].p1.height = isc_image_info->frame_data[src_index].p1.height;
+	isc_image_info->frame_data[dst_index].p1.channel_count = isc_image_info->frame_data[src_index].p1.channel_count;
+
+	size_t copy_size = isc_image_info->frame_data[src_index].p1.width * isc_image_info->frame_data[src_index].p1.height * isc_image_info->frame_data[src_index].p1.channel_count;
+	if (copy_size > 0) {
+		memcpy(isc_image_info->frame_data[dst_index].p1.image, isc_image_info->frame_data[src_index].p1.image, copy_size);
+	}
+
+	// p2
+	if (isc_image_info->grab == IscGrabMode::kCorrect ||
+		isc_image_info->grab == IscGrabMode::kBeforeCorrect) {
+
+		isc_image_info->frame_data[dst_index].p2.width = isc_image_info->frame_data[src_index].p2.width;
+		isc_image_info->frame_data[dst_index].p2.height = isc_image_info->frame_data[src_index].p2.height;
+		isc_image_info->frame_data[dst_index].p2.channel_count = isc_image_info->frame_data[src_index].p2.channel_count;
+
+		copy_size = isc_image_info->frame_data[src_index].p2.width * isc_image_info->frame_data[src_index].p2.height * isc_image_info->frame_data[src_index].p2.channel_count;
+		if (copy_size > 0) {
+			memcpy(isc_image_info->frame_data[dst_index].p2.image, isc_image_info->frame_data[src_index].p2.image, copy_size);
+		}
+	}
+
+	// color
+	if (isc_image_info->color_grab_mode == IscGrabColorMode::kColorON) {
+		if (isc_image_info->frame_data[src_index].color.width != 0 && isc_image_info->frame_data[src_index].color.height != 0 &&
+			isc_image_info->frame_data[src_index].color.channel_count == 3) {
+
+			isc_image_info->frame_data[dst_index].color.width = isc_image_info->frame_data[src_index].color.width;
+			isc_image_info->frame_data[dst_index].color.height = isc_image_info->frame_data[src_index].color.height;
+			isc_image_info->frame_data[dst_index].color.channel_count = isc_image_info->frame_data[src_index].color.channel_count;
+
+			copy_size = isc_image_info->frame_data[src_index].color.width * isc_image_info->frame_data[src_index].color.height * isc_image_info->frame_data[src_index].color.channel_count;
+			if (copy_size > 0) {
+				memcpy(isc_image_info->frame_data[dst_index].color.image, isc_image_info->frame_data[src_index].color.image, copy_size);
+			}
+		}
+	}
+
+	// depth
+	if (isc_image_info->grab == IscGrabMode::kParallax) {
+		if (isc_image_info->frame_data[src_index].depth.width != 0 && isc_image_info->frame_data[src_index].depth.height != 0) {
+
+			isc_image_info->frame_data[dst_index].depth.width = isc_image_info->frame_data[src_index].depth.width;
+			isc_image_info->frame_data[dst_index].depth.height = isc_image_info->frame_data[src_index].depth.height;
+
+			copy_size = isc_image_info->frame_data[src_index].depth.width * isc_image_info->frame_data[src_index].depth.height * sizeof(float);
+			if (copy_size > 0) {
+				memcpy(isc_image_info->frame_data[dst_index].depth.image, isc_image_info->frame_data[src_index].depth.image, copy_size);
+			}
+		}
+	}
+
+	//raw
+	if (isc_image_info->frame_data[src_index].raw.width != 0 && isc_image_info->frame_data[src_index].raw.height != 0) {
+
+		isc_image_info->frame_data[dst_index].raw.width = isc_image_info->frame_data[src_index].raw.width;
+		isc_image_info->frame_data[dst_index].raw.height = isc_image_info->frame_data[src_index].raw.height;
+		isc_image_info->frame_data[dst_index].raw.channel_count = isc_image_info->frame_data[src_index].raw.channel_count;
+
+		copy_size = isc_image_info->frame_data[src_index].raw.width * isc_image_info->frame_data[src_index].raw.height;
+		if (copy_size > 0) {
+			memcpy(isc_image_info->frame_data[dst_index].raw.image, isc_image_info->frame_data[src_index].raw.image, copy_size);
+		}
+	}
+
+	//raw color
+	if (isc_image_info->frame_data[src_index].raw_color.width != 0 && isc_image_info->frame_data[src_index].raw_color.height != 0) {
+
+		isc_image_info->frame_data[dst_index].raw_color.width = isc_image_info->frame_data[src_index].raw_color.width;
+		isc_image_info->frame_data[dst_index].raw_color.height = isc_image_info->frame_data[src_index].raw_color.height;
+		isc_image_info->frame_data[dst_index].raw_color.channel_count = isc_image_info->frame_data[src_index].raw_color.channel_count;
+
+		copy_size = isc_image_info->frame_data[src_index].raw_color.width * isc_image_info->frame_data[src_index].raw_color.height;
+		if (copy_size > 0) {
+			memcpy(isc_image_info->frame_data[dst_index].raw_color.image, isc_image_info->frame_data[src_index].raw_color.image, copy_size);
+		}
+	}
+
+	return DPC_E_OK;
+}
 
 } /* namespace ns_vmsdk_wrapper */

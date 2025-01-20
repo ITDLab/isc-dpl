@@ -110,7 +110,10 @@ enum class IscCameraParameter {
     kPeculiarRemoval,           /**< [bool] Settings to remove peculiarity */
     kSelfCalibration,           /**< [bool] Software Calibration(selft calibration) valid */
     kGenericRead,               /**< [uc*, uc*, int,int ] General purpose loading */
-    kGenericWrite               /**< [uc*, int ] General purpose writing */
+    kGenericWrite,              /**< [uc*, int ] General purpose writing */
+    kSemiAutoDoubleParam,       /**< [int] Semi auto double shutter parameter */
+    kSadSearchRange128,         /**< [bool] disparity aearch range 128bit enable */
+    EnablEextendedMatching      /**< [bool] eextended matching enable */
 };
 
 /** @struct  IscCameraDisparityParameter

@@ -173,6 +173,18 @@ int IscMeasurement::GetPositionDepth(const int x, const int y, const IscImageInf
 
     int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
+    IscShutterMode shutter_mode = isc_image_info->shutter_mode;
+
+    if (shutter_mode == IscShutterMode::kDoubleShutter) {
+        // Double Shutterモードで、結合結果のデータがあれば、それを使用する
+        int temp_width  = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.width;
+        int temp_height = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.height;
+
+        if (temp_width > 0 && temp_height > 0) {
+            fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+        }
+    }
+
     int width = isc_image_info->frame_data[fd_index].depth.width;
     int height = isc_image_info->frame_data[fd_index].depth.height;
 
@@ -285,6 +297,19 @@ int IscMeasurement::GetPosition3D(const int x, const int y, const IscImageInfo* 
     }
 
     int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    IscShutterMode shutter_mode = isc_image_info->shutter_mode;
+
+    if (shutter_mode == IscShutterMode::kDoubleShutter) {
+        // Double Shutterモードで、結合結果のデータがあれば、それを使用する
+        int temp_width = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.width;
+        int temp_height = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.height;
+
+        if (temp_width > 0 && temp_height > 0) {
+            fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+        }
+    }
+
     int width = isc_image_info->frame_data[fd_index].depth.width;
     int height = isc_image_info->frame_data[fd_index].depth.height;
 
@@ -377,6 +402,18 @@ int IscMeasurement::GetAreaStatistics(const int x, const int y, const int width,
     isc_data_statistics->max_distance = max_distance;
 
     int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+    IscShutterMode shutter_mode = isc_image_info->shutter_mode;
+
+    if (shutter_mode == IscShutterMode::kDoubleShutter) {
+        // Double Shutterモードで、結合結果のデータがあれば、それを使用する
+        int temp_width = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.width;
+        int temp_height = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_MERGED].depth.height;
+
+        if (temp_width > 0 && temp_height > 0) {
+            fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+        }
+    }
 
     int image_width = isc_image_info->frame_data[fd_index].depth.width;
     int image_height = isc_image_info->frame_data[fd_index].depth.height;

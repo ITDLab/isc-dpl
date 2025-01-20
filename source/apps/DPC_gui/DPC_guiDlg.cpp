@@ -655,7 +655,6 @@ BOOL CDPCguiDlg::OnInitDialog()
 	dp_param_dlg0_ = new DPParameterDlg(this);
 	dp_param_dlg0_->Create(IDD_DIALOG4, this);
 
-
 	dp_param_dlg1_ = new DPParameterDlg(this);
 	dp_param_dlg1_->Create(IDD_DIALOG4, this);
 

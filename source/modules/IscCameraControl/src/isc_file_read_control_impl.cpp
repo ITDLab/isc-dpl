@@ -511,7 +511,23 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 		// 合成を行います
 
 		if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
-			ReadDoubleShutterRawData(isc_image_info);
+
+			// Frame番号が連続していないデータは、不採用とします
+
+			DPL_RESULT read_ret = DPC_E_OK;
+			while(true) {
+				read_ret = ReadDoubleShutterRawData(isc_image_info);
+				
+				if (read_ret == DPC_E_OK) {
+					break;
+				}
+				else if (read_ret == CAMCONTROL_E_READ_FILE_FAILED_RETRY) {
+					// continue
+				}
+				else {
+					break;
+				}
+			}
 		}
 		else {
 			return CAMCONTROL_E_READ_FILE_FAILED;
@@ -1092,7 +1108,7 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 	}
 	file_read_information_.total_read_size += readed_size;
 
-	int frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+	int frame_data_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
 
 	// 初期化
 	{
@@ -1263,7 +1279,23 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 	}
 	file_read_information_.total_read_size += readed_size;
 
-	frame_data_index = kISCIMAGEINFO_FRAMEDATA_PREVIOUS;
+	frame_data_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
+
+	// 次の読み込みのために1データ分　戻す
+	LARGE_INTEGER new_pointer = {};
+
+	LARGE_INTEGER  distance_to_move = {};
+	distance_to_move.QuadPart = (LONGLONG)(sizeof(raw_read_data_.isc_raw_data_header) + raw_read_data_.isc_raw_data_header.data_size) * -1;
+	DWORD move_method = FILE_CURRENT;
+
+	if (!SetFilePointerEx(file_read_information_.handle_file, distance_to_move, (PLARGE_INTEGER)&new_pointer, move_method)) {
+		DWORD gs_error = GetLastError();
+		char msg[64] = {};
+		sprintf_s(msg, "[ERROR]ReadDoubleShutterRawData() SetFilePointerEx error(%d)\n", gs_error);
+		OutputDebugStringA(msg);
+
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
 
 	// 初期化
 	{
@@ -1417,6 +1449,39 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 
 		int width = file_read_information_.raw_file_header.max_width;
 		int height = file_read_information_.raw_file_header.max_height;
+
+		// check frame number
+		int latest_frame_no = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_LATEST].frameNo;
+		int previous_frame_no = isc_image_info->frame_data[kISCIMAGEINFO_FRAMEDATA_PREVIOUS].frameNo;
+
+		bool is_frame_ok = true;
+		if (latest_frame_no == 255) {
+			int diff = abs(latest_frame_no - previous_frame_no);
+			if (diff != 1) {
+				is_frame_ok = false;
+			}
+		}
+		else if (previous_frame_no == 255) {
+			int diff = abs((latest_frame_no + 256) - previous_frame_no);
+			if (diff != 1) {
+				is_frame_ok = false;
+			}
+		}
+		else {
+			int diff = abs(latest_frame_no - previous_frame_no);
+			if (diff != 1) {
+				is_frame_ok = false;
+			}
+		}
+
+		if (!is_frame_ok) {
+			// Frameが連続していない
+			//char msg[256] = {};
+			//sprintf_s(msg, "[ERROR]ReadDoubleShutterRawData() Frame numbers are not consecutive.(%d,%d)\n", latest_frame_no, previous_frame_no);
+			//OutputDebugStringA(msg);
+
+			return CAMCONTROL_E_READ_FILE_FAILED_RETRY;
+		}
 
 		int ret = raw_data_decoder_->CombineImagesForDoubleShutter(isc_camera_model, width, height, isc_image_info);
 		if (ret != DPC_E_OK) {

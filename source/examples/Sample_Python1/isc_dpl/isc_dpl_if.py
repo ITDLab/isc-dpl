@@ -114,6 +114,9 @@ class IscCameraParameter(IntEnum) :
     kSelfCalibration=21         #/**< [bool] Software Calibration(selft calibration) valid */
     kGenericRead=22             #/**< [uc*, uc*, int,int ] General purpose loading */
     kGenericWrite=23            #/**< [uc*, int ] General purpose writing */
+    kSemiAutoDoubleParam=24     #/**< [int] Semi auto double shutter parameter */
+    kSadSearchRange128=25       #/**< [bool] disparity aearch range 128bit enable */
+    EnablEextendedMatching=26   #/**< [bool] eextended matching enable */
 
 # /** @enum  IscShutterMode
 #  *  @brief This is a shutter control mode 
@@ -123,6 +126,12 @@ class IscShutterMode(IntEnum) :
     kSingleShutter=1    #/**< Single shutter mode */
     kDoubleShutter=2    #/**< Double shutter mode */
     kDoubleShutter2=3   #/**< Double shutter mode(Alt) */
+
+# IscImageInfo Frame_data index description.
+class IscImageInfoFrameIndex(IntEnum) :
+    latest=0    #/**< latest FrameData */
+    previous=1  #/**< previous FrameData */
+    merged=2    #/**< merge for double shutter FrameData */
 
 # /** @struct  IscDplConfiguration
 #  *  @brief This is the configuration information 
@@ -1153,7 +1162,11 @@ class IscDplIf:
         ret_depth_data = -1
 
         if ret == 0:
-            frame_index = 0
+            frame_index = IscImageInfoFrameIndex.latest
+
+            if self.isc_image_info.shutter_mode == IscShutterMode.kDoubleShutter:
+                if self.isc_image_info.frame_data[IscImageInfoFrameIndex.merged].p1.width != 0 and self.isc_image_info.frame_data[IscImageInfoFrameIndex.merged].p1.height != 0:
+                    frame_index = IscImageInfoFrameIndex.merged
 
             # show time stamp
             frame_time_sec = int(self.isc_image_info.frame_data[frame_index].frame_time / 1000)
@@ -1223,7 +1236,11 @@ class IscDplIf:
         ret_depth_data = -1
 
         if ret == 0:
-            frame_index = 0
+            frame_index = IscImageInfoFrameIndex.latest
+
+            if self.isc_image_info.shutter_mode == IscShutterMode.kDoubleShutter:
+                if self.isc_image_info.frame_data[IscImageInfoFrameIndex.merged].p1.width != 0 and self.isc_image_info.frame_data[IscImageInfoFrameIndex.merged].p1.height != 0:
+                    frame_index = IscImageInfoFrameIndex.merged
 
             # base image
             p1_width = self.iscdataproc_result_data.isc_image_info.frame_data[frame_index].p1.width

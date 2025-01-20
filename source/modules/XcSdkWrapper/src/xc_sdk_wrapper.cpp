@@ -210,6 +210,29 @@ namespace ns_xcsdk_wrapper
 	typedef int (WINAPI* TGetFullFrameInfo4)(RawSrcData*, RawSrcData*, int);
 	TGetFullFrameInfo4 getFullFrameInfo4 = NULL;
 
+	//int SetSemiAutoDoubleParam(unsigned int nValue);
+	typedef int (WINAPI* TSetSemiAutoDoubleParam)(unsigned int);
+	TSetSemiAutoDoubleParam setSemiAutoDoubleParam = NULL;
+
+	//int GetSemiAutoDoubleParam(unsigned int* pnValue);
+	typedef int (WINAPI* TGetSemiAutoDoubleParam)(unsigned int*);
+	TGetSemiAutoDoubleParam getSemiAutoDoubleParam = NULL;
+
+	//int SetSadSearchRange128(int nValue);
+	typedef int (WINAPI* TSetSadSearchRange128)(int);
+	TSetSadSearchRange128 setSadSearchRange128 = NULL;
+
+	//int GetSadSearchRange128(int* pnValue);
+	typedef int (WINAPI* TGetSadSearchRange128)(int*);
+	TGetSadSearchRange128 getSadSearchRange128 = NULL;
+
+	//int SetEnablEextendedMatching(int nValue);
+	typedef int (WINAPI* TSetEnablEextendedMatching)(int);
+	TSetEnablEextendedMatching setEnablEextendedMatching = NULL;
+
+	//int GetEnablEextendedMatching(int* pnValue);
+	typedef int (WINAPI* TGetEnablEextendedMatching)(int*);
+	TGetEnablEextendedMatching getEnablEextendedMatching = NULL;
 
 /**
  * constructor
@@ -1068,6 +1091,18 @@ bool XcSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::kSadSearchRange128:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::EnablEextendedMatching:
+		ret_value = true;
+		break;
+
 	}
 
 	return ret_value;
@@ -1104,6 +1139,17 @@ bool XcSdkWrapper::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::kSadSearchRange128:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::EnablEextendedMatching:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1137,6 +1183,18 @@ bool XcSdkWrapper::DeviceOptionIsWritable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kPeculiarRemoval:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::kSadSearchRange128:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::EnablEextendedMatching:
 		ret_value = true;
 		break;
 
@@ -1176,6 +1234,10 @@ int XcSdkWrapper::DeviceGetOptionMin(const IscCameraParameter option_name, int* 
 		ret_value = DPC_E_OK;
 		break;
 
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		*value = 0;
+		ret_value = DPC_E_OK;
+		break;
 	}
 
 	return ret_value;
@@ -1211,6 +1273,11 @@ int XcSdkWrapper::DeviceGetOptionMax(const IscCameraParameter option_name, int* 
 		*value = 7;
 		ret_value = DPC_E_OK;
 		break;
+
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		*value = 32;
+		ret_value = DPC_E_OK;
+		break;
 	}
 
 	return ret_value;
@@ -1240,6 +1307,11 @@ int XcSdkWrapper::DeviceGetOptionInc(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kOcclusionRemoval:
+		*value = 1;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kSemiAutoDoubleParam:
 		*value = 1;
 		ret_value = DPC_E_OK;
 		break;
@@ -1299,6 +1371,16 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 		}
 		break;
 
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		ret_value = getSemiAutoDoubleParam(&get_value);
+		if (ret_value == ISC_OK) {
+			*value = static_cast<int>(get_value);
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
 
 	}
 
@@ -1354,6 +1436,17 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
 		}
 		break;
+
+	case IscCameraParameter::kSemiAutoDoubleParam:
+		ret_value = setSemiAutoDoubleParam(set_value);
+		if (ret_value == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+		break;
+
 	}
 
 	return ret_value;
@@ -1473,6 +1566,39 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
+
+	case IscCameraParameter::kSadSearchRange128:
+		ret_value = getSadSearchRange128(&get_value);
+		if (ret_value == ISC_OK) {
+			if (get_value != 0) {
+				*value = true;
+			}
+			else {
+				*value = false;
+			}
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::EnablEextendedMatching:
+		ret_value = getEnablEextendedMatching(&get_value);
+		if (ret_value == ISC_OK) {
+			if (get_value != 0) {
+				*value = true;
+			}
+			else {
+				*value = false;
+			}
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
+
 	}
 
 	return ret_value;
@@ -1536,6 +1662,48 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		}
 		else {
 			ret_value = SetStereoMatchingsPeculiarRemoval(0);
+			if (ret_value == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
+		}
+		break;
+
+	case IscCameraParameter::kSadSearchRange128:
+		if (value) {
+			ret_value = setSadSearchRange128(1);
+			if (ret_value == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
+		}
+		else {
+			ret_value = setSadSearchRange128(0);
+			if (ret_value == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
+		}
+		break;
+
+	case IscCameraParameter::EnablEextendedMatching:
+		if (value) {
+			ret_value = setEnablEextendedMatching(1);
+			if (ret_value == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
+		}
+		else {
+			ret_value = setEnablEextendedMatching(0);
 			if (ret_value == ISC_OK) {
 				ret_value = DPC_E_OK;
 			}
@@ -3598,7 +3766,7 @@ int XcSdkWrapper::LoadDLLFunction(char* module_path)
 	}
 	getImageEx = reinterpret_cast<TGetImageEx>(proc);
 
-	//	ISCSDKLIB_API int GetYUVImageEx(unsigned char* pBuffer, int nSkip, unsigned long nWaitTime = 100);
+	//int GetYUVImageEx(unsigned char* pBuffer, int nSkip, unsigned long nWaitTime = 100);
 	proc = GetProcAddress(dll_handle_, "GetYUVImageEx");
 	if (proc == NULL) {
 		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
@@ -3606,13 +3774,63 @@ int XcSdkWrapper::LoadDLLFunction(char* module_path)
 	}
 	getYUVImageEx = reinterpret_cast<TGetYUVImageEx>(proc);
 
-	//ISCSDKLIB_API int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
+	//int GetFullFrameInfo4(RawSrcData* rawSrcDataCur, RawSrcData* rawSrcDataPrev, int nWaitTime);
 	proc = GetProcAddress(dll_handle_, "GetFullFrameInfo4");
 	if (proc == NULL) {
 		MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
 		return CAMCONTROL_E_LOAD_DLL_FAILED;
 	}
 	getFullFrameInfo4 = reinterpret_cast<TGetFullFrameInfo4>(proc);
+
+	// 下記はSDKのバージョンによっては存在しないため、無くてもエラーにしない
+
+	//int SetSemiAutoDoubleParam(unsigned int nValue);
+	proc = GetProcAddress(dll_handle_, "SetSemiAutoDoubleParam");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setSemiAutoDoubleParam = reinterpret_cast<TSetSemiAutoDoubleParam>(proc);
+
+	//int GetSemiAutoDoubleParam(unsigned int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetSemiAutoDoubleParam");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getSemiAutoDoubleParam = reinterpret_cast<TGetSemiAutoDoubleParam>(proc);
+
+	//int SetSadSearchRange128(int nValue);
+	proc = GetProcAddress(dll_handle_, "SetSadSearchRange128");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setSadSearchRange128 = reinterpret_cast<TSetSadSearchRange128>(proc);
+
+	//int GetSadSearchRange128(int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetSadSearchRange128");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getSadSearchRange128 = reinterpret_cast<TGetSadSearchRange128>(proc);
+
+	//int SetEnablEextendedMatching(int nValue);
+	proc = GetProcAddress(dll_handle_, "SetEnablEextendedMatching");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	setEnablEextendedMatching = reinterpret_cast<TSetEnablEextendedMatching>(proc);
+
+	//int GetEnablEextendedMatching(int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetEnablEextendedMatching");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getEnablEextendedMatching = reinterpret_cast<TGetEnablEextendedMatching>(proc);
 
 	return DPC_E_OK;
 }
@@ -3665,6 +3883,12 @@ int XcSdkWrapper::UnLoadDLLFunction()
 	getImageEx = NULL;
 	getYUVImageEx = NULL;
 	getFullFrameInfo4 = NULL;
+	setSemiAutoDoubleParam = NULL;
+	getSemiAutoDoubleParam = NULL;
+	setSadSearchRange128 = NULL;
+	getSadSearchRange128 = NULL;
+	setEnablEextendedMatching = NULL;
+	getEnablEextendedMatching = NULL;
 
 	return DPC_E_OK;
 }

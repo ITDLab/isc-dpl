@@ -71,8 +71,9 @@
 #define CAMCONTROL_E_WRITE_FAILED               ((DPL_RESULT) 0xC2000023)  /**< I failed to write. */
 #define CAMCONTROL_E_OPEN_READ_FILE_FAILED      ((DPL_RESULT) 0xC2000030)  /**< can't open read file. */
 #define CAMCONTROL_E_READ_FILE_FAILED           ((DPL_RESULT) 0xC2000031)  /**< can't read from file. */
-#define CAMCONTROL_E_READ_CAMERA_MODEL          ((DPL_RESULT) 0xC2000032)  /**< camera model not match. */
-#define CAMCONTROL_E_NOT_ENOUGH_FREE_SPACE      ((DPL_RESULT) 0xC2000033)  /**< Not enough free space. */
+#define CAMCONTROL_E_READ_FILE_FAILED_RETRY     ((DPL_RESULT) 0xC2000032)  /**< can't read from file and request retry. */
+#define CAMCONTROL_E_READ_CAMERA_MODEL          ((DPL_RESULT) 0xC2000033)  /**< camera model not match. */
+#define CAMCONTROL_E_NOT_ENOUGH_FREE_SPACE      ((DPL_RESULT) 0xC2000034)  /**< Not enough free space. */
 
 #define DPCCONTROL_E_FAIL                       ((DPL_RESULT) 0xB2000001)  /**< Unspecified error occurred. */
 #define DPCCONTROL_E_OPVERLAPED_OPERATION       ((DPL_RESULT) 0xB2000002)  /**< The processing overlaps. */

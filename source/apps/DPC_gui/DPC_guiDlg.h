@@ -83,5 +83,6 @@ public:
 	void UpdateCb(const int id, const bool is_enabled);
 	bool SetupGuiControlDefault(bool enabled_camera);
 	bool SaveGuiControlDefault();
+	bool SetupCameraOptions(bool enabled_camera);
 
 };

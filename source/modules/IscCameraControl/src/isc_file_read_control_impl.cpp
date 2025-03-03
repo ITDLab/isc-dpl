@@ -204,7 +204,11 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 	swprintf_s(file_read_information_.read_file_name, L"%s", isc_grab_start_mode->isc_play_mode_parameter.play_file_name);
 
 	// open file
+	file_read_information_.request_fo_designated_number = false;
+	file_read_information_.designated_number = 0;
+
 	file_read_information_.total_read_size = 0;
+	file_read_information_.current_frame_number = 0;
 
 	if (!GetDatFileSize(file_read_information_.read_file_name, &file_read_information_.file_size)) {
 		return CAMCONTROL_E_OPEN_READ_FILE_FAILED;
@@ -246,6 +250,7 @@ int IscFileReadControlImpl::Start(const IscGrabStartMode* isc_grab_start_mode)
 
 	size_t buff_size = raw_read_data_.width * raw_read_data_.height * 2;
 	raw_read_data_.buffer = new unsigned char[buff_size];
+	memset(raw_read_data_.buffer, 0, buff_size);
 
 	file_read_information_.is_file_ready = true;
 
@@ -426,18 +431,61 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 
 	IscGrabColorMode isc_grab_color_mode = (file_read_information_.raw_file_header.color_mode == 0) ? IscGrabColorMode::kColorOFF : IscGrabColorMode::kColorON;
 	if (isc_grab_color_mode == IscGrabColorMode::kColorOFF) {
-		unsigned __int64 next_to_read = file_read_information_.total_read_size + sizeof(raw_read_data_.isc_raw_data_header) + raw_read_data_.isc_raw_data_header.data_size;
-		if (next_to_read >= file_read_information_.file_size) {
-			return CAMCONTROL_E_NO_IMAGE;
+
+		IscShutterMode isc_shutter_mode = IscShutterMode::kManualShutter;
+		switch (file_read_information_.raw_file_header.shutter_mode) {
+		case 0:
+			isc_shutter_mode = IscShutterMode::kManualShutter;
+			break;
+		case 1:
+			isc_shutter_mode = IscShutterMode::kSingleShutter;
+			break;
+		case 2:
+			isc_shutter_mode = IscShutterMode::kDoubleShutter;
+			break;
+		case 3:
+			isc_shutter_mode = IscShutterMode::kDoubleShutter2;
+			break;
+		}
+
+		if (isc_shutter_mode == IscShutterMode::kDoubleShutter) {
+			int width = file_read_information_.raw_file_header.max_width;
+			int height = file_read_information_.raw_file_header.max_height;
+
+			size_t frame_size = width * height * 2;
+			__int64 one_data_size = sizeof(raw_read_data_.isc_raw_data_header) + frame_size;
+
+			unsigned __int64 next_to_read = file_read_information_.total_read_size + one_data_size;
+			// Double Shutterの場合は、2Frame必要
+			if (next_to_read >= file_read_information_.file_size) {
+				return CAMCONTROL_E_NO_IMAGE;
+			}
+		}
+		else {
+			int width = file_read_information_.raw_file_header.max_width;
+			int height = file_read_information_.raw_file_header.max_height;
+
+			size_t frame_size = width * height * 2;
+			__int64 one_data_size = sizeof(raw_read_data_.isc_raw_data_header) + frame_size;
+
+			unsigned __int64 next_to_read = file_read_information_.total_read_size + one_data_size;
+			if (next_to_read > file_read_information_.file_size) {
+				return CAMCONTROL_E_NO_IMAGE;
+			}
 		}
 	}
 	else if (isc_grab_color_mode == IscGrabColorMode::kColorON) {
 		// it read 2 raw datas
-		unsigned __int64 next_to_read = file_read_information_.total_read_size + (sizeof(raw_read_data_.isc_raw_data_header) + raw_read_data_.isc_raw_data_header.data_size) * 2;
-		if (next_to_read >= file_read_information_.file_size) {
+		int width = file_read_information_.raw_file_header.max_width;
+		int height = file_read_information_.raw_file_header.max_height;
+
+		size_t frame_size = width * height * 2;
+		__int64 one_data_size = sizeof(raw_read_data_.isc_raw_data_header) + frame_size;
+
+		unsigned __int64 next_to_read = file_read_information_.total_read_size + one_data_size * 2;
+		if (next_to_read > file_read_information_.file_size) {
 			return CAMCONTROL_E_NO_IMAGE;
 		}
-
 	}
 	else {
 		return CAMCONTROL_E_READ_FILE_FAILED;
@@ -486,6 +534,22 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 	isc_image_info->camera_specific_parameter.base_length = file_read_information_.raw_file_header.base_length;
 	isc_image_info->camera_specific_parameter.dz = file_read_information_.raw_file_header.dz;
 
+	// 指定Frameへの移動要求の確認
+	if (file_read_information_.request_fo_designated_number) {
+		file_read_information_.request_fo_designated_number = false;
+
+		__int64 request_frame = file_read_information_.designated_number;
+
+		if ((request_frame >= 0) && (request_frame < file_read_information_.play_file_information.total_frame_count)) {
+			// 移動
+			int move_ret = MoveToSpecifyFrameNumber(request_frame);
+
+			if (move_ret != DPC_E_OK) {
+				return CAMCONTROL_E_READ_FILE_FAILED;
+			}
+		}
+	}
+
 	if ((isc_shutter_mode == IscShutterMode::kManualShutter) ||
 		(isc_shutter_mode == IscShutterMode::kSingleShutter) ||
 		(isc_shutter_mode == IscShutterMode::kDoubleShutter2)) {
@@ -523,6 +587,17 @@ int IscFileReadControlImpl::GetData(IscImageInfo* isc_image_info)
 				}
 				else if (read_ret == CAMCONTROL_E_READ_FILE_FAILED_RETRY) {
 					// continue
+					int width = file_read_information_.raw_file_header.max_width;
+					int height = file_read_information_.raw_file_header.max_height;
+
+					size_t frame_size = width * height * 2;
+					__int64 one_data_size = sizeof(raw_read_data_.isc_raw_data_header) + frame_size;
+
+					unsigned __int64 next_to_read = file_read_information_.total_read_size + one_data_size;
+					// Double Shutterの場合は、2Frame必要
+					if (next_to_read >= file_read_information_.file_size) {
+						return CAMCONTROL_E_NO_IMAGE;
+					}
 				}
 				else {
 					break;
@@ -627,6 +702,7 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info)
 			isc_image_info->frame_data[frame_data_index].frame_time = 0;
 		}
 
+		isc_image_info->frame_data[frame_data_index].data_index = file_read_information_.current_frame_number;
 		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
 		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
 		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
@@ -741,6 +817,8 @@ int IscFileReadControlImpl::ReadOneRawData(IscImageInfo* isc_image_info)
 		return CAMCONTROL_E_READ_FILE_FAILED;
 	}
 
+	file_read_information_.current_frame_number++;
+
 	return DPC_E_OK;
 }
 
@@ -830,6 +908,7 @@ int IscFileReadControlImpl::ReadColorRawData(IscImageInfo* isc_image_info)
 			isc_image_info->frame_data[frame_data_index].frame_time = 0;
 		}
 
+		isc_image_info->frame_data[frame_data_index].data_index = file_read_information_.current_frame_number;
 		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
 		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
 		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
@@ -923,6 +1002,8 @@ int IscFileReadControlImpl::ReadColorRawData(IscImageInfo* isc_image_info)
 	else {
 		return CAMCONTROL_E_READ_FILE_FAILED;
 	}
+
+	file_read_information_.current_frame_number++;
 
 	// (2) second data
 	IscGrabColorMode requested_color_mode = IscGrabColorMode::kColorOFF;
@@ -1065,6 +1146,8 @@ int IscFileReadControlImpl::ReadColorRawData(IscImageInfo* isc_image_info)
 		return CAMCONTROL_E_READ_FILE_FAILED;
 	}
 
+	file_read_information_.current_frame_number++;
+
 	return DPC_E_OK;
 }
 
@@ -1154,6 +1237,7 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 			isc_image_info->frame_data[frame_data_index].frame_time = 0;
 		}
 
+		isc_image_info->frame_data[frame_data_index].data_index = file_read_information_.current_frame_number;
 		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
 		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
 		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
@@ -1297,6 +1381,8 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 		return CAMCONTROL_E_READ_FILE_FAILED;
 	}
 
+	file_read_information_.total_read_size += distance_to_move.QuadPart;
+
 	// 初期化
 	{
 		isc_image_info->frame_data[frame_data_index].camera_status.error_code = raw_read_data_.isc_raw_data_header.error_code;
@@ -1341,6 +1427,7 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 			isc_image_info->frame_data[frame_data_index].frame_time = 0;
 		}
 
+		isc_image_info->frame_data[frame_data_index].data_index = file_read_information_.current_frame_number + 1;
 		isc_image_info->frame_data[frame_data_index].frameNo = raw_read_data_.isc_raw_data_header.frame_index;
 		isc_image_info->frame_data[frame_data_index].gain = raw_read_data_.isc_raw_data_header.gain;
 		isc_image_info->frame_data[frame_data_index].exposure = raw_read_data_.isc_raw_data_header.exposure;
@@ -1480,6 +1567,7 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 			//sprintf_s(msg, "[ERROR]ReadDoubleShutterRawData() Frame numbers are not consecutive.(%d,%d)\n", latest_frame_no, previous_frame_no);
 			//OutputDebugStringA(msg);
 
+			file_read_information_.current_frame_number++;
 			return CAMCONTROL_E_READ_FILE_FAILED_RETRY;
 		}
 
@@ -1488,6 +1576,8 @@ int IscFileReadControlImpl::ReadDoubleShutterRawData(IscImageInfo* isc_image_inf
 			return CAMCONTROL_E_READ_FILE_FAILED;
 		}
 	}
+
+	file_read_information_.current_frame_number++;
 
 	return DPC_E_OK;
 }
@@ -1580,51 +1670,61 @@ int IscFileReadControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFi
 	// 保存間隔を確認するために、100Frame先のフレームの時間を見る
 	__int64 test_read_frame_count = 100;
 
-	LARGE_INTEGER new_pointer = {};
+	__int64 frame_interval = 16;
 
-	LARGE_INTEGER  distance_to_move = {};
-	distance_to_move.QuadPart = (LONGLONG)(sizeof(IscRawFileHeader) + one_fr_size * (test_read_frame_count - 1));
-	DWORD move_method = FILE_BEGIN;
+	if (total_frame_count > test_read_frame_count) {
 
-	if (!SetFilePointerEx(handle_file, distance_to_move, (PLARGE_INTEGER)&new_pointer, move_method)) {
-		DWORD gs_error = GetLastError();
-		char msg[64] = {};
-		sprintf_s(msg, "[ERROR]CreateWriteFile() SetFilePointerEx error(%d)\n", gs_error);
-		OutputDebugStringA(msg);
+		LARGE_INTEGER new_pointer = {};
 
-		CloseHandle(handle_file);
+		LARGE_INTEGER  distance_to_move = {};
+		distance_to_move.QuadPart = (LONGLONG)(sizeof(IscRawFileHeader) + one_fr_size * (test_read_frame_count - 1));
+		DWORD move_method = FILE_BEGIN;
 
-		return CAMCONTROL_E_READ_FILE_FAILED;
+		if (!SetFilePointerEx(handle_file, distance_to_move, (PLARGE_INTEGER)&new_pointer, move_method)) {
+			DWORD gs_error = GetLastError();
+			char msg[64] = {};
+			sprintf_s(msg, "[ERROR]CreateWriteFile() SetFilePointerEx error(%d)\n", gs_error);
+			OutputDebugStringA(msg);
+
+			CloseHandle(handle_file);
+
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+
+		bytes_to_read = sizeof(raw_read_data_.isc_raw_data_header);
+		readed_size = 0;
+		IscRawDataHeader isc_raw_data_header_test = {};
+
+		if (FALSE == ReadFile(handle_file, &isc_raw_data_header_test, bytes_to_read, &readed_size, NULL)) {
+			CloseHandle(handle_file);
+
+			return CAMCONTROL_E_READ_FILE_FAILED;
+		}
+
+		ULARGE_INTEGER ul_int_test = {};
+		ul_int_test.LowPart = isc_raw_data_header_test.frame_time_low;
+		ul_int_test.HighPart = isc_raw_data_header_test.frame_time_high;
+
+		__int64 elapsed_time_msec = ul_int_test.QuadPart - ul_int_first.QuadPart;
+		frame_interval = elapsed_time_msec / test_read_frame_count;
+
+		// 現在のISCシリーズは、最大60FPSなので、小さすぎる値は補正する
+		if (frame_interval < 15) {
+			frame_interval = 16;
+		}
 	}
-
-	bytes_to_read = sizeof(raw_read_data_.isc_raw_data_header);
-	readed_size = 0;
-	IscRawDataHeader isc_raw_data_header_test = {};
-
-	if (FALSE == ReadFile(handle_file, &isc_raw_data_header_test, bytes_to_read, &readed_size, NULL)) {
-		CloseHandle(handle_file);
-
-		return CAMCONTROL_E_READ_FILE_FAILED;
-	}
-
-	ULARGE_INTEGER ul_int_test = {};
-	ul_int_test.LowPart = isc_raw_data_header_test.frame_time_low;
-	ul_int_test.HighPart = isc_raw_data_header_test.frame_time_high;
-
-	__int64 elapsed_time_msec = ul_int_test.QuadPart - ul_int_first.QuadPart;
-	__int64 frame_interval = elapsed_time_msec / test_read_frame_count;
-
-	// 現在のISCシリーズは、最大60FPSなので、小さすぎる値は補正する
-	if (frame_interval < 15) {
+	else {
 		frame_interval = 16;
 	}
 
 	// 最後のデータまでファイルポインタを進める
+	LARGE_INTEGER new_pointer = {};
+	LARGE_INTEGER  distance_to_move = {};
 	memset(&new_pointer, 0, sizeof(LARGE_INTEGER));
 	memset(&distance_to_move, 0, sizeof(LARGE_INTEGER));
 
 	distance_to_move.QuadPart = (LONGLONG)(sizeof(IscRawFileHeader) + one_fr_size * (total_frame_count - 1));
-	move_method = FILE_BEGIN;
+	DWORD move_method = FILE_BEGIN;
 
 	if (!SetFilePointerEx(handle_file, distance_to_move, (PLARGE_INTEGER)&new_pointer, move_method)) {
 		DWORD gs_error = GetLastError();
@@ -1656,7 +1756,7 @@ int IscFileReadControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFi
 	// file information
 	file_read_information_.play_file_information.total_frame_count = total_frame_count;
 	file_read_information_.play_file_information.total_time_sec = (__int64)(total_elapsed_time_msec / (long long)1000);
-	file_read_information_.play_file_information.frame_interval = frame_interval;
+	file_read_information_.play_file_information.frame_interval = (int)frame_interval;
 	file_read_information_.play_file_information.start_time = (__int64)ul_int_first.QuadPart;
 	file_read_information_.play_file_information.end_time = (__int64)ul_int_last.QuadPart;
 
@@ -1670,6 +1770,74 @@ int IscFileReadControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFi
 	play_file_information->frame_interval		= file_read_information_.play_file_information.frame_interval;
 	play_file_information->start_time			= file_read_information_.play_file_information.start_time;
 	play_file_information->end_time				= file_read_information_.play_file_information.end_time;
+
+	return DPC_E_OK;
+}
+
+/**
+ * 読み込みFrameを指定番号とします
+ *
+ * @param[in] frame_number 指定番号
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscFileReadControlImpl::SetReadFrameNumber(const __int64 frame_number)
+{
+	if (!file_read_information_.request_fo_designated_number) {
+		file_read_information_.request_fo_designated_number = true;
+		file_read_information_.designated_number = frame_number;
+	}
+
+	return DPC_E_OK;
+}
+
+/**
+ * 指定Frameまで移動します
+ *
+ * @param[in] specify_frame_number　指定フレーム
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscFileReadControlImpl::MoveToSpecifyFrameNumber(const __int64 specify_frame_number)
+{
+
+	if (file_read_information_.handle_file == NULL) {
+		return CAMCONTROL_E_INVALID_PARAMETER;
+	}
+
+	if ((specify_frame_number < 0) && (specify_frame_number >= file_read_information_.play_file_information.total_frame_count)) {
+		return CAMCONTROL_E_INVALID_PARAMETER;
+	}
+
+	// Header
+	__int64 headr_size = sizeof(IscRawFileHeader);
+
+	int width = file_read_information_.raw_file_header.max_width;
+	int height = file_read_information_.raw_file_header.max_height;
+
+	size_t frame_size = width * height * 2;
+	__int64 one_data_size = sizeof(raw_read_data_.isc_raw_data_header) + frame_size;
+
+	// move
+	LARGE_INTEGER new_pointer = {};
+
+	LARGE_INTEGER  distance_to_move = {};
+	distance_to_move.QuadPart = (LONGLONG)(headr_size + (one_data_size * specify_frame_number));
+	DWORD move_method = FILE_BEGIN;
+
+	if (!SetFilePointerEx(file_read_information_.handle_file, distance_to_move, (PLARGE_INTEGER)&new_pointer, move_method)) {
+		DWORD gs_error = GetLastError();
+		char msg[64] = {};
+		sprintf_s(msg, "[ERROR]MoveToSpecifyFrameNumber() SetFilePointerEx error(%d)\n", gs_error);
+		OutputDebugStringA(msg);
+
+		return CAMCONTROL_E_READ_FILE_FAILED;
+	}
+
+	file_read_information_.total_read_size = distance_to_move.QuadPart;
+	file_read_information_.current_frame_number = specify_frame_number;
 
 	return DPC_E_OK;
 }

@@ -28,9 +28,11 @@ public:
 
 	struct StartMode {
 		bool enabled_color;
+		int show_mode;
 	};
 
 	bool Start(StartMode& start_mode);
+	bool StartPlayFile(StartMode& start_mode, wchar_t* play_file_name);
 	bool Stop();
 
 	bool GetCameraData(IscImageInfo* isc_image_Info);
@@ -40,6 +42,9 @@ public:
 
 	bool ConvertDisparityToImage(double b, const double angle, const double bf, const double dinf,
 									const int width, const int height, float* depth, unsigned char* bgra_image);
+
+	bool GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
+	
 
 private:
 	StartMode start_mode_;

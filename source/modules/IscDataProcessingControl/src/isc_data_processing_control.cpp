@@ -626,6 +626,7 @@ int IscDataProcessingControl::InitializeIscDataProcResultData(IscDataProcResultD
     isc_image_info->camera_specific_parameter.dz = 0;
 
     for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].data_index = -1;
         isc_image_info->frame_data[i].frameNo = -1;
         isc_image_info->frame_data[i].gain = -1;
         isc_image_info->frame_data[i].exposure = -1;
@@ -713,6 +714,7 @@ int IscDataProcessingControl::ReleaeIscDataProcResultData(IscDataProcResultData*
     isc_image_info->camera_specific_parameter.dz = 0;
 
     for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].data_index = -1;
         isc_image_info->frame_data[i].frameNo = -1;
         isc_image_info->frame_data[i].gain = -1;
         isc_image_info->frame_data[i].exposure = -1;
@@ -791,6 +793,7 @@ int IscDataProcessingControl::ClearIscDataProcResultData(IscDataProcResultData* 
     isc_image_info->camera_specific_parameter.dz = 0;
 
     for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        isc_image_info->frame_data[i].data_index = -1;
         isc_image_info->frame_data[i].frameNo = -1;
         isc_image_info->frame_data[i].gain = -1;
         isc_image_info->frame_data[i].exposure = -1;
@@ -869,6 +872,7 @@ int IscDataProcessingControl::GetDataProcModuleData(IscDataProcResultData* isc_d
             isc_data_proc_result_data->isc_image_info.camera_specific_parameter.dz = src_isc_image_info->camera_specific_parameter.dz;
 
             for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+                isc_data_proc_result_data->isc_image_info.frame_data[i].data_index = src_isc_image_info->frame_data[i].data_index;
                 isc_data_proc_result_data->isc_image_info.frame_data[i].frameNo = src_isc_image_info->frame_data[i].frameNo;
                 isc_data_proc_result_data->isc_image_info.frame_data[i].gain = src_isc_image_info->frame_data[i].gain;
                 isc_data_proc_result_data->isc_image_info.frame_data[i].exposure = src_isc_image_info->frame_data[i].exposure;
@@ -1139,6 +1143,7 @@ int IscDataProcessingControl::AsyncRun(IscImageInfo* isc_image_info)
         buffer_data->isc_image_info.camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
 
         for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+            buffer_data->isc_image_info.frame_data[i].data_index = isc_image_info->frame_data[i].data_index;
             buffer_data->isc_image_info.frame_data[i].frameNo = isc_image_info->frame_data[i].frameNo;
             buffer_data->isc_image_info.frame_data[i].gain = isc_image_info->frame_data[i].gain;
             buffer_data->isc_image_info.frame_data[i].exposure = isc_image_info->frame_data[i].exposure;
@@ -1351,6 +1356,7 @@ int IscDataProcessingControl::RunDataProcStereoMatching(IscImageInfo* isc_image_
 
     const int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
+    dst_isc_image_info->frame_data[fd_index].data_index = isc_image_info->frame_data[fd_index].data_index;
     dst_isc_image_info->frame_data[fd_index].frameNo = isc_image_info->frame_data[fd_index].frameNo;
     dst_isc_image_info->frame_data[fd_index].gain = isc_image_info->frame_data[fd_index].gain;
     dst_isc_image_info->frame_data[fd_index].exposure = isc_image_info->frame_data[fd_index].exposure;
@@ -1458,6 +1464,7 @@ int IscDataProcessingControl::RunDataProcFrameDecoder(IscImageInfo* isc_image_in
 
     const int fd_index = kISCIMAGEINFO_FRAMEDATA_LATEST;
 
+    dst_isc_image_info->frame_data[fd_index].data_index = isc_image_info->frame_data[fd_index].data_index;
     dst_isc_image_info->frame_data[fd_index].frameNo = isc_image_info->frame_data[fd_index].frameNo;
     dst_isc_image_info->frame_data[fd_index].gain = isc_image_info->frame_data[fd_index].gain;
     dst_isc_image_info->frame_data[fd_index].exposure = isc_image_info->frame_data[fd_index].exposure;
@@ -1623,6 +1630,7 @@ int IscDataProcessingControl::RunDataProcFrameDecoderInDoubleShutter(IscImageInf
         dst_isc_image_info->camera_specific_parameter.dz = isc_image_info->camera_specific_parameter.dz;
 
         for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+            dst_isc_image_info->frame_data[i].data_index = isc_image_info->frame_data[i].data_index;
             dst_isc_image_info->frame_data[i].frameNo = isc_image_info->frame_data[i].frameNo;
             dst_isc_image_info->frame_data[i].gain = isc_image_info->frame_data[i].gain;
             dst_isc_image_info->frame_data[i].exposure = isc_image_info->frame_data[i].exposure;

@@ -113,6 +113,7 @@ int IscImageInfoRingBuffer::Initialize(const bool last_mpde, const bool allow_ov
 			buffer_data_[i].isc_image_info.frame_data[j].camera_status.error_code = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].camera_status.data_receive_tact_time = 0;
 
+			buffer_data_[i].isc_image_info.frame_data[j].data_index = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].frameNo = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].gain = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].exposure = 0;
@@ -194,6 +195,7 @@ int IscImageInfoRingBuffer::Clear()
 			buffer_data_[i].isc_image_info.frame_data[j].camera_status.error_code = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].camera_status.data_receive_tact_time = 0;
 
+			buffer_data_[i].isc_image_info.frame_data[j].data_index = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].frameNo = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].gain = 0;
 			buffer_data_[i].isc_image_info.frame_data[j].exposure = 0;

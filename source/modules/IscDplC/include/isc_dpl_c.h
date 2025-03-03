@@ -300,6 +300,11 @@ extern "C" {
 	*/
 	ISCDPLC_EXPORTS_API int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
+	/** @brief Set the read Frame to the specified number.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplSetReadFrameNumber(const __int64 frame_number);
+
 	// get information for depth, distance, ...
 
 	/** @brief gets the distance of the given coordinates.

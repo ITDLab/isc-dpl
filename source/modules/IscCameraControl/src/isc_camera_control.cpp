@@ -2047,6 +2047,26 @@ int IscCameraControl::GetFileInformation(wchar_t* play_file_name, IscRawFileHead
 }
 
 /**
+ * 読み込みFrameを指定番号とします
+ *
+ * @param[in] frame_number 指定番号
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscCameraControl::SetReadFrameNumber(const __int64 frame_number)
+{
+	int ret = DPC_E_OK;
+
+	ret = isc_file_read_control_impl_->SetReadFrameNumber(frame_number);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return ret;
+}
+
+/**
  * カメラよりデータを取得します
  *
  * @param[in] isc_image_Info バッファー構造体
@@ -2085,6 +2105,7 @@ int IscCameraControl::GetDataLiveCamera(IscImageInfo* isc_image_info)
 	isc_image_info->camera_specific_parameter.dz = buffer_data->isc_image_info.camera_specific_parameter.dz;
 
 	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].data_index = buffer_data->isc_image_info.frame_data[i].data_index;
 		isc_image_info->frame_data[i].frameNo = buffer_data->isc_image_info.frame_data[i].frameNo;
 		isc_image_info->frame_data[i].gain = buffer_data->isc_image_info.frame_data[i].gain;
 		isc_image_info->frame_data[i].exposure = buffer_data->isc_image_info.frame_data[i].exposure;

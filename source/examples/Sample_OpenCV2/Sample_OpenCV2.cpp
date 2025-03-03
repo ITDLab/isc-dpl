@@ -50,7 +50,7 @@ struct ImageState {
 	unsigned char* bgra_image;
 };
 
-int ImageHandler(const int display_scale, const int display_mode, ImageState* image_state);
+int ImageHandler(const int display_scale, const int show_mode, const int display_mode, ImageState* image_state);
 
 void PrintUsage(void)
 {
@@ -74,9 +74,11 @@ int main(int argc, char* argv[]) try
 	// for Visual Studio debug console
 	SetConsoleOutputCP(932);
 
-	if (argc < 2) {
-		std::cout << "Usage : ViewOCV.exe camera_model\n";
+	if (argc < 4) {
+		std::cout << "Usage : ViewOCV.exe camera_model file_name show_mode\n";
 		std::cout << "         camera_model:0:VM 1:XC\n";
+		std::cout << "         file_name:0:file name for play data\n";
+		std::cout << "         show_mode:0:camera data 1:data processing result data\n";
 
 		return 0;
 	}
@@ -109,8 +111,38 @@ int main(int argc, char* argv[]) try
 		std::cout << "\n";
 	}
 	else {
-		std::cout << "Usage : ViewOCV.exe camera_model\n";
+		std::cout << "Usage : ViewOCV.exe camera_model file_name show_mode\n";
 		std::cout << "         camera_model:0:VM 1:XC\n";
+		std::cout << "         file_name:0:file name for play data\n";
+		std::cout << "         show_mode:0:camera data 1:data processing result data\n";
+
+		return 0;
+	}
+
+	char play_file_name[_MAX_PATH] = {};
+	sprintf_s(play_file_name, "%s", argv[2]);
+
+	wchar_t wc_play_file_name[_MAX_PATH] = {};
+	{
+		size_t return_value = 0;
+		mbstate_t mb_state = { 0 };
+		const char* src = play_file_name;
+
+		size_t size_in_words = _MAX_PATH;
+
+		errno_t err = mbsrtowcs_s(&return_value, wc_play_file_name, size_in_words, &src, size_in_words - 1, &mb_state);
+		if (err != 0) {
+			return 0;
+		}
+	}
+
+	const int show_mode = atoi(argv[3]);
+
+	if (show_mode < 0 || show_mode > 1) {
+		std::cout << "Usage : ViewOCV.exe camera_model file_name show_mode\n";
+		std::cout << "         camera_model:0:VM 1:XC\n";
+		std::cout << "         file_name:0:file name for play data\n";
+		std::cout << "         show_mode:0:camera data 1:data processing result data\n";
 
 		return 0;
 	}
@@ -170,6 +202,7 @@ int main(int argc, char* argv[]) try
 
 	// start mode
 	DplControl::StartMode start_mode = {};
+	start_mode.show_mode = show_mode;
 
 	// start camera process
 	enum class MainState {
@@ -214,7 +247,7 @@ int main(int argc, char* argv[]) try
 			break;
 
 		case MainState::start:
-			ret = image_state.dpl_control->Start(start_mode);
+			ret = image_state.dpl_control->StartPlayFile(start_mode, wc_play_file_name);
 
 			if (ret != 0) {
 				main_state = MainState::exit;
@@ -235,7 +268,7 @@ int main(int argc, char* argv[]) try
 				main_state = MainState::stop;
 			}
 			else {
-				ret = ImageHandler(display_scale, display_mode, &image_state);
+				ret = ImageHandler(display_scale, start_mode.show_mode, display_mode, &image_state);
 
 				if (ret != 0) {
 					main_state = MainState::exit;
@@ -336,7 +369,7 @@ catch (const std::exception& e)
 	return EXIT_FAILURE;
 }
 
-int ImageHandler(const int display_scale, const int display_mode, ImageState* image_state)
+int ImageHandler(const int display_scale, const int show_mode, const int display_mode, ImageState* image_state)
 {
 
 	// images from camera
@@ -350,6 +383,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 	}
 
 	cv::Mat mat_s0_image_scale_flip;
+	cv::Mat mat_depth_image_scale_flip;
 	if (camera_status) {
 		bool is_color_exists = false;
 		if (image_state->color_mode == 1) {
@@ -388,6 +422,29 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 
 			cv::imshow("Base Image", mat_s0_image_scale_flip);
 		}
+
+		if (show_mode == 0) {
+			// depth
+			const int width = image_state->isc_image_Info.frame_data[fd_inex].depth.width;
+			const int height = image_state->isc_image_Info.frame_data[fd_inex].depth.height;
+			float* depth = image_state->isc_image_Info.frame_data[fd_inex].depth.image;
+
+			image_state->dpl_control->ConvertDisparityToImage(image_state->b, image_state->angle, image_state->bf, image_state->dinf,
+				width, height, depth, image_state->bgra_image);
+
+			cv::Mat mat_depth_image_temp(height, width, CV_8UC4, image_state->bgra_image);
+
+			cv::Mat mat_depth_image;
+			cv::cvtColor(mat_depth_image_temp, mat_depth_image, cv::COLOR_BGRA2BGR);
+
+			double ratio = 1.0 / (double)display_scale;
+			cv::Mat mat_depth_image_scale;
+			cv::resize(mat_depth_image, mat_depth_image_scale, cv::Size(), ratio, ratio, cv::INTER_NEAREST);
+
+			cv::flip(mat_depth_image_scale, mat_depth_image_scale_flip, -1);
+
+			cv::imshow("Depth Image", mat_depth_image_scale_flip);
+		}
 	}
 
 	// data processing result
@@ -399,8 +456,7 @@ int ImageHandler(const int display_scale, const int display_mode, ImageState* im
 		data_proc_status = false;
 	}
 
-	cv::Mat mat_depth_image_scale_flip;
-	if (data_proc_status) {
+	if (data_proc_status && show_mode == 1) {
 		// depth
 		const int width = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.width;
 		const int height = image_state->isc_data_proc_result_data.isc_image_info.frame_data[fd_inex].depth.height;

@@ -107,6 +107,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 |                       | DPC_gui                   | DPC_gui.exe                   | |  
 | Examples              |                           |                               | |  
 |                       | Sample_OpenCV1            | Sample_OpenCV1.exe            | OpenCVを使用するサンプル|  
+|                       | Sample_OpenCV2            | Sample_OpenCV2.exe            | OpenCVを使用するサンプル ファイルより再生します|  
 |                       | Sample_Yolo1              | Sample_Yolo1.exe              | Yoloを使用するサンプル|  
 |                       | Sample_Python1            |                               | Pythonで使用するサンプル|  
 | Library               | ISC DPL                   |                               | カメラの制御及びデータ処理を行うライブラリ群です|  

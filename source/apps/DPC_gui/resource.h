@@ -176,6 +176,11 @@
 #define IDC_STATIC74                    1173
 #define IDC_STATIC_MODULE_NAME_3        1174
 #define IDC_CHECK17                     1175
+#define IDC_STATIC_FILE                 1176
+#define IDC_SLIDER1                     1177
+#define IDC_STATIC_TFC                  1178
+#define IDC_STATIC_TT                   1179
+#define IDC_SCROLLBAR4                  1180
 
 // Next default values for new objects
 // 
@@ -183,7 +188,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1176
+#define _APS_NEXT_CONTROL_VALUE         1181
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

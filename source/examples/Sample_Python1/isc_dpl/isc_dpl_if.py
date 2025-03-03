@@ -117,6 +117,8 @@ class IscCameraParameter(IntEnum) :
     kSemiAutoDoubleParam=24     #/**< [int] Semi auto double shutter parameter */
     kSadSearchRange128=25       #/**< [bool] disparity aearch range 128bit enable */
     EnablEextendedMatching=26   #/**< [bool] eextended matching enable */
+    kNoiseFilter=27             #/**< [int] noise filter value */
+    KEnableMatchingBlockSize46=28   #/**< [bool] matching block size 4x6 enable */
 
 # /** @enum  IscShutterMode
 #  *  @brief This is a shutter control mode 
@@ -206,7 +208,8 @@ class FrameData (Structure):
                 ("camera_status", IscCameraStatus), #/**< カメラの状態 */
 
                 ("frame_time", c_int64),            #/**< UNIX UTC Time (msec) */
-    
+
+                ("data_index", c_int64),            #/**< データの番号　Camera(-1)　File(通し番号) */
                 ("frameNo", c_int),                 #/**< フレームの番号 */
                 ("gain", c_int),                    #/**< フレームのGain値 */
                 ("exposure", c_int),                #/**< フレームのExposure値 */

@@ -113,7 +113,9 @@ enum class IscCameraParameter {
     kGenericWrite,              /**< [uc*, int ] General purpose writing */
     kSemiAutoDoubleParam,       /**< [int] Semi auto double shutter parameter */
     kSadSearchRange128,         /**< [bool] disparity aearch range 128bit enable */
-    EnablEextendedMatching      /**< [bool] eextended matching enable */
+    kEnableExtendedMatching,    /**< [bool] extended matching enable */
+    kNoiseFilter,               /**< [int] noise filter value */
+    KEnableMatchingBlockSize46  /**< [bool] matching block size 4x6 enable */
 };
 
 /** @struct  IscCameraDisparityParameter
@@ -258,6 +260,7 @@ struct IscImageInfo {
 
         __int64 frame_time;                 /**< UNIX UTC Time (msec) */
 
+        __int64 data_index;                 /**< データの番号　Camera(-1)　File(通し番号) */
         int frameNo;                        /**< フレームの番号 */
         int gain;                           /**< フレームのGain値 */
         int exposure;                       /**< フレームのExposure値 */

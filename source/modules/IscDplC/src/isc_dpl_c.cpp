@@ -1276,6 +1276,28 @@ int DplGetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_he
 	return DPC_E_OK;
 }
 
+/**
+ * 読み込みFrameを指定番号とします
+ *
+ * @param[in] frame_number 指定番号
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int DplSetReadFrameNumber(const __int64 frame_number)
+{
+	if (isc_main_control_ == nullptr) {
+		return ISCDPL_E_INVALID_HANDLE;
+	}
+
+	int ret = isc_main_control_->SetReadFrameNumber(frame_number);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return DPC_E_OK;
+}
+
 // get information for depth, distance, ...
 
 /**

@@ -178,6 +178,9 @@ struct MouseOperationControl {
 };
 MouseOperationControl mouse_operation_control_;
 
+
+PlayControlDlg::PlayDataInformation play_data_information_ = {};
+
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialogEx
@@ -541,6 +544,9 @@ BOOL CDPCguiDlg::OnInitDialog()
 	// Gui default on/off
 	SetupGuiControlDefault(isc_dpl_configuration_.enabled_camera && (dpl_result == DPC_E_OK));
 
+	// Setop camera option parameters
+	SetupCameraOptions(isc_dpl_configuration_.enabled_camera && (dpl_result == DPC_E_OK));
+
 	// initialize Dialog for camera parameter
 	camera_info_dlg_ = new CameraInfoDlg(this);
 	camera_info_dlg_->Create(IDD_DIALOG1, this);
@@ -886,9 +892,10 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 			DPL_RESULT dpl_result = isc_dpl_->Start(&isc_control_.isc_start_mode);
 			if (dpl_result == DPC_E_OK) {
 				SetupDialogItems(true, &isc_control_);
+				play_control_dlg_->SetCurrentStatus(true);
+				isc_control_.play_frame_number = 0;
 				isc_control_.camera_status = CameraStatus::kStart;
 				isc_control_.main_state = MainStateState::kPlayReadyToRun;
-				play_control_dlg_->SetCurrentStatus(true);
 				isc_control_.time_to_event = GetTickCount64();
 			}
 			else {
@@ -900,28 +907,24 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 		case MainStateState::kPlayReadyToRun:
 			if (isc_control_.stop_request) {
 				isc_control_.stop_request = false;
+				DPL_RESULT dpl_result = isc_dpl_->Stop();
 				isc_control_.main_state = MainStateState::kPlayStop;
 			}
 			else {
-				bool ret = ImageCaptureProc();
-
-				if (ret) {
-					isc_control_.main_state = MainStateState::kPlayRun;
-					isc_control_.time_to_event = GetTickCount64();
-				}
-				else {
-					ULONGLONG time = GetTickCount64();
-					if ((time - isc_control_.time_to_event) > (ULONGLONG)1000) {
-						// unable to start
-						isc_control_.main_state = MainStateState::kPlayStop;
-					}
-				}
+				isc_control_.main_state = MainStateState::kPlayRun;
+				isc_control_.time_to_event = GetTickCount64();
 			}
 			break;
 
 		case MainStateState::kPlayRun:
-			if (isc_control_.stop_request) {
+			if (isc_control_.end_request) {
+				isc_control_.end_request = false;
+				DPL_RESULT dpl_result = isc_dpl_->Stop();
+				isc_control_.main_state = MainStateState::kPlayEnded;
+			}
+			else if (isc_control_.stop_request) {
 				isc_control_.stop_request = false;
+				DPL_RESULT dpl_result = isc_dpl_->Stop();
 				isc_control_.main_state = MainStateState::kPlayStop;
 			}
 			else if (isc_control_.pause_request) {
@@ -938,9 +941,16 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				bool ret = ImageCaptureProcForPlay();
 
 				if (ret) {
-					bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false;
-					play_control_dlg_->GetRequest(&is_pause_request, &is_resume_request, &is_stop_request, &is_restart_request);
-					if (is_stop_request) {
+					isc_control_.play_frame_number = isc_control_.isc_image_info.frame_data[0].data_index;
+					play_control_dlg_->SetCurrentFrameNumber(isc_control_.play_frame_number);
+
+					bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false, is_end_request = false;
+					play_control_dlg_->GetRequest(&is_pause_request, &is_resume_request, &is_stop_request, &is_restart_request, &is_end_request);
+					if (is_end_request) {
+						play_control_dlg_->ClearRequests();
+						isc_control_.end_request = true;
+					}
+					else if (is_stop_request) {
 						play_control_dlg_->ClearRequests();
 						isc_control_.stop_request = true;
 					}
@@ -953,7 +963,19 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 						isc_control_.pause_request = true;
 					}
 					else if (is_resume_request) {
+						play_control_dlg_->ClearRequests();
 						__debugbreak();
+					}
+
+					if (!is_end_request && !is_stop_request && !is_restart_request && !is_pause_request && !is_resume_request) {
+						bool is_request = false;
+						int specify_frame = 0;
+						play_control_dlg_->GetPlayFromSpecifiedFrame(&is_request, &specify_frame);
+						play_control_dlg_->ClearRequests();
+
+						if (is_request) {
+							DPL_RESULT dpl_result = isc_dpl_->SetReadFrameNumber(specify_frame);
+						}
 					}
 				}
 
@@ -974,26 +996,34 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				}
 				else {
 					// Played to end of file
-					ULONGLONG time = GetTickCount64();
-#ifdef _DEBUG
-					const ULONGLONG play_time_out = (ULONGLONG)2000;
-#else
-					const ULONGLONG play_time_out = (ULONGLONG)1000;
-#endif
-					if ((time - isc_control_.time_to_event) > play_time_out) {
+					if (isc_control_.play_frame_number >= (play_data_information_.total_frame_count - 1)) {
+						// ended
+						DPL_RESULT dpl_result = isc_dpl_->Stop();
 						isc_control_.main_state = MainStateState::kPlayStop;
-
-						//TCHAR msg[128] = {};
-						//_stprintf_s(msg, _T("[INFO]Play time out! stop it\n"));
-						//OutputDebugString(msg);
+					}
+					else {
+						// 時間待ち
+						ULONGLONG time = GetTickCount64();
+						const ULONGLONG play_time_out = (ULONGLONG)5000;
+						if ((time - isc_control_.time_to_event) > play_time_out) {
+							// time out
+							DPL_RESULT dpl_result = isc_dpl_->Stop();
+							isc_control_.main_state = MainStateState::kPlayStop;
+						}
 					}
 				}
 			}
 			break;
 
 		case MainStateState::kPlayPause:
-			if (isc_control_.stop_request) {
+			if (isc_control_.end_request) {
+				isc_control_.end_request = false;
+				DPL_RESULT dpl_result = isc_dpl_->Stop();
+				isc_control_.main_state = MainStateState::kPlayEnded;
+			}
+			else if (isc_control_.stop_request) {
 				isc_control_.stop_request = false;
+				DPL_RESULT dpl_result = isc_dpl_->Stop();
 				isc_control_.main_state = MainStateState::kPlayStop;
 			}
 			else if (isc_control_.resume_request) {
@@ -1006,9 +1036,13 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				isc_control_.main_state = MainStateState::kPlayStart;
 			}
 			else {
-				bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false;
-				play_control_dlg_->GetRequest(&is_pause_request, &is_resume_request, &is_stop_request, &is_restart_request);
-				if (is_stop_request) {
+				bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false, is_end_request = false;
+				play_control_dlg_->GetRequest(&is_pause_request, &is_resume_request, &is_stop_request, &is_restart_request, &is_end_request);
+				if (is_end_request) {
+					play_control_dlg_->ClearRequests();
+					isc_control_.end_request = true;
+				}
+				else if (is_stop_request) {
 					play_control_dlg_->ClearRequests();
 					isc_control_.stop_request = true;
 				}
@@ -1018,11 +1052,22 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				}
 				else if (is_pause_request) {
 					play_control_dlg_->ClearRequests();
-					isc_control_.pause_request = true;
+					//isc_control_.pause_request = true;
 				}
 				else if (is_resume_request) {
 					play_control_dlg_->ClearRequests();
 					isc_control_.resume_request = true;
+				}
+
+				if (!is_end_request && !is_stop_request && !is_restart_request && !is_resume_request) {
+					bool is_request = false;
+					int specify_frame = 0;
+					play_control_dlg_->GetPlayFromSpecifiedFrame(&is_request, &specify_frame);
+					play_control_dlg_->ClearRequests();
+
+					if (is_request) {
+						DPL_RESULT dpl_result = isc_dpl_->SetReadFrameNumber(specify_frame);
+					}
 				}
 
 				// for pickup information
@@ -1032,17 +1077,42 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 			break;
 
 		case MainStateState::kPlayStop:
-		{
-			DPL_RESULT dpl_result = isc_dpl_->Stop();
-			isc_control_.main_state = MainStateState::kPlayEnded;
-		}
-		break;
+			if (isc_control_.end_request) {
+				isc_control_.end_request = false;
+				isc_control_.main_state = MainStateState::kPlayEnded;
+			}
+			else if (isc_control_.stop_request) {
+				isc_control_.stop_request = false;
+			}
+			else if (isc_control_.resume_request) {
+				isc_control_.resume_request = false;
+			}
+			else if (isc_control_.restart_request) {
+				isc_control_.restart_request = false;
+				isc_control_.main_state = MainStateState::kPlayStart;
+			}
+			else {
+				bool is_pause_request = false, is_resume_request = false, is_stop_request = false, is_restart_request = false, is_end_request = false;
+				play_control_dlg_->GetRequest(&is_pause_request, &is_resume_request, &is_stop_request, &is_restart_request, &is_end_request);
+				if (is_end_request) {
+					play_control_dlg_->ClearRequests();
+					isc_control_.end_request = true;
+				}
+				else if (is_restart_request) {
+					play_control_dlg_->ClearRequests();
+					isc_control_.restart_request = true;
+				}
+				else {
+					play_control_dlg_->ClearRequests();
+				}
+			}
+			break;
 
 		case MainStateState::kPlayEnded:
 			SetupDialogItems(false, &isc_control_);
 			isc_control_.camera_status = CameraStatus::kStop;
 
-			play_control_dlg_->Initialize();
+			play_control_dlg_->Initialize(nullptr);
 			play_control_dlg_->SetCurrentStatus(false);
 			play_control_dlg_->ShowWindow(SW_HIDE);
 
@@ -1730,7 +1800,15 @@ void CDPCguiDlg::OnBnClickedButton6()
 
 		SetupIscControlToStart(false, false, true, selectFileName.GetBuffer(), &isc_feature_request, &isc_control_);
 
-		play_control_dlg_->Initialize();
+		memset(&play_data_information_, 0, sizeof(play_data_information_));
+		swprintf_s(play_data_information_.file_name_play, L"%s", selectFileName.GetBuffer());
+		play_data_information_.total_frame_count = play_file_information.total_frame_count;
+		play_data_information_.total_time_sec = play_file_information.total_time_sec;
+		play_data_information_.frame_interval = play_file_information.frame_interval;
+		play_data_information_.start_time = play_file_information.start_time;
+		play_data_information_.end_time = play_file_information.end_time;
+		
+		play_control_dlg_->Initialize(&play_data_information_);
 		play_control_dlg_->ShowWindow(SW_SHOW);
 	}
 	else {
@@ -2759,8 +2837,10 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	// IDC_EDIT2		Exposure Value
 	// IDC_SCROLLBAR3   Fine Expossure Scroll Bar
 	// IDC_EDIT3		Fine Expossure Value
+	// IDC_SCROLLBAR4	Noise Filter Scroll Bar
+	// IDC_EDIT4		Nose Filter Value
 
-		// Gain用Scroll Bar?
+	// Gain用Scroll Bar?
 	if (pScrollBar == (CScrollBar*)GetDlgItem(IDC_SCROLLBAR1)) {
 		int scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR1))->GetScrollPos();
 
@@ -2950,8 +3030,6 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		}
 	}
 
-	// IDC_SCROLLBAR3   Fine Expossure Scroll Bar
-	// IDC_EDIT3		Fine Expossure Value
 	// Fine Exposure用Scroll Bar?
 	if (pScrollBar == (CScrollBar*)GetDlgItem(IDC_SCROLLBAR3)) {
 		int scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR3))->GetScrollPos();
@@ -3049,6 +3127,104 @@ void CDPCguiDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		}
 	}
 
+	// Noise Filter?
+	if (pScrollBar == (CScrollBar*)GetDlgItem(IDC_SCROLLBAR4)) {
+		int scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->GetScrollPos();
+
+		int min_value = 0;
+		int max_value = 0;
+		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->GetScrollRange(&min_value, &max_value);
+
+		TCHAR tc_buff[64] = {};
+
+		// Exposure用ScrollBar処理
+		switch (nSBCode)
+		{
+			// 左端
+		case SB_LEFT:
+			scroll_pos = min_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+			// 右端
+		case SB_RIGHT:
+			scroll_pos = max_value;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+			// 左ページ/左矢印
+		case SB_PAGELEFT:
+			scroll_pos -= 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+		case SB_LINELEFT:
+			scroll_pos = max(min_value, scroll_pos - 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+			// 右ページ/右矢印
+		case SB_PAGERIGHT:
+			scroll_pos += 10;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+		case SB_LINERIGHT:
+			scroll_pos = min(max_value, scroll_pos + 1);
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+		case SB_THUMBPOSITION:
+			scroll_pos = nPos;
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+		case SB_THUMBTRACK:
+			scroll_pos = nPos;
+			_stprintf_s(tc_buff, _T("%d"), scroll_pos);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+			break;
+		case SB_ENDSCROLL:
+			break;
+		}
+
+		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(scroll_pos);
+
+		if (nSBCode == SB_ENDSCROLL) {
+			// update
+			scroll_pos = ((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->GetScrollPos();
+
+			int	ret = isc_dpl_->DeviceSetOption(IscCameraParameter::kNoiseFilter, scroll_pos);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR4()"), MB_ICONERROR);
+			}
+			Sleep(160);
+
+			// Read Back
+			int read_value = scroll_pos;
+			ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kNoiseFilter, &read_value);
+			if (ret != DPC_E_OK) {
+				TCHAR msg[64] = {};
+				_stprintf_s(msg, _T("[ERROR]isc_dpl_ DeviceSetOption() failure code=0X%08X"), ret);
+				MessageBox(msg, _T("CDPCguiDlg::IDC_SCROLLBAR4()"), MB_ICONERROR);
+			}
+
+			((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(read_value);
+			_stprintf_s(tc_buff, _T("%d"), read_value);
+			((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+		}
+	}
+
+
 	return;
 }
 
@@ -3108,6 +3284,7 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 		(GetDlgItem(IDC_SCROLLBAR1))->EnableWindow(FALSE);
 		(GetDlgItem(IDC_SCROLLBAR2))->EnableWindow(FALSE);
 		(GetDlgItem(IDC_SCROLLBAR3))->EnableWindow(FALSE);
+		(GetDlgItem(IDC_SCROLLBAR4))->EnableWindow(FALSE);
 
 		return true;
 	}
@@ -3302,6 +3479,37 @@ bool CDPCguiDlg::SetupDialogItemsInitial(bool is_disable_all)
 	else {
 		(GetDlgItem(IDC_SCROLLBAR3))->EnableWindow(FALSE);
 		(GetDlgItem(IDC_EDIT3))->EnableWindow(FALSE);
+	}
+
+	// IDC_SCROLLBAR4   Noise filter Scroll Bar
+	// IDC_EDIT4    Noise filter Value
+	is_enabled = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kNoiseFilter);
+	if (is_enabled) {
+		(GetDlgItem(IDC_SCROLLBAR4))->EnableWindow(TRUE);
+		(GetDlgItem(IDC_EDIT4))->EnableWindow(TRUE);
+
+		int min_value = 0;
+		int ret = isc_dpl_->DeviceGetOptionMin(IscCameraParameter::kNoiseFilter, &min_value);
+
+		int max_value = 0;
+		ret = isc_dpl_->DeviceGetOptionMax(IscCameraParameter::kNoiseFilter, &max_value);
+
+		int inc_value = 0;
+		ret = isc_dpl_->DeviceGetOptionInc(IscCameraParameter::kNoiseFilter, &inc_value);
+
+		int current_value = 0;
+		ret = isc_dpl_->DeviceGetOption(IscCameraParameter::kNoiseFilter, &current_value);
+
+		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollRange(min_value, max_value, TRUE);
+		((CScrollBar*)GetDlgItem(IDC_SCROLLBAR4))->SetScrollPos(current_value);
+
+		TCHAR tc_buff[32] = {};
+		_stprintf_s(tc_buff, _T("%d"), current_value);
+		((CEdit*)GetDlgItem(IDC_EDIT4))->SetWindowText(tc_buff);
+	}
+	else {
+		(GetDlgItem(IDC_SCROLLBAR4))->EnableWindow(FALSE);
+		(GetDlgItem(IDC_EDIT4))->EnableWindow(FALSE);
 	}
 
 	// IDC_CHECK9   High Resolution
@@ -3753,7 +3961,6 @@ bool CDPCguiDlg::ImageCaptureProcForPlay()
 			isc_control_.is_data_proc_result_valid = true;
 		}
 	}
-
 
 	return true;
 }
@@ -4275,13 +4482,6 @@ bool CDPCguiDlg::ImageDrawProc()
 		SaveDPLparameterFileToImageFolder();
 	}
 
-	// debug
-	if (0) {
-		TCHAR dbg_msg[128] = {};
-		_stprintf_s(dbg_msg, _T("[INFO]Image Frame Index=%d\n"), isc_control_.isc_image_info.frame_data[fd_index].frameNo);
-		OutputDebugString(dbg_msg);
-	}
-
 	// how to use display classes
 	if (0) {	
 		// for example 
@@ -4476,6 +4676,34 @@ bool CDPCguiDlg::SaveGuiControlDefault()
 
 	// save
 	dpl_gui_configuration_->SaveGuiDefault();
+
+	return true;
+}
+
+bool CDPCguiDlg::SetupCameraOptions(bool enabled_camera)
+{
+
+	if (!enabled_camera) {
+		return true;
+	}
+
+	// Extended Matciong
+	bool is_supported = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kEnableExtendedMatching);
+	bool is_writable = isc_dpl_->DeviceOptionIsWritable(IscCameraParameter::kEnableExtendedMatching);
+	if (is_supported && is_writable) {
+		bool is_enabled = dpl_gui_configuration_->IsOptionExtendedMatching();
+
+		isc_dpl_->DeviceSetOption(IscCameraParameter::kEnableExtendedMatching, is_enabled);
+	}
+
+	// Search Range
+	is_supported = isc_dpl_->DeviceOptionIsImplemented(IscCameraParameter::kSadSearchRange128);
+	is_writable = isc_dpl_->DeviceOptionIsWritable(IscCameraParameter::kSadSearchRange128);
+	if (is_supported && is_writable) {
+		bool is_enabled = dpl_gui_configuration_->IsOptionSearchRange128();
+
+		isc_dpl_->DeviceSetOption(IscCameraParameter::kSadSearchRange128, is_enabled);
+	}
 
 	return true;
 }

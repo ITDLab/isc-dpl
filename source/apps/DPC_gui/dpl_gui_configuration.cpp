@@ -57,7 +57,9 @@ DplGuiConfiguration::DplGuiConfiguration():
 	cb_matching_image_correted_(false),
 	cb_color_image_(false),
 	cb_color_image_correted_(false),
-	cmb_shutter_control_mode_(0)
+	cmb_shutter_control_mode_(0),
+	extended_matching_(false),
+	search_range128_(false)
 {
 
 	
@@ -125,6 +127,10 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 		CB_MATCHING_IMAGE_CORRECTED=0
 		CB_COLOR_IMAGE=0
 		CB_COLOR_IMAGE_CORRECTED=0
+
+		[OPTION_PARAMETER]
+		EXTENDED_MATCHING=0
+		SEARCH_RANGE128=1
 
 	*/
 	
@@ -260,6 +266,14 @@ bool DplGuiConfiguration::Load(const TCHAR* file_path)
 	temp_value = _tstoi(returned_string);
 	cmb_shutter_control_mode_ = temp_value;
 
+	GetPrivateProfileString(_T("OPTION_PARAMETER"), _T("EXTENDED_MATCHING"), _T("0"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	extended_matching_ = temp_value == 1 ? true : false;
+
+	GetPrivateProfileString(_T("OPTION_PARAMETER"), _T("SEARCH_RANGE128"), _T("1"), returned_string, sizeof(returned_string) / sizeof(TCHAR), configuration_file_name_);
+	temp_value = _tstoi(returned_string);
+	search_range128_ = temp_value == 1 ? true : false;
+
 	// for 4K
 	// 4Kカメラは、データ処理ライブラリの対象外です
 	// 4K cameras are not covered by the data processing library
@@ -385,6 +399,12 @@ bool DplGuiConfiguration::SaveGuiDefault()
 
 	_stprintf_s(write_string, _T("%d"), cmb_shutter_control_mode_);
 	WritePrivateProfileString(_T("GUI_DEFAULT"), _T("CMB_SHUTTER_CONTROL_MODE"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), extended_matching_ ? 1 : 0);
+	WritePrivateProfileString(_T("OPTION_PARAMETER"), _T("EXTENDED_MATCHING"), write_string, configuration_file_name_);
+
+	_stprintf_s(write_string, _T("%d"), search_range128_ ? 1 : 0);
+	WritePrivateProfileString(_T("OPTION_PARAMETER"), _T("SEARCH_RANGE128"), write_string, configuration_file_name_);
 
 	return true;
 }
@@ -821,3 +841,22 @@ void DplGuiConfiguration::SetGuiCmbShutterControlMode(const int mode)
 	return;
 }
 
+bool DplGuiConfiguration::IsOptionExtendedMatching() const
+{
+	return extended_matching_;
+}
+
+void DplGuiConfiguration::SetOptionExtendedMatching(const bool enabled)
+{
+	extended_matching_ = enabled;
+}
+
+bool DplGuiConfiguration::IsOptionSearchRange128() const
+{
+	return search_range128_;
+}
+
+void DplGuiConfiguration::SetOptionSearchRange128(const bool enabled)
+{
+	search_range128_ = enabled;
+}

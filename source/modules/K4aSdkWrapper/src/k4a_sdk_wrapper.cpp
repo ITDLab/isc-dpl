@@ -980,6 +980,9 @@ bool K4aSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_na
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1016,6 +1019,9 @@ bool K4aSdkWrapper::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1052,6 +1058,9 @@ bool K4aSdkWrapper::DeviceOptionIsWritable(const IscCameraParameter option_name)
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1088,6 +1097,10 @@ int K4aSdkWrapper::DeviceGetOptionMin(const IscCameraParameter option_name, int*
 		ret_value = DPC_E_OK;
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		*value = 0;
+		ret_value = DPC_E_OK;
+		break;
 	}
 
 	return ret_value;
@@ -1123,6 +1136,11 @@ int K4aSdkWrapper::DeviceGetOptionMax(const IscCameraParameter option_name, int*
 		*value = 7;
 		ret_value = DPC_E_OK;
 		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		*value = 32;
+		ret_value = DPC_E_OK;
+		break;
 	}
 
 	return ret_value;
@@ -1152,6 +1170,11 @@ int K4aSdkWrapper::DeviceGetOptionInc(const IscCameraParameter option_name, int*
 		break;
 
 	case IscCameraParameter::kOcclusionRemoval:
+		*value = 1;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		*value = 1;
 		ret_value = DPC_E_OK;
 		break;
@@ -1212,6 +1235,16 @@ int K4aSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* va
 		}
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = getNoiseFilter(&get_value);
+		if (ret_value == ISC_OK) {
+			*value = static_cast<int>(get_value);
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
 
 	}
 
@@ -1260,6 +1293,16 @@ int K4aSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const i
 
 	case IscCameraParameter::kOcclusionRemoval:
 		ret_value = SetStereoMatchingsOcclusionRemoval(set_value);
+		if (ret_value == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = setNoiseFilter(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1870,6 +1913,7 @@ int K4aSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].frame_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -1946,6 +1990,7 @@ int K4aSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].frame_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2025,6 +2070,7 @@ int K4aSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInf
 	isc_image_info->camera_specific_parameter.dz = k4a_camera_param_info_.dz;
 
 	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;

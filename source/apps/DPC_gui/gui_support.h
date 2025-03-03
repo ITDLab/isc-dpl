@@ -82,7 +82,7 @@ struct IscControl {
 	bool pause_request;
 	bool resume_request;
 	bool restart_request;
-
+	bool end_request;
 	bool one_shot_save_request;
 
 	IscStartMode isc_start_mode;
@@ -92,6 +92,8 @@ struct IscControl {
 
 	bool is_data_proc_result_valid;
 	IscDataProcResultData isc_data_proc_result_data;
+
+	int play_frame_number;
 };
 
 struct IscFeatureRequest {

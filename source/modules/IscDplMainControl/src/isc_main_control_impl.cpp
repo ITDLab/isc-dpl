@@ -1696,6 +1696,10 @@ int IscMainControlImpl::GetCameraData(IscImageInfo* isc_image_Info)
  */
 int IscMainControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information)
 {
+    if (isc_camera_control_ == nullptr) {
+        return ISCDPL_E_INVALID_HANDLE;
+    }
+
     if (play_file_name == nullptr) {
         return ISCDPL_E_INVALID_PARAMETER;
     }
@@ -1709,6 +1713,28 @@ int IscMainControlImpl::GetFileInformation(wchar_t* play_file_name, IscRawFileHe
         return ret;
     }
     
+    return DPC_E_OK;
+}
+
+/**
+ * 読み込みFrameを指定番号とします
+ *
+ * @param[in] frame_number 指定番号
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscMainControlImpl::SetReadFrameNumber(const __int64 frame_number)
+{
+    if (isc_camera_control_ == nullptr) {
+        return ISCDPL_E_INVALID_HANDLE;
+    }
+
+    int ret = isc_camera_control_->SetReadFrameNumber(frame_number);
+    if (ret != DPC_E_OK) {
+        return ret;
+    }
+
     return DPC_E_OK;
 }
 
@@ -1734,6 +1760,7 @@ int IscMainControlImpl::CopyIscImageInfo(IscImageInfo* dst_isc_image_Info, IscIm
     dst_isc_image_Info->camera_specific_parameter.dz = src_isc_image_Info->camera_specific_parameter.dz;
 
     for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+        dst_isc_image_Info->frame_data[i].data_index = src_isc_image_Info->frame_data[i].data_index;
         dst_isc_image_Info->frame_data[i].frameNo = src_isc_image_Info->frame_data[i].frameNo;
         dst_isc_image_Info->frame_data[i].gain = src_isc_image_Info->frame_data[i].gain;
         dst_isc_image_Info->frame_data[i].exposure = src_isc_image_Info->frame_data[i].exposure;

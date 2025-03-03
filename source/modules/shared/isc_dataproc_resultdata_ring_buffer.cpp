@@ -125,6 +125,7 @@ int IscDataprocResultdataRingBuffer::Initialize(const bool last_mpde, const bool
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_specific_parameter.dz = 0;
 
 		for (int j = 0; j < max_fd_count; j++) {
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].data_index = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].frameNo = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].gain = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].exposure = 0;
@@ -220,6 +221,7 @@ int IscDataprocResultdataRingBuffer::Clear()
 		buffer_data_[i].isc_dataproc_resultdata.isc_image_info.camera_specific_parameter.dz = 0;
 
 		for (int j = 0; j < max_fd_count; j++) {
+			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].data_index = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].frameNo = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].gain = 0;
 			buffer_data_[i].isc_dataproc_resultdata.isc_image_info.frame_data[j].exposure = 0;

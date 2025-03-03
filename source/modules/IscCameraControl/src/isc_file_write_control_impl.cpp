@@ -478,6 +478,7 @@ int IscFileWriteControlImpl::Add(IscImageInfo* isc_image_info)
 
 		buffer_data->isc_image_info.frame_data[frame_data_index].frame_time = isc_image_info->frame_data[frame_data_index].frame_time;
 
+		buffer_data->isc_image_info.frame_data[frame_data_index].data_index = isc_image_info->frame_data[frame_data_index].data_index;
 		buffer_data->isc_image_info.frame_data[frame_data_index].frameNo = isc_image_info->frame_data[frame_data_index].frameNo;
 		buffer_data->isc_image_info.frame_data[frame_data_index].gain = isc_image_info->frame_data[frame_data_index].gain;
 		buffer_data->isc_image_info.frame_data[frame_data_index].exposure = isc_image_info->frame_data[frame_data_index].exposure;

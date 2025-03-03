@@ -69,6 +69,11 @@ public:
 	*/
 	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
+	/** @brief Set the read Frame to the specified number.
+		@return 0, if successful.
+	*/
+	int SetReadFrameNumber(const __int64 frame_number);
+
 private:
 
 	IscCameraControlConfiguration isc_camera_control_config_;
@@ -83,6 +88,11 @@ private:
 
 		IscRawFileHeader raw_file_header;
 		unsigned __int64 total_read_size;
+
+		__int64 current_frame_number;
+
+		bool request_fo_designated_number;
+		__int64 designated_number;
 
 		IscPlayFileInformation play_file_information;
 	};
@@ -102,6 +112,7 @@ private:
 	int ReadOneRawData(IscImageInfo* isc_image_info);
 	int ReadColorRawData(IscImageInfo* isc_image_info);
 	int ReadDoubleShutterRawData(IscImageInfo* isc_image_info);
+	int MoveToSpecifyFrameNumber(const __int64 specify_frame_number);
 
 
 };

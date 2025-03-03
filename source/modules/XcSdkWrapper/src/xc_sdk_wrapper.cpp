@@ -52,7 +52,6 @@ extern char xc_module_file_name_[1024];
 
 namespace ns_xcsdk_wrapper
 {
-
 	constexpr char kISC_XC_DRV_FILE_NAME[] = "ISCSDKLibxc.dll";
 
 	// Function typedef
@@ -227,12 +226,21 @@ namespace ns_xcsdk_wrapper
 	TGetSadSearchRange128 getSadSearchRange128 = NULL;
 
 	//int SetEnablEextendedMatching(int nValue);
-	typedef int (WINAPI* TSetEnablEextendedMatching)(int);
-	TSetEnablEextendedMatching setEnablEextendedMatching = NULL;
+	typedef int (WINAPI* TSetEnableExtendedMatching)(int);
+	TSetEnableExtendedMatching setEnableExtendedMatching = NULL;
 
 	//int GetEnablEextendedMatching(int* pnValue);
-	typedef int (WINAPI* TGetEnablEextendedMatching)(int*);
-	TGetEnablEextendedMatching getEnablEextendedMatching = NULL;
+	typedef int (WINAPI* TGetEnableExtendedMatching)(int*);
+	TGetEnableExtendedMatching getEnableExtendedMatching = NULL;
+
+	//int SetSadMatchingBlockSize46Enable(int nValue);
+	typedef int (WINAPI* TSetSadMatchingBlockSize46Enable)(int);
+	TSetSadMatchingBlockSize46Enable setSadMatchingBlockSize46Enable = NULL;
+
+	//int GetSadMatchingBlockSize46Enable(int* pnValue);
+	typedef int (WINAPI* TGetSadMatchingBlockSize46Enable)(int*);
+	TGetSadMatchingBlockSize46Enable getSadMatchingBlockSize46Enable = NULL;
+
 
 /**
  * constructor
@@ -1096,13 +1104,35 @@ bool XcSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 		break;
 
 	case IscCameraParameter::kSadSearchRange128:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kEnableExtendedMatching:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		ret_value = true;
 		break;
 
-	case IscCameraParameter::EnablEextendedMatching:
-		ret_value = true;
+	case IscCameraParameter::KEnableMatchingBlockSize46:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
 		break;
-
 	}
 
 	return ret_value;
@@ -1144,11 +1174,34 @@ bool XcSdkWrapper::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kSadSearchRange128:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kEnableExtendedMatching:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		ret_value = true;
 		break;
 
-	case IscCameraParameter::EnablEextendedMatching:
-		ret_value = true;
+	case IscCameraParameter::KEnableMatchingBlockSize46:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
 		break;
 	}
 
@@ -1191,13 +1244,35 @@ bool XcSdkWrapper::DeviceOptionIsWritable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kSadSearchRange128:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kEnableExtendedMatching:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		ret_value = true;
 		break;
 
-	case IscCameraParameter::EnablEextendedMatching:
-		ret_value = true;
+	case IscCameraParameter::KEnableMatchingBlockSize46:
+		if (xc_camera_param_info_.fpga_version_major < 0x27) {
+			ret_value = false;
+		}
+		else {
+			ret_value = true;
+		}
 		break;
-
 	}
 
 	return ret_value;
@@ -1235,6 +1310,11 @@ int XcSdkWrapper::DeviceGetOptionMin(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kSemiAutoDoubleParam:
+		*value = 0;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		*value = 0;
 		ret_value = DPC_E_OK;
 		break;
@@ -1278,6 +1358,12 @@ int XcSdkWrapper::DeviceGetOptionMax(const IscCameraParameter option_name, int* 
 		*value = 32;
 		ret_value = DPC_E_OK;
 		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		*value = 32;
+		ret_value = DPC_E_OK;
+		break;
+
 	}
 
 	return ret_value;
@@ -1312,6 +1398,11 @@ int XcSdkWrapper::DeviceGetOptionInc(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kSemiAutoDoubleParam:
+		*value = 1;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		*value = 1;
 		ret_value = DPC_E_OK;
 		break;
@@ -1372,16 +1463,31 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 		break;
 
 	case IscCameraParameter::kSemiAutoDoubleParam:
-		ret_value = getSemiAutoDoubleParam(&get_value);
-		if (ret_value == ISC_OK) {
-			*value = static_cast<int>(get_value);
-			ret_value = DPC_E_OK;
+		if (getSemiAutoDoubleParam != NULL) {
+			ret_value = getSemiAutoDoubleParam(&get_value);
+			if (ret_value == ISC_OK) {
+				*value = static_cast<int>(get_value);
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
 		}
 		else {
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = getNoiseFilter(value);
+		if (ret_value == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			*value = 0;
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
 	}
 
 	return ret_value;
@@ -1438,7 +1544,22 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 		break;
 
 	case IscCameraParameter::kSemiAutoDoubleParam:
-		ret_value = setSemiAutoDoubleParam(set_value);
+		if (setSemiAutoDoubleParam != NULL) {
+			ret_value = setSemiAutoDoubleParam(set_value);
+			if (ret_value == ISC_OK) {
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+			}
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = setNoiseFilter(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1446,7 +1567,6 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
 		}
 		break;
-
 	}
 
 	return ret_value;
@@ -1568,31 +1688,62 @@ int XcSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, bool* va
 		break;
 
 	case IscCameraParameter::kSadSearchRange128:
-		ret_value = getSadSearchRange128(&get_value);
-		if (ret_value == ISC_OK) {
-			if (get_value != 0) {
-				*value = true;
+		if (getSadSearchRange128 != NULL) {
+			ret_value = getSadSearchRange128(&get_value);
+			if (ret_value == ISC_OK) {
+				if (get_value != 0) {
+					*value = true;
+				}
+				else {
+					*value = false;
+				}
+				ret_value = DPC_E_OK;
 			}
 			else {
-				*value = false;
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 			}
-			ret_value = DPC_E_OK;
 		}
 		else {
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
 
-	case IscCameraParameter::EnablEextendedMatching:
-		ret_value = getEnablEextendedMatching(&get_value);
-		if (ret_value == ISC_OK) {
-			if (get_value != 0) {
-				*value = true;
+	case IscCameraParameter::kEnableExtendedMatching:
+		if (getEnableExtendedMatching != NULL) {
+			ret_value = getEnableExtendedMatching(&get_value);
+			if (ret_value == ISC_OK) {
+				if (get_value != 0) {
+					*value = true;
+				}
+				else {
+					*value = false;
+				}
+				ret_value = DPC_E_OK;
 			}
 			else {
-				*value = false;
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 			}
-			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::KEnableMatchingBlockSize46:
+		if (getSadMatchingBlockSize46Enable != NULL) {
+			ret_value = getSadMatchingBlockSize46Enable(&get_value);
+			if (ret_value == ISC_OK) {
+				if (get_value != 0) {
+					*value = true;
+				}
+				else {
+					*value = false;
+				}
+				ret_value = DPC_E_OK;
+			}
+			else {
+				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+			}
 		}
 		else {
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
@@ -1672,44 +1823,80 @@ int XcSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const bo
 		break;
 
 	case IscCameraParameter::kSadSearchRange128:
-		if (value) {
-			ret_value = setSadSearchRange128(1);
-			if (ret_value == ISC_OK) {
-				ret_value = DPC_E_OK;
+		if (setSadSearchRange128 != NULL) {
+			if (value) {
+				ret_value = setSadSearchRange128(1);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
 			else {
-				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				ret_value = setSadSearchRange128(0);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
 		}
 		else {
-			ret_value = setSadSearchRange128(0);
-			if (ret_value == ISC_OK) {
-				ret_value = DPC_E_OK;
-			}
-			else {
-				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
-			}
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
 
-	case IscCameraParameter::EnablEextendedMatching:
-		if (value) {
-			ret_value = setEnablEextendedMatching(1);
-			if (ret_value == ISC_OK) {
-				ret_value = DPC_E_OK;
+	case IscCameraParameter::kEnableExtendedMatching:
+		if (setEnableExtendedMatching != NULL) {
+			if (value) {
+				ret_value = setEnableExtendedMatching(1);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
 			else {
-				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				ret_value = setEnableExtendedMatching(0);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
 		}
 		else {
-			ret_value = setEnablEextendedMatching(0);
-			if (ret_value == ISC_OK) {
-				ret_value = DPC_E_OK;
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::KEnableMatchingBlockSize46:
+		if (setSadMatchingBlockSize46Enable != NULL) {
+			if (value) {
+				ret_value = setSadMatchingBlockSize46Enable(1);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
 			else {
-				ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				ret_value = setSadMatchingBlockSize46Enable(0);
+				if (ret_value == ISC_OK) {
+					ret_value = DPC_E_OK;
+				}
+				else {
+					ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+				}
 			}
+		}
+		else {
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
 
@@ -2126,7 +2313,8 @@ int XcSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
 		isc_image_info->frame_data[i].frame_time = 0;
-
+		
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2203,6 +2391,7 @@ int XcSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].frame_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2308,6 +2497,7 @@ int XcSdkWrapper::GetDataModeNormal(const IscGetMode* isc_get_mode, IscImageInfo
 	isc_image_info->camera_specific_parameter.dz = xc_camera_param_info_.dz;
 
 	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2685,6 +2875,7 @@ int XcSdkWrapper::GetDataModeDoubleShutter(const IscGetMode* isc_get_mode, IscIm
 	isc_image_info->camera_specific_parameter.dz = xc_camera_param_info_.dz;
 
 	for (int i = 0; i < kISCIMAGEINFO_FRAMEDATA_MAX_COUNT; i++) {
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -3817,20 +4008,42 @@ int XcSdkWrapper::LoadDLLFunction(char* module_path)
 	getSadSearchRange128 = reinterpret_cast<TGetSadSearchRange128>(proc);
 
 	//int SetEnablEextendedMatching(int nValue);
-	proc = GetProcAddress(dll_handle_, "SetEnablEextendedMatching");
+	proc = GetProcAddress(dll_handle_, "SetEnableExtendedMatching");
 	if (proc == NULL) {
 		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
 		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+
+		// 綴りの間違いによる別バージョンが存在します SDK 2.7.3
+		proc = GetProcAddress(dll_handle_, "SetEnablEextendedMatching");
 	}
-	setEnablEextendedMatching = reinterpret_cast<TSetEnablEextendedMatching>(proc);
+	setEnableExtendedMatching = reinterpret_cast<TSetEnableExtendedMatching>(proc);
 
 	//int GetEnablEextendedMatching(int* pnValue);
-	proc = GetProcAddress(dll_handle_, "GetEnablEextendedMatching");
+	proc = GetProcAddress(dll_handle_, "GetEnableExtendedMatching");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+
+		// 綴りの間違いによる別バージョンが存在します SDK 2.7.3
+		proc = GetProcAddress(dll_handle_, "GetEnablEextendedMatching");
+	}
+	getEnableExtendedMatching = reinterpret_cast<TGetEnableExtendedMatching>(proc);
+
+	//int SetSadMatchingBlockSize46Enable(int nValue);
+	proc = GetProcAddress(dll_handle_, "SetSadMatchingBlockSize46Enable");
 	if (proc == NULL) {
 		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
 		//return CAMCONTROL_E_LOAD_DLL_FAILED;
 	}
-	getEnablEextendedMatching = reinterpret_cast<TGetEnablEextendedMatching>(proc);
+	setSadMatchingBlockSize46Enable = reinterpret_cast<TSetSadMatchingBlockSize46Enable>(proc);
+
+	//int GetSadMatchingBlockSize46Enable(int* pnValue);
+	proc = GetProcAddress(dll_handle_, "GetSadMatchingBlockSize46Enable");
+	if (proc == NULL) {
+		//MessageBoxA(NULL, "Failed to get function address", "LoadDLLFunction", MB_OK);
+		//return CAMCONTROL_E_LOAD_DLL_FAILED;
+	}
+	getSadMatchingBlockSize46Enable = reinterpret_cast<TGetSadMatchingBlockSize46Enable>(proc);
 
 	return DPC_E_OK;
 }
@@ -3887,8 +4100,10 @@ int XcSdkWrapper::UnLoadDLLFunction()
 	getSemiAutoDoubleParam = NULL;
 	setSadSearchRange128 = NULL;
 	getSadSearchRange128 = NULL;
-	setEnablEextendedMatching = NULL;
-	getEnablEextendedMatching = NULL;
+	setEnableExtendedMatching = NULL;
+	getEnableExtendedMatching = NULL;
+	setSadMatchingBlockSize46Enable = NULL;
+	getSadMatchingBlockSize46Enable = NULL;
 
 	return DPC_E_OK;
 }

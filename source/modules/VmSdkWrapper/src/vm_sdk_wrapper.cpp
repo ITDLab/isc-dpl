@@ -958,6 +958,9 @@ bool VmSdkWrapper::DeviceOptionIsImplemented(const IscCameraParameter option_nam
 		ret_value = true;
 		break;
 
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1007,6 +1010,10 @@ bool VmSdkWrapper::DeviceOptionIsReadable(const IscCameraParameter option_name)
 		break;
 
 	case IscCameraParameter::kPeculiarRemoval:
+		ret_value = true;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		ret_value = true;
 		break;
 	}
@@ -1060,6 +1067,10 @@ bool VmSdkWrapper::DeviceOptionIsWritable(const IscCameraParameter option_name)
 	case IscCameraParameter::kPeculiarRemoval:
 		ret_value = true;
 		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = true;
+		break;
 	}
 
 	return ret_value;
@@ -1102,6 +1113,11 @@ int VmSdkWrapper::DeviceGetOptionMin(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kOcclusionRemoval:
+		*value = 0;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		*value = 0;
 		ret_value = DPC_E_OK;
 		break;
@@ -1150,6 +1166,11 @@ int VmSdkWrapper::DeviceGetOptionMax(const IscCameraParameter option_name, int* 
 		*value = 7;
 		ret_value = DPC_E_OK;
 		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		*value = 32;
+		ret_value = DPC_E_OK;
+		break;
 	}
 
 	return ret_value;
@@ -1189,6 +1210,11 @@ int VmSdkWrapper::DeviceGetOptionInc(const IscCameraParameter option_name, int* 
 		break;
 
 	case IscCameraParameter::kOcclusionRemoval:
+		*value = 1;
+		ret_value = DPC_E_OK;
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
 		*value = 1;
 		ret_value = DPC_E_OK;
 		break;
@@ -1263,6 +1289,17 @@ int VmSdkWrapper::DeviceGetOption(const IscCameraParameter option_name, int* val
 			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
 		}
 		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = getNoiseFilter(value);
+		if (ret_value == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			*value = 0;
+			ret_value = CAMCONTROL_E_GET_FETURE_FAILED;
+		}
+		break;
 	}
 
 	return ret_value;
@@ -1321,6 +1358,16 @@ int VmSdkWrapper::DeviceSetOption(const IscCameraParameter option_name, const in
 
 	case IscCameraParameter::kOcclusionRemoval:
 		ret_value = SetStereoMatchingsOcclusionRemoval(set_value);
+		if (ret_value == ISC_OK) {
+			ret_value = DPC_E_OK;
+		}
+		else {
+			ret_value = CAMCONTROL_E_SET_FETURE_FAILED;
+		}
+		break;
+
+	case IscCameraParameter::kNoiseFilter:
+		ret_value = setNoiseFilter(set_value);
 		if (ret_value == ISC_OK) {
 			ret_value = DPC_E_OK;
 		}
@@ -1995,6 +2042,7 @@ int VmSdkWrapper::InitializeIscIamgeinfo(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].frame_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2071,6 +2119,7 @@ int VmSdkWrapper::ReleaeIscIamgeinfo(IscImageInfo* isc_image_info)
 
 		isc_image_info->frame_data[i].frame_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;
@@ -2136,6 +2185,7 @@ int VmSdkWrapper::GetData(const IscGetMode* isc_get_mode, IscImageInfo* isc_imag
 		isc_image_info->frame_data[i].camera_status.error_code = ISC_OK;
 		isc_image_info->frame_data[i].camera_status.data_receive_tact_time = 0;
 
+		isc_image_info->frame_data[i].data_index = -1;
 		isc_image_info->frame_data[i].frameNo = -1;
 		isc_image_info->frame_data[i].gain = -1;
 		isc_image_info->frame_data[i].exposure = -1;

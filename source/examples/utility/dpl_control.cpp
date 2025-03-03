@@ -236,6 +236,126 @@ bool DplControl::Start(StartMode& start_mode)
     return true;
 }
 
+bool DplControl::StartPlayFile(StartMode& start_mode, wchar_t* play_file_name)
+{
+    if (isc_dpl_ == nullptr) {
+        return false;
+    }
+
+    IscRawFileHeader raw_file_headaer = {};
+    IscPlayFileInformation play_file_information = {};
+    int ret = isc_dpl_->GetFileInformation(play_file_name, &raw_file_headaer, &play_file_information);
+    if (ret != DPC_E_OK) {
+        printf("[ERR]initialization failed GetFileInformation() failure  code=0X%08X\n", ret);
+
+        return false;
+    }
+
+    // file information
+    printf("[INFO][IscDplIf]File information\n");
+    printf("                camera model:%d\n", raw_file_headaer.camera_model);
+    printf("                max_width:%d\n", raw_file_headaer.max_width);
+    printf("                max_height:%d\n", raw_file_headaer.max_height);
+    printf("                Base length=%.3f,BF=%.3f,DINF=%.3f\n", raw_file_headaer.base_length, raw_file_headaer.bf, raw_file_headaer.d_inf);
+    printf("                grab_mode:%d\n", raw_file_headaer.grab_mode);
+    printf("                shutter_mode:%d\n", raw_file_headaer.shutter_mode);
+    printf("                color_mode:%d\n", raw_file_headaer.color_mode);
+    printf("                *If grab_mode=2, then the show parameter should be 1. If 0, no disparity is displayed\n");
+    printf("                total_frame_count:%lld\n", play_file_information.total_frame_count);
+    printf("                total_time_sec:%lld\n", play_file_information.total_time_sec);
+
+    // for (Block Matcing=ON Frame Decoder=ON)
+
+    isc_start_mode_.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
+    switch (raw_file_headaer.grab_mode) {
+    case 1:
+        /**< 視差モード(補正後画像+視差画像) */
+        isc_start_mode_.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kParallax;
+        break;
+
+    case 2:
+        /**< 補正後画像モード */
+        isc_start_mode_.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kCorrect;
+        break;
+
+    case 3:
+        /**< 補正前画像モード(原画像) */
+        isc_start_mode_.isc_grab_start_mode.isc_grab_mode = IscGrabMode::kBeforeCorrect;
+        break;
+
+    default:
+        printf("[ERROR][IscDplIf]Invalid grab mode");
+        return false;
+        //break;
+    }
+
+    isc_start_mode_.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
+    if (raw_file_headaer.color_mode && start_mode.enabled_color) {
+        isc_start_mode_.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorON;
+        isc_start_mode_.isc_grab_start_mode.isc_get_color_mode = IscGetModeColor::kAwb;
+    }
+    else if (raw_file_headaer.color_mode && !start_mode.enabled_color) {
+        isc_start_mode_.isc_grab_start_mode.isc_grab_color_mode = IscGrabColorMode::kColorOFF;
+        isc_start_mode_.isc_grab_start_mode.isc_get_color_mode = IscGetModeColor::kAwb;
+    }
+    else {
+        // 強制的にOFF
+        start_mode.enabled_color = false;
+    }
+    isc_start_mode_.isc_grab_start_mode.isc_get_mode.wait_time = 100;
+    isc_start_mode_.isc_grab_start_mode.isc_get_raw_mode = IscGetModeRaw::kRawOff;
+    isc_start_mode_.isc_grab_start_mode.isc_record_mode = IscRecordMode::kRecordOff;
+    isc_start_mode_.isc_grab_start_mode.isc_play_mode = IscPlayMode::kPlayOn;
+    isc_start_mode_.isc_grab_start_mode.isc_play_mode_parameter.interval = 30;
+    
+    swprintf_s(isc_start_mode_.isc_grab_start_mode.isc_play_mode_parameter.play_file_name, L"%s", play_file_name);
+
+    if (start_mode.show_mode == 1) {
+        // データ処理ライブラリ有効
+        switch (raw_file_headaer.grab_mode) {
+        case 1:
+            /**< 視差モード(補正後画像+視差画像) */
+            isc_start_mode_.isc_dataproc_start_mode.enabled_stereo_matching = false;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_frame_decoder = true;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_disparity_filter = true;
+            break;
+
+        case 2:
+            /**< 補正後画像モード */
+            isc_start_mode_.isc_dataproc_start_mode.enabled_stereo_matching = true;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_frame_decoder = true;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_disparity_filter = true;
+            break;
+
+        case 3:
+            /**< 補正前画像モード(原画像) */
+            isc_start_mode_.isc_dataproc_start_mode.enabled_stereo_matching = true;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_frame_decoder = true;
+            isc_start_mode_.isc_dataproc_start_mode.enabled_disparity_filter = true;
+            break;
+
+        default:
+            break;
+        }
+    }
+    else {
+        isc_start_mode_.isc_dataproc_start_mode.enabled_stereo_matching = false;
+        isc_start_mode_.isc_dataproc_start_mode.enabled_frame_decoder = false;
+        isc_start_mode_.isc_dataproc_start_mode.enabled_disparity_filter = false;
+    }
+
+    DPL_RESULT dpl_result = isc_dpl_->Start(&isc_start_mode_);
+    if (dpl_result == DPC_E_OK) {
+        printf("[INFO]Start successfully\n");
+    }
+    else {
+        printf("[ERROR]Failed to Start\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool DplControl::Stop()
 {
     if (isc_dpl_ == nullptr) {
@@ -338,6 +458,20 @@ bool DplControl::ConvertDisparityToImage(double b, const double angle, const dou
                                     width, height, depth, bgra_image);
 
     return ret;
+}
+
+bool DplControl::GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information)
+{
+
+    int ret = isc_dpl_->GetFileInformation(play_file_name, raw_file_header, play_file_information);
+    if (ret != DPC_E_OK) {
+        char msg[64] = {};
+        sprintf_s(msg, "[ERROR]isc_dpl_ GetFileInformation() failure code=0X%08X\n", ret);
+        printf(msg);
+        return false;
+    }
+
+    return true;
 }
 
 int DplControl::ColorScaleBCGYR(const double min_value, const double max_value, const double in_value, int* bo, int* go, int* ro)

@@ -80,6 +80,10 @@ public:
 	void SetGuiCbColorImageCorrected(const bool enabled);
 	int GetGuiCmbShutterControlMode() const;
 	void SetGuiCmbShutterControlMode(const int mode);
+	bool IsOptionExtendedMatching() const;
+	void SetOptionExtendedMatching(const bool enabled);
+	bool IsOptionSearchRange128() const;
+	void SetOptionSearchRange128(const bool enabled);
 
 private:
 
@@ -121,5 +125,8 @@ private:
 	bool cb_color_image_correted_;				/**< gui check box color image correted */
 	int cmb_shutter_control_mode_;				/**< gui combo box shutter control mode */
 
+	// option parameters
+	bool extended_matching_;					/**< extended matching */
+	bool search_range128_;						/**< search range , set to 128 (disable case:256) */
 };
 

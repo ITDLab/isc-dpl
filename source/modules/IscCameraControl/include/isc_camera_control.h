@@ -326,6 +326,11 @@ public:
 	*/
 	int GetFileInformation(wchar_t* play_file_name, IscRawFileHeader* raw_file_header, IscPlayFileInformation* play_file_information);
 
+	/** @brief Set the read Frame to the specified number.
+		@return 0, if successful.
+	*/
+	int SetReadFrameNumber(const __int64 frame_number);
+
 private:
 	IscLog* isc_log_;
 

@@ -624,6 +624,11 @@ bool SetupDrawImageDataSet(const DpcDrawLib::ImageDrawMode mode, IscControl* isc
 		// depth data,color image
 		image_data_set[0]->valid = true;
 		image_data_set[0]->mode = DpcDrawLib::ImageDrawMode::kDepthColor;
+		
+		if ((shutter_mode == IscShutterMode::kDoubleShutter && is_raw_on) ||
+			(shutter_mode == IscShutterMode::kDoubleShutter && is_play_mode)) {
+			fd_index = kISCIMAGEINFO_FRAMEDATA_MERGED;
+		}
 
 		image_data_set[0]->image_data_list[0].depth.width = isc_control->isc_image_info.frame_data[fd_index].depth.width;
 		image_data_set[0]->image_data_list[0].depth.height = isc_control->isc_image_info.frame_data[fd_index].depth.height;

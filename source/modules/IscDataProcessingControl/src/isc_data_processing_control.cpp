@@ -1553,6 +1553,14 @@ int IscDataProcessingControl::RunDataProcFrameDecoderInDoubleShutter(IscImageInf
             memcpy(dst_isc_image_info->frame_data[fd_index].p1.image, isc_block_disparity_data_.pbldimg, cp_size);
         }
 
+        dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index].color.width;
+        dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index].color.height;
+        dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index].color.channel_count;
+        cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index].color.height * isc_image_info->frame_data[fd_index].color.channel_count;
+        if (cp_size > 0) {
+            memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index].color.image, cp_size);
+        }
+
         // copy non merged data
         int fd_index_src = kISCIMAGEINFO_FRAMEDATA_LATEST;
         dst_isc_image_info->frame_data[fd_index].p2.width = isc_image_info->frame_data[fd_index_src].p2.width;
@@ -1561,14 +1569,6 @@ int IscDataProcessingControl::RunDataProcFrameDecoderInDoubleShutter(IscImageInf
         cp_size = isc_image_info->frame_data[fd_index].p2.width * isc_image_info->frame_data[fd_index_src].p2.height * isc_image_info->frame_data[fd_index_src].p2.channel_count;
         if (cp_size > 0) {
             memcpy(dst_isc_image_info->frame_data[fd_index].p2.image, isc_image_info->frame_data[fd_index_src].p2.image, cp_size);
-        }
-
-        dst_isc_image_info->frame_data[fd_index].color.width = isc_image_info->frame_data[fd_index_src].color.width;
-        dst_isc_image_info->frame_data[fd_index].color.height = isc_image_info->frame_data[fd_index_src].color.height;
-        dst_isc_image_info->frame_data[fd_index].color.channel_count = isc_image_info->frame_data[fd_index_src].color.channel_count;
-        cp_size = isc_image_info->frame_data[fd_index].color.width * isc_image_info->frame_data[fd_index_src].color.height * isc_image_info->frame_data[fd_index_src].color.channel_count;
-        if (cp_size > 0) {
-            memcpy(dst_isc_image_info->frame_data[fd_index].color.image, isc_image_info->frame_data[fd_index_src].color.image, cp_size);
         }
 
         isc_data_proc_result_data->module_status[module_index].error_code = dp_ret;

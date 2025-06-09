@@ -41,10 +41,10 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
 - OpenCV 4.8.0 (これ以外のバージョンも動作可能ですが、その場合はbuildの設定を調整してください)  
 - ISC Stereo Camrea  
     - ISC100VM: FPGA(0x75)  
-    - ISC100XC: FPGA(0x22)  
+    - ISC100XC: FPGA(0x22~)  
 - ISC Stereo Camera SDK
     - ISC100VM: 2.3.2
-    - ISC100XC: 2.2.2
+    - ISC100XC: 2.2.2~  
 
 ****
 # How to build and Run  
@@ -93,6 +93,7 @@ isc-dplは、ISCシリーズのステレオカメラに対応したデータ処�
     - ISC100XCを使用する場合は、USB 3.0 to FIFO Bridge Chip FT601(FTDI*)のApplication Library(FTD3XX.dll)を実行フォルダへコピーします  
       FTD3XX.dll は、ISC Stereo Cameraに同梱されるSDKに含まれています  
       または、[FTDI official site](https://ftdichip.com/drivers/d3xx-drivers/)より入手可能です  
+      D3XX バージョン　1.3.0.10　を使用します  
     - 実行に必要なパラメータファイルを実行フォルダへコピーします  
       source\apps\ParameterFiles に含まれています
 

@@ -305,6 +305,11 @@ extern "C" {
 	*/
 	ISCDPLC_EXPORTS_API int DplSetReadFrameNumber(const __int64 frame_number);
 
+	/** @brief Get the status.
+		@return 0, if successful.
+	*/
+	ISCDPLC_EXPORTS_API int DplGetFileReadStatus(__int64* frame_number, IscFileReadStatus* file_read_status);
+
 	// get information for depth, distance, ...
 
 	/** @brief gets the distance of the given coordinates.

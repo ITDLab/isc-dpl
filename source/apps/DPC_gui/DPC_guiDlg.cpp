@@ -842,7 +842,7 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 				isc_control_.main_state = MainStateState::kGrabRun;
 			}
 			else {
-				isc_control_.main_state = MainStateState::kGrabEnded;
+				isc_control_.main_state = MainStateState::kGrabStop;
 			}
 		}
 			break;
@@ -1002,13 +1002,31 @@ void CDPCguiDlg::OnTimer(UINT_PTR nIDEvent)
 						isc_control_.main_state = MainStateState::kPlayStop;
 					}
 					else {
-						// 時間待ち
-						ULONGLONG time = GetTickCount64();
-						const ULONGLONG play_time_out = (ULONGLONG)5000;
-						if ((time - isc_control_.time_to_event) > play_time_out) {
-							// time out
-							DPL_RESULT dpl_result = isc_dpl_->Stop();
-							isc_control_.main_state = MainStateState::kPlayStop;
+						// Get Status
+						__int64 current_frame_number = -1;
+						IscFileReadStatus file_read_status = IscFileReadStatus::kNotReady;
+						DPL_RESULT dpl_result = isc_dpl_->GetFileReadStatus(&current_frame_number, &file_read_status);
+						if (dpl_result == DPC_E_OK) {
+							if (file_read_status == IscFileReadStatus::kEnded) {
+								// ended
+								DPL_RESULT dpl_result = isc_dpl_->Stop();
+								isc_control_.main_state = MainStateState::kPlayStop;
+							}
+						}
+						else {
+							// 時間待ちで終了させる
+#ifdef _DEBUG
+							// Debug時は時間待ちしない	
+#else
+							ULONGLONG time = GetTickCount64();
+							const ULONGLONG play_time_out = (ULONGLONG)5000;
+							if ((time - isc_control_.time_to_event) > play_time_out) {
+								// time out
+								DPL_RESULT dpl_result = isc_dpl_->Stop();
+								isc_control_.main_state = MainStateState::kPlayStop;
+							}
+#endif
+
 						}
 					}
 				}

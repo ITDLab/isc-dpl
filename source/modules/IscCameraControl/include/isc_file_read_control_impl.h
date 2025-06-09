@@ -74,12 +74,19 @@ public:
 	*/
 	int SetReadFrameNumber(const __int64 frame_number);
 
+	/** @brief Get the status.
+		@return 0, if successful.
+	*/
+	int GetFileReadStatus(__int64* frame_number, IscFileReadStatus* file_read_status);
+
+
 private:
 
 	IscCameraControlConfiguration isc_camera_control_config_;
 	IscGrabStartMode isc_grab_start_mode_;
 
 	struct FileRaedInformation {
+		IscFileReadStatus file_read_status;
 		wchar_t read_file_name[_MAX_PATH];
 		unsigned __int64 file_size;
 
@@ -112,6 +119,8 @@ private:
 	int ReadOneRawData(IscImageInfo* isc_image_info);
 	int ReadColorRawData(IscImageInfo* isc_image_info);
 	int ReadDoubleShutterRawData(IscImageInfo* isc_image_info);
+	int ReadDoubleShutterColorRawData(IscImageInfo* isc_image_info);
+
 	int MoveToSpecifyFrameNumber(const __int64 specify_frame_number);
 
 

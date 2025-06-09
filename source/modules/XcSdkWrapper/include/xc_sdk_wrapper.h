@@ -523,7 +523,7 @@ private:
 	/** @brief covert bgr to yuyv
 		@return 0, if successful.
 	*/
-	int ConverBGR2YUYV(const int width, const int height, unsigned char* input_image, unsigned char* output_image);
+	int ConvertBGR2YUYV(const int width, const int height, unsigned char* input_image, unsigned char* output_image);
 
 	/** @brief calculate parameters to be used for synthesis
 		@return 0, if successful.

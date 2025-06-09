@@ -404,4 +404,15 @@ struct IscPlayFileInformation {
     __int64 end_time;           /**< End time */
 };
 
+/** @enum  IscFileReadStatus
+ *  @brief This is the status of file read
+ */
+enum class IscFileReadStatus {
+    kNotReady = 0,
+    kReady,
+    kReading,
+    kStoped,
+    kEnded
+};
+
 #endif /* ISC_CEMERA_DEF_H */

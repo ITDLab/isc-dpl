@@ -1317,6 +1317,29 @@ int IscDpl::SetReadFrameNumber(const __int64 frame_number)
 	return DPC_E_OK;
 }
 
+/**
+ * File読み込みの状態を取得します
+ *
+ * @param[out] frame_number 最後に読み込んだframe_number番号
+ * @param[out] file_read_status 読み込み状態
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscDpl::GetFileReadStatus(__int64* frame_number, IscFileReadStatus* file_read_status)
+{
+	if (isc_main_control_ == nullptr) {
+		return ISCDPL_E_INVALID_HANDLE;
+	}
+
+	int ret = isc_main_control_->GetFileReadStatus(frame_number, file_read_status);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return DPC_E_OK;
+}
+
 // get information for depth, distance, ...
 
 /**

@@ -1434,7 +1434,6 @@ int IscFileWriteControlImpl::WriteDataProc(IscFileWriteControlImpl* isc_file_wri
 					}
 
 					isc_file_write_Control->file_write_information_.frame_index++;
-
 				}
 
 				// debug

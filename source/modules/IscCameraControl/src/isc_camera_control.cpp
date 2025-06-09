@@ -2067,6 +2067,27 @@ int IscCameraControl::SetReadFrameNumber(const __int64 frame_number)
 }
 
 /**
+ * File読み込みの状態を取得します
+ *
+ * @param[out] frame_number 最後に読み込んだframe_number番号
+ * @param[out] file_read_status 読み込み状態
+ *
+ * @retval 0 成功
+ * @retval other 失敗
+ */
+int IscCameraControl::GetFileReadStatus(__int64* frame_number, IscFileReadStatus* file_read_status)
+{
+	int ret = DPC_E_OK;
+
+	ret = isc_file_read_control_impl_->GetFileReadStatus(frame_number, file_read_status);
+	if (ret != DPC_E_OK) {
+		return ret;
+	}
+
+	return ret;
+}
+
+/**
  * カメラよりデータを取得します
  *
  * @param[in] isc_image_Info バッファー構造体

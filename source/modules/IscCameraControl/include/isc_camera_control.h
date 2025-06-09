@@ -331,6 +331,12 @@ public:
 	*/
 	int SetReadFrameNumber(const __int64 frame_number);
 
+	/** @brief Get the status.
+		@return 0, if successful.
+	*/
+	int GetFileReadStatus(__int64* frame_number, IscFileReadStatus* file_read_status);
+
+
 private:
 	IscLog* isc_log_;
 
